@@ -22,9 +22,16 @@
 - [x] Component parity smoke: encoder maxabs ~7e-7, decoder probs maxabs ~1e-7
 - [x] Greedy loop token parity vs TF full SavedModel on preprocessed sample (**exact match**)
 - [x] Clean decoder ONNX interface to `(tokens, enc_out)` (pos-encoding inputs removed)
-- [ ] Token parity on 3+ real chemical structure images (selftest/fixtures)
+- [x] Token parity on 4 samples incl. real structures: daidzein selftest (`C1=CC(=CC=C1C2=COC3=CC(=CC=C3C2=O)O)O`) and caffeine PubChem (**exact SMILES parity**)
 - [ ] INT16 QDQ smoke test (opset 21 vs `com.microsoft`)
 - [ ] Record rough latency and decide go/no-go
+
+## M4 — Quantization & selection (next)
+- [ ] E1: dynamic INT8 (encoder ConvInteger + decoder MatMulInteger), no calibration
+- [ ] E2: static INT8 QDQ (calibration set)
+- [ ] E3: hybrid (static encoder + dynamic decoder)
+- [ ] E4: FP16 safety net
+- [ ] Evaluate token parity/latency/size and write `selection.json`
 
 ## M1 — Skeleton & reproducibility
 - [ ] `scripts/check.sh`, lint/type/test config, CI skeleton
