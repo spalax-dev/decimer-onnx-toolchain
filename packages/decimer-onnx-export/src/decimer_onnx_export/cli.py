@@ -30,9 +30,14 @@ def models() -> None:
 
 
 @app.command()
-def probe() -> None:
-    """Stage 2 (M0): inspect fetched weights / decide extraction path. Not implemented yet."""
-    typer.echo("probe: scaffolded (M0).")
+def probe(
+    model: str = typer.Option("ocsr-printed", help=f"Model key: {', '.join(available_models())}"),
+    data_dir: Path = typer.Option(Path("data/weights"), help="Cache directory for weights"),
+) -> None:
+    """Stage 2 (M0): inspect fetched weights / decide extraction path."""
+    from decimer_onnx_export.source import format_probe, probe_model
+
+    typer.echo(format_probe(probe_model(model, data_dir=data_dir)))
 
 
 @app.command("export")

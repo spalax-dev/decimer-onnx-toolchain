@@ -1,0 +1,31 @@
+{
+  "model": {
+    "key": "ocsr-handdrawn",
+    "record": "https://zenodo.org/records/10781330",
+    "title": "DECIMER V2 hand-drawn specialist OCSR model",
+    "license": "CC-BY-4.0",
+    "files": [
+      {
+        "name": "DECIMER_HandDrawn_model.zip",
+        "url": "https://zenodo.org/api/records/10781330/files/DECIMER_HandDrawn_model.zip/content",
+        "size": 298515112,
+        "checksum": "md5:1fece9813549417440f7c45d0c51603a",
+        "extract": true,
+        "dest": null
+      }
+    ]
+  },
+  "fetched": [
+    {
+      "file": {
+        "name": "DECIMER_HandDrawn_model.zip",
+        "url": "https://zenodo.org/api/records/10781330/files/DECIMER_HandDrawn_model.zip/content",
+        "size": 298515112,
+        "checksum": "md5:1fece9813549417440f7c45d0c51603a",
+        "extract": true,
+        "dest": null
+      },
+      "path": "data/weights/ocsr-handdrawn/DECIMER_HandDrawn_model.zip"
+    }
+  ]
+}

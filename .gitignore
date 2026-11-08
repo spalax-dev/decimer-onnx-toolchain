@@ -12,6 +12,8 @@ data/weights/
 data/calibration/
 data/validation/
 data/manifests/*.tmp
+*.onnx
+*.onnx.data
 
 # Local plan (kept out of git)
 docs/plan.md

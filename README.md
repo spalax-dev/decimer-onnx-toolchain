@@ -15,7 +15,7 @@ Reproducible pipeline to convert [DECIMER](https://github.com/Kohulan/DECIMER-Im
 5. **Validate** — preprocessing parity, token parity vs TensorFlow, golden-set chemistry checks.
 6. **Bundle** — manifest, model card, NOTICE, `selection.json`, and a `default/` artifact.
 
-See [`docs/pipeline.puml`](docs/pipeline.puml) (source) and [`TODO.md`](TODO.md).
+See [`TODO.md`](TODO.md) for progress.
 
 ## Quick start (bootstrap)
 
@@ -29,7 +29,7 @@ uv run decimer-export fetch --model ocsr-handdrawn  # hand-drawn specialist
 uv run decimer-export fetch --model image-classifier
 ```
 
-Downloaded weights are cached under `data/weights/` (gitignored) and verified against pinned checksums.
+Downloaded weights are cached under `data/weights/`  and verified against pinned checksums.
 
 ## Models & sources
 
@@ -37,9 +37,9 @@ Downloaded weights are cached under `data/weights/` (gitignored) and verified ag
 |---|---|---|---|
 | `ocsr-printed` | DECIMER v2 printed OCSR (inference, `models.zip`) | [Zenodo 8300489 — DECIMER V2 Models](https://zenodo.org/records/8300489) | CC-BY-4.0 (Rajan et al.) |
 | `ocsr-handdrawn` | DECIMER v2 hand-drawn specialist OCSR | [Zenodo 10781330 — DECIMER V2 Hand drawn Model](https://zenodo.org/records/10781330) | CC-BY-4.0 |
-| `image-classifier` | DECIMER Image Classifier (EfficientNetB0, structure vs non-structure) | [Iagea/DECIMER-Image-Classifier](https://github.com/Iagea/DECIMER-Image-Classifier) (pinned commit) · DOI [10.5281/zenodo.6670746](https://doi.org/10.5281/zenodo.6670746) | MIT code; DOI points to the classifier *dataset* (126 GB), not the trained weights |
+| `image-classifier` | DECIMER Image Classifier (EfficientNetB0, structure vs non-structure) | [Iagea/DECIMER-Image-Classifier](https://github.com/Iagea/DECIMER-Image-Classifier) (pinned commit) | MIT (upstream code); trained weights fetched from upstream repo at a pinned commit |
 
-Upstream projects: [DECIMER Image Transformer](https://github.com/Kohulan/DECIMER-Image_Transformer), [DECIMER.ai](https://github.com/Steinbeck-Lab/DECIMER.ai), [DECIMER Image Classifier mirror](https://github.com/Steinbeck-Lab/DECIMER-Image-Classifier).
+
 
 ## Layout
 
@@ -54,4 +54,4 @@ tests/ scripts/
 
 ## License & attribution
 
-Code: MIT (see `LICENSE`, to be added). DECIMER OCSR weights: **CC-BY-4.0** (Zenodo [8300489](https://zenodo.org/records/8300489) printed, [10781330](https://zenodo.org/records/10781330) hand-drawn, Rajan et al.). DECIMER Image Classifier: upstream [Iagea/DECIMER-Image-Classifier](https://github.com/Iagea/DECIMER-Image-Classifier) (MIT code; DOI [10.5281/zenodo.6670746](https://doi.org/10.5281/zenodo.6670746)). Redistributed/quantized weights must keep required attribution; see `NOTICE` (to be added with first bundle).
+Code: MIT (see `LICENSE`, to be added). DECIMER OCSR weights: **CC-BY-4.0** (Zenodo [8300489](https://zenodo.org/records/8300489) printed, [10781330](https://zenodo.org/records/10781330) hand-drawn, Rajan et al.). DECIMER Image Classifier: upstream [Iagea/DECIMER-Image-Classifier](https://github.com/Iagea/DECIMER-Image-Classifier) (MIT code; trained weights fetched from the upstream repo at a pinned commit). Redistributed/quantized weights must keep required attribution; see `NOTICE` (to be added with first bundle).

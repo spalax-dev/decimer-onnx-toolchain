@@ -76,9 +76,9 @@ MODELS: dict[str, ModelSpec] = {
     ),
     "image-classifier": ModelSpec(
         key="image-classifier",
-        record="https://github.com/Iagea/DECIMER-Image-Classifier (Zenodo DOI 10.5281/zenodo.6670746)",
+        record="https://github.com/Iagea/DECIMER-Image-Classifier",
         title="DECIMER Image Classifier (EfficientNetB0, structure vs non-structure)",
-        license="MIT (code); see upstream for model/data terms",
+        license="MIT (upstream code); trained weights from pinned commit",
         files=(
             ModelFile(
                 name="saved_model.pb",

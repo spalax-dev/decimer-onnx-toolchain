@@ -1,30 +1,42 @@
 @startuml pipeline
-!theme plain
-left to right direction
+skinparam monochrome true
 skinparam backgroundColor white
 skinparam shadowing false
 skinparam defaultFontName SansSerif
-skinparam ArrowColor #555555
-skinparam state {
-  BorderColor #555555
-  BackgroundColor #F8F9FA
-}
 
-title DECIMER -> ONNX pipeline (state flow)
+title DECIMER -> ONNX pipeline
 
-state "1. Fetch" as S1 #EEF6FF : Download pinned weights\n(Zenodo/GitHub) + verify
-state "2. Probe / extract" as S2 #EEF6FF : Inspect SavedModel or\nrebuild encoder/decoder
-state "3. FP32 export" as S3 #FFF7E6 : tf2onnx\nencoder.onnx + decoder-step.onnx
-state "4. Quantize & select" as S4 #FFF7E6 : E1 dynamic / E2 static\nE3 hybrid / E4 FP16\n-> selection.json
-state "5. Validate" as S5 #EAF7EA : Preprocess + token parity\n+ golden-set gates
-state "6. Bundle" as S6 #EAF7EA : Manifest, model card,\nNOTICE, default artifact
+|Build (TF)|
+start
+:1. Fetch weights\n(verify checksum);
+:2. Probe / extract source;
+:3. Export FP32 ONNX\n(encoder + decoder step);
+if (FP32 parity vs TF OK?) then (yes)
+else (no)
+  :Report export/parity failure;
+  goto fail
+endif
 
-[*] --> S1
-S1 --> S2 : weights cached
-S2 --> S3 : graph ready
-S3 --> S4 : fp32 parity
-S4 --> S5 : candidates
-S5 --> S6 : gates pass
-S5 --> S4 : gate fail / tune
-S6 --> [*] : runtime ready (no TF)
+|Quantize & select (ORT)|
+:4. Build E1-E4 candidates\n(dyn/static INT8, hybrid, FP16);
+repeat
+  :Evaluate candidates\n(parity, golden, latency, size);
+
+  |Validate & ship|
+  if (quality gates pass?) then (yes)
+    :Select default (selection.json);
+    :6. Bundle runtime (no TF);
+    :Runtime ready;
+    stop
+  else (no)
+    |Quantize & select (ORT)|
+    :Tune calibration / exclusions\nand rebuild candidates;
+  endif
+repeat while (rebuilt for re-evaluation?) is (yes) not (no)
+
+|Validate & ship|
+:Report: no candidate passed gates;
+label fail
+:Block release;
+end
 @enduml

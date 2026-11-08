@@ -1,0 +1,31 @@
+{
+  "model": {
+    "key": "ocsr-printed",
+    "record": "https://zenodo.org/records/8300489",
+    "title": "DECIMER V2 Models (printed OCSR)",
+    "license": "CC-BY-4.0",
+    "files": [
+      {
+        "name": "models.zip",
+        "url": "https://zenodo.org/api/records/8300489/files/models.zip/content",
+        "size": 298662033,
+        "checksum": "md5:de78c966b0d63b290cd3f70bb81a91e7",
+        "extract": true,
+        "dest": null
+      }
+    ]
+  },
+  "fetched": [
+    {
+      "file": {
+        "name": "models.zip",
+        "url": "https://zenodo.org/api/records/8300489/files/models.zip/content",
+        "size": 298662033,
+        "checksum": "md5:de78c966b0d63b290cd3f70bb81a91e7",
+        "extract": true,
+        "dest": null
+      },
+      "path": "data/weights/ocsr-printed/models.zip"
+    }
+  ]
+}
