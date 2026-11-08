@@ -1,0 +1,15 @@
+{
+  "suite": "hf-jpo",
+  "title": "HF import Keylab/OCSR-Benchmarks JPO",
+  "hf_dataset": "Keylab/OCSR-Benchmarks",
+  "hf_dataset_commit_observed": "2fdcdc59067acb36d84ddc82c1ace24c91d5ad71",
+  "config": "JPO",
+  "split": "test",
+  "model": "ocsr-printed",
+  "provenance": "JPO subset from ChemInfty/OSRA context (as distributed in Keylab/OCSR-Benchmarks).",
+  "license_note": "HF aggregate license is mixed-see-sources; verify original JPO/ChemInfty/OSRA subset terms before redistribution.",
+  "aggregate_license": "mixed-see-sources",
+  "labels_path": "data/benchmark/hf-jpo/labels.jsonl",
+  "labels_count": 449,
+  "expected_rows": 449
+}

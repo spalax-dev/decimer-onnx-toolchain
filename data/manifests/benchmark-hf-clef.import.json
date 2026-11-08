@@ -1,0 +1,15 @@
+{
+  "suite": "hf-clef",
+  "title": "HF import Keylab/OCSR-Benchmarks CLEF",
+  "hf_dataset": "Keylab/OCSR-Benchmarks",
+  "hf_dataset_commit_observed": "2fdcdc59067acb36d84ddc82c1ace24c91d5ad71",
+  "config": "CLEF",
+  "split": "test",
+  "model": "ocsr-printed",
+  "provenance": "CLEF 2012 OCSR benchmark test set (as distributed in Keylab/OCSR-Benchmarks).",
+  "license_note": "HF aggregate license is mixed-see-sources; verify original CLEF 2012 benchmark terms before redistribution.",
+  "aggregate_license": "mixed-see-sources",
+  "labels_path": "data/benchmark/hf-clef/labels.jsonl",
+  "labels_count": 992,
+  "expected_rows": 992
+}

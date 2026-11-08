@@ -87,15 +87,17 @@ def export_fp32_onnx(model_dir: Path, out_dir: Path, opset: int = 17) -> OnnxExp
 
     dec_path = out_dir / "decoder_step.fp32.onnx"
     try:
+        import onnx as _onnx
+
         model_proto, _ = tf2onnx.convert.from_function(
             g.decoder_fn,
             input_signature=g.decoder_spec,
             opset=opset,
             output_path=str(dec_path),
         )
-        onnx.save(model_proto, str(dec_path))
+        _onnx.save(model_proto, str(dec_path))
         baked = _bake_decoder_positional_encodings(dec_path)
-        model_proto = onnx.load(str(dec_path))
+        model_proto = _onnx.load(str(dec_path))
         res.decoder_path = str(dec_path)
         res.metadata["decoder"] = {
             "inputs": [f"{i.name}:{i.type.tensor_type.elem_type}" for i in model_proto.graph.input],

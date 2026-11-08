@@ -1,0 +1,31 @@
+{
+  "opset": 17,
+  "encoder_path": "data/artifacts/fp32/ocsr-handdrawn/encoder.fp32.onnx",
+  "decoder_path": "data/artifacts/fp32/ocsr-handdrawn/decoder_step.fp32.onnx",
+  "metadata": {
+    "encoder": {
+      "inputs": [
+        "image:1"
+      ],
+      "outputs": [
+        "Identity:0"
+      ],
+      "nodes": 810
+    },
+    "decoder": {
+      "inputs": [
+        "tokens:[1, 'unk__3136']",
+        "enc_out:[1, 256, 512]"
+      ],
+      "outputs": [
+        "Identity:0"
+      ],
+      "nodes": 994,
+      "baked_inputs": [
+        "217602:0",
+        "217606:0"
+      ]
+    }
+  },
+  "errors": []
+}
