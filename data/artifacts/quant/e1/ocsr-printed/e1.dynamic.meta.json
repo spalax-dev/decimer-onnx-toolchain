@@ -1,0 +1,13 @@
+{
+  "variant": "e1-dynamic-int8",
+  "encoder_path": "data/artifacts/quant/e1/ocsr-printed/encoder.e1.dynamic.onnx",
+  "decoder_path": "data/artifacts/quant/e1/ocsr-printed/decoder_step.e1.dynamic.onnx",
+  "metadata": {
+    "variant": "e1-dynamic-int8",
+    "encoder_bytes": 54557694,
+    "decoder_bytes": 30718505,
+    "fp32_encoder_bytes": 208800707,
+    "fp32_decoder_bytes": 107011679
+  },
+  "errors": []
+}

@@ -54,4 +54,4 @@ tests/ scripts/
 
 ## License & attribution
 
-Code: MIT (see `LICENSE`, to be added). DECIMER OCSR weights: **CC-BY-4.0** (Zenodo [8300489](https://zenodo.org/records/8300489) printed, [10781330](https://zenodo.org/records/10781330) hand-drawn, Rajan et al.). DECIMER Image Classifier: upstream [Iagea/DECIMER-Image-Classifier](https://github.com/Iagea/DECIMER-Image-Classifier) (MIT code; trained weights fetched from the upstream repo at a pinned commit). Redistributed/quantized weights must keep required attribution; see `NOTICE` (to be added with first bundle).
+Code: **Apache-2.0** (see [`LICENSE`](LICENSE)). DECIMER OCSR weights: **CC-BY-4.0** (Zenodo [8300489](https://zenodo.org/records/8300489) printed, [10781330](https://zenodo.org/records/10781330) hand-drawn, Rajan et al.). DECIMER Image Classifier: upstream [Iagea/DECIMER-Image-Classifier](https://github.com/Iagea/DECIMER-Image-Classifier) (MIT code; trained weights fetched from the upstream repo at a pinned commit). Redistributed/quantized weights must keep required attribution; see `NOTICE` (to be added with first bundle).
