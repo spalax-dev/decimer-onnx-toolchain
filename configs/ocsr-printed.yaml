@@ -1,0 +1,7 @@
+# Pipeline: stage 2/3 config for printed-structure OCSR export.
+# Selects source model key, image size (512), encoder/decoder shapes, vocab path,
+# and reference decoder limits (max_length=302). Used by probe/export stages.
+model: ocsr-printed
+task: ocsr
+image_size: 512
+max_length: 302

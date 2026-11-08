@@ -1,0 +1,24 @@
+[project]
+name = "decimer-onnx-toolchain"
+version = "0.1.0"
+description = "Reproducible pipeline: DECIMER → ONNX (FP32/INT8/FP16) for fast chemical structure recognition"
+readme = "README.md"
+requires-python = ">=3.11,<3.12"
+dependencies = []
+
+[tool.uv.workspace]
+members = ["packages/*"]
+
+[dependency-groups]
+dev = [
+  "pytest>=8.0",
+  "ruff>=0.6",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["slow: requires model weights or heavy deps"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"

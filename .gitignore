@@ -1,0 +1,21 @@
+# Python / uv
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+.eggs/
+
+# Data and artifacts (generated)
+data/weights/
+data/calibration/
+data/validation/
+data/manifests/*.tmp
+
+# Local plan (kept out of git)
+docs/plan.md
+
+# OS / editor
+.DS_Store
+*.swp

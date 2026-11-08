@@ -1,0 +1,6 @@
+# Pipeline: stage 2/3 config for DECIMER Image Classifier export.
+# EfficientNetB0 SavedModel (structure vs non-structure, threshold ~0.000089 upstream).
+# Export target is a single ONNX graph (no autoregressive loop).
+model: image-classifier
+task: classify
+image_size: 224

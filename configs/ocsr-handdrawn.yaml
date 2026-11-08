@@ -1,0 +1,7 @@
+# Pipeline: stage 2/3 config for hand-drawn specialist OCSR export.
+# Same tokenizer/decoder shape family as printed OCSR; different source weights
+# (Zenodo 10781330). Used by probe/export stages.
+model: ocsr-handdrawn
+task: ocsr
+image_size: 512
+max_length: 302
