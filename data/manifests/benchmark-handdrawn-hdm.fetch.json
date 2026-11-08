@@ -1,0 +1,33 @@
+{
+  "suite": "handdrawn-hdm",
+  "title": "DECIMER Hand-Drawn Molecules benchmark (5088 images)",
+  "record": "https://zenodo.org/records/7617107",
+  "license": "CC-BY-4.0",
+  "labels": [],
+  "fetched": [
+    {
+      "file": {
+        "name": "DECIMER_HDM_Dataset_Images.zip",
+        "url": "https://zenodo.org/api/records/7617107/files/DECIMER_HDM_Dataset_Images.zip/content",
+        "size": 79109007,
+        "checksum": "md5:7c67bb16bb9819b5bf2699e216ace087",
+        "extract": true,
+        "dest": null
+      },
+      "path": "data/benchmark/handdrawn-hdm/DECIMER_HDM_Dataset_Images.zip"
+    },
+    {
+      "file": {
+        "name": "DECIMER_HDM_Dataset_SMILES.tsv",
+        "url": "https://zenodo.org/api/records/7617107/files/DECIMER_HDM_Dataset_SMILES.tsv/content",
+        "size": 234153,
+        "checksum": "md5:3b643bc381be7fe005a7541e9884ca8d",
+        "extract": false,
+        "dest": null
+      },
+      "path": "data/benchmark/handdrawn-hdm/DECIMER_HDM_Dataset_SMILES.tsv"
+    }
+  ],
+  "labels_count": 5088,
+  "labels_path": "data/benchmark/handdrawn-hdm/labels.jsonl"
+}

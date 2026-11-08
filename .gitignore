@@ -21,3 +21,6 @@ docs/plan.md
 # OS / editor
 .DS_Store
 *.swp
+
+# Benchmark data (downloaded images/parquet extracts); manifests under data/manifests/ are tracked
+/data/benchmark/

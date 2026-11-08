@@ -1,0 +1,95 @@
+{
+  "suite": "decimer-smoke",
+  "title": "DECIMER printed OCSR smoke (4 labeled images)",
+  "record": "https://github.com/Kohulan/DECIMER-Image_Transformer/tree/9d0686127d21b572d5e78783874462b542836c6c",
+  "license": "MIT (DECIMER-Image_Transformer)",
+  "labels": [
+    {
+      "image": "images/DECIMER_test_0.png",
+      "smiles": "C1=CC=C(C=C1)CC2=C(C3=CC=C(C=C3)OS(=O)(=O)C(F)(F)F)C4=C(C=CC=C4)O2",
+      "source": "DECIMER-Image_Transformer/Benchmark/TEST.txt",
+      "model": "ocsr-printed"
+    },
+    {
+      "image": "images/DECIMER_test_1.png",
+      "smiles": "CCCCC1=CC=CC=C1",
+      "source": "DECIMER-Image_Transformer/Benchmark/TEST.txt",
+      "model": "ocsr-printed"
+    },
+    {
+      "image": "images/github_issue_test.png",
+      "smiles": "CC(CC1=CC2=C(C=C1)OCO2)NC",
+      "source": "DECIMER-Image_Transformer/Benchmark/TEST.txt",
+      "model": "ocsr-printed"
+    },
+    {
+      "image": "images/caffeine_upstream.png",
+      "smiles": "CN1C=NC2=C1C(=O)N(C)C(=O)N2C",
+      "source": "DECIMER-Image_Transformer/tests/test_functions.py",
+      "model": "ocsr-printed"
+    }
+  ],
+  "fetched": [
+    {
+      "file": {
+        "name": "DECIMER_test_0.png",
+        "url": "https://raw.githubusercontent.com/Kohulan/DECIMER-Image_Transformer/9d0686127d21b572d5e78783874462b542836c6c/Benchmark/test_images/DECIMER_test_0.png",
+        "size": 4743,
+        "checksum": "sha256:f464ae34ff2a82759a640b95181b1a9306e086063cbcbe39d317af7bdb4724f2",
+        "extract": false,
+        "dest": null
+      },
+      "path": "data/benchmark/decimer-smoke/images/DECIMER_test_0.png"
+    },
+    {
+      "file": {
+        "name": "DECIMER_test_1.png",
+        "url": "https://raw.githubusercontent.com/Kohulan/DECIMER-Image_Transformer/9d0686127d21b572d5e78783874462b542836c6c/Benchmark/test_images/DECIMER_test_1.png",
+        "size": 12486,
+        "checksum": "sha256:73d940ad62648e82e404cd4f363dbc787d46178116e0bb221a16991163630ba1",
+        "extract": false,
+        "dest": null
+      },
+      "path": "data/benchmark/decimer-smoke/images/DECIMER_test_1.png"
+    },
+    {
+      "file": {
+        "name": "github_issue_test.png",
+        "url": "https://raw.githubusercontent.com/Kohulan/DECIMER-Image_Transformer/9d0686127d21b572d5e78783874462b542836c6c/Benchmark/test_images/github_issue_test.png",
+        "size": 30464,
+        "checksum": "sha256:4a20ba7aa00d9ae178e3bd39e936e0d25c29de55b9ff522395db1929af22f260",
+        "extract": false,
+        "dest": null
+      },
+      "path": "data/benchmark/decimer-smoke/images/github_issue_test.png"
+    },
+    {
+      "file": {
+        "name": "caffeine_upstream.png",
+        "url": "https://raw.githubusercontent.com/Kohulan/DECIMER-Image_Transformer/9d0686127d21b572d5e78783874462b542836c6c/tests/caffeine.png",
+        "size": 24609,
+        "checksum": "sha256:31df300ab9cae7a4761a278a952f22881d058ec6c4a39baba537d370e528ac8b",
+        "extract": false,
+        "dest": null
+      },
+      "path": "data/benchmark/decimer-smoke/images/caffeine_upstream.png"
+    },
+    {
+      "file": {
+        "name": "TEST.txt",
+        "url": "https://raw.githubusercontent.com/Kohulan/DECIMER-Image_Transformer/9d0686127d21b572d5e78783874462b542836c6c/Benchmark/TEST.txt",
+        "size": 169,
+        "checksum": "sha256:5133bdd7756962345ed67867cc8c5552cb094729d62ebb02ede740228efc6089",
+        "extract": false,
+        "dest": null
+      },
+      "path": "data/benchmark/decimer-smoke/images/TEST.txt"
+    },
+    {
+      "labels": "data/benchmark/decimer-smoke/images/labels.jsonl",
+      "count": 4
+    }
+  ],
+  "labels_path": "data/benchmark/decimer-smoke/labels.jsonl",
+  "labels_count": 4
+}
