@@ -27,10 +27,10 @@
 - [ ] Record rough latency and decide go/no-go
 
 ## M4 — Quantization & selection (next)
-- [ ] E1: dynamic INT8 (encoder ConvInteger + decoder MatMulInteger), no calibration
+- [x] E1 dynamic INT8: 209+107MB -> 55+31MB, **exact token/SMILES parity** on daidzein + caffeine
 - [ ] E2: static INT8 QDQ (calibration set)
 - [ ] E3: hybrid (static encoder + dynamic decoder)
-- [ ] E4: FP16 safety net
+- [ ] E4: FP16 safety net (in progress candidate)
 - [ ] Evaluate token parity/latency/size and write `selection.json`
 
 ## M1 — Skeleton & reproducibility
