@@ -30,12 +30,13 @@ class DecodeResult:
 
 
 def _decoder_feed(dec_session, tokens: np.ndarray, enc_out: np.ndarray) -> dict[str, np.ndarray]:
-    from decimer_onnx_export.graph import positional_encoding_1d, positional_encoding_2d
-
     feed = {"tokens": tokens.astype(np.int32), "enc_out": enc_out.astype(np.float32)}
+    # Tolerate legacy exports that exposed positional encodings as inputs.
     for inp in dec_session.get_inputs():
         if inp.name in feed:
             continue
+        from decimer_onnx_export.graph import positional_encoding_1d, positional_encoding_2d
+
         if inp.shape == [1, 302, 512]:
             feed[inp.name] = positional_encoding_1d()
         elif inp.shape == [1, 256, 512]:

@@ -21,8 +21,8 @@
 - [x] Export FP32 `encoder.onnx` + `decoder_step.onnx` (tf2onnx, opset 17)
 - [x] Component parity smoke: encoder maxabs ~7e-7, decoder probs maxabs ~1e-7
 - [x] Greedy loop token parity vs TF full SavedModel on preprocessed sample (**exact match**)
-- [ ] Fix decoder ONNX interface (positional encodings currently exposed as extra inputs)
-- [ ] Token parity on 3+ real chemical images (selftest/fixtures)
+- [x] Clean decoder ONNX interface to `(tokens, enc_out)` (pos-encoding inputs removed)
+- [ ] Token parity on 3+ real chemical structure images (selftest/fixtures)
 - [ ] INT16 QDQ smoke test (opset 21 vs `com.microsoft`)
 - [ ] Record rough latency and decide go/no-go
 
