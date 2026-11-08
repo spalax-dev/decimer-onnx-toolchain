@@ -30,7 +30,7 @@
 - [x] E1 dynamic INT8: 209+107MB -> 55+31MB, **exact token/SMILES parity** on daidzein + caffeine
 - [ ] E2: static INT8 QDQ (calibration set)
 - [ ] E3: hybrid (static encoder + dynamic decoder)
-- [ ] E4: FP16 safety net (in progress candidate)
+- [x] E4 FP16 (ORT converter, keep_io_types): 105+55MB but **decoder runtime broadcast error on CPU** (multi-head attention add) — not viable as-is; E1 remains preferred
 - [ ] Evaluate token parity/latency/size and write `selection.json`
 
 ## M1 — Skeleton & reproducibility

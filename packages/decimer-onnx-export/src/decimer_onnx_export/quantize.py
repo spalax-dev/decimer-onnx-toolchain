@@ -92,3 +92,41 @@ def quantize_e1_dynamic(fp32_dir: Path, out_dir: Path) -> QuantizeResult:
     }
     (out_dir / "e1.dynamic.meta.json").write_text(json.dumps(asdict(res), indent=2) + "\n", encoding="utf-8")
     return res
+
+
+def quantize_e4_fp16(fp32_dir: Path, out_dir: Path) -> QuantizeResult:
+    """E4: FP16 conversion (safety net). Keeps graph numerics in float16 where supported."""
+    import onnx
+    from onnxruntime.transformers.float16 import convert_float_to_float16
+
+    out_dir.mkdir(parents=True, exist_ok=True)
+    res = QuantizeResult(variant="e4-fp16", metadata={}, errors=[])
+    enc_in = fp32_dir / "encoder.fp32.onnx"
+    dec_in = fp32_dir / "decoder_step.fp32.onnx"
+    enc_out = out_dir / "encoder.e4.fp16.onnx"
+    dec_out = out_dir / "decoder_step.e4.fp16.onnx"
+
+    for name, src, dst in [
+        ("encoder", enc_in, enc_out),
+        ("decoder", dec_in, dec_out),
+    ]:
+        try:
+            model = onnx.load(str(src))
+            model_fp16 = convert_float_to_float16(model, keep_io_types=True)
+            onnx.save(model_fp16, str(dst))
+            if name == "encoder":
+                res.encoder_path = str(dst)
+            else:
+                res.decoder_path = str(dst)
+        except Exception as e:  # noqa: BLE001
+            res.errors.append(f"{name} e4 failed: {e}")
+
+    res.metadata = {
+        "variant": res.variant,
+        "encoder_bytes": _size(res.encoder_path),
+        "decoder_bytes": _size(res.decoder_path),
+        "fp32_encoder_bytes": _size(str(enc_in)),
+        "fp32_decoder_bytes": _size(str(dec_in)),
+    }
+    (out_dir / "e4.fp16.meta.json").write_text(json.dumps(asdict(res), indent=2) + "\n", encoding="utf-8")
+    return res
