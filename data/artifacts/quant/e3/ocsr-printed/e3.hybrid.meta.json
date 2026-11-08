@@ -1,0 +1,14 @@
+{
+  "variant": "e3-hybrid-staticenc-dyndec",
+  "encoder_path": "data/artifacts/quant/e3/ocsr-printed/encoder.e3.static.onnx",
+  "decoder_path": "data/artifacts/quant/e3/ocsr-printed/decoder_step.e3.dynamic.onnx",
+  "metadata": {
+    "variant": "e3-hybrid-staticenc-dyndec",
+    "encoder_bytes": 57795358,
+    "decoder_bytes": 30718505,
+    "fp32_encoder_bytes": 208800707,
+    "fp32_decoder_bytes": 107011679,
+    "calibration_images": 2
+  },
+  "errors": []
+}

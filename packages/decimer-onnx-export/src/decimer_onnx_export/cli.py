@@ -79,6 +79,34 @@ def validate() -> None:
     typer.echo("validate: scaffolded (M3/M4).")
 
 
+
+
+@app.command("quantize")
+def quantize_cmd(
+    model: str = typer.Option("ocsr-printed", help="Model key"),
+    fp32_dir: Path = typer.Option(Path("data/artifacts/fp32"), help="FP32 artifacts root"),
+    out_dir: Path = typer.Option(Path("data/artifacts/quant"), help="Quantized artifacts root"),
+    variant: str = typer.Option("e1", help="Variant: e1, e2, e3, e4, all"),
+    calibration_dir: Path = typer.Option(None, help="Optional calibration image directory"),
+) -> None:
+    """Stage 4 (M4): build quantization candidates."""
+    from decimer_onnx_export.quantize import quantize_e1_dynamic, quantize_e2_static, quantize_e3_hybrid, quantize_e4_fp16
+
+    fp = fp32_dir / model
+    variants = [variant] if variant != "all" else ["e1", "e2", "e3", "e4"]
+    for v in variants:
+        if v == "e1":
+            r = quantize_e1_dynamic(fp, out_dir / "e1" / model)
+        elif v == "e2":
+            r = quantize_e2_static(fp, out_dir / "e2" / model, calibration_dir)
+        elif v == "e3":
+            r = quantize_e3_hybrid(fp, out_dir / "e3" / model, calibration_dir)
+        elif v == "e4":
+            r = quantize_e4_fp16(fp, out_dir / "e4" / model)
+        else:
+            raise typer.BadParameter(f"unknown variant {v}")
+        typer.echo(f"{r.variant}: enc={r.encoder_path} dec={r.decoder_path} err={r.errors}")
+
 if __name__ == "__main__":
     app()
 

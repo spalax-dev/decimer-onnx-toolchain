@@ -1,0 +1,14 @@
+{
+  "variant": "e2-static-int8-qdq",
+  "encoder_path": "data/artifacts/quant/e2/ocsr-printed/encoder.e2.static.onnx",
+  "decoder_path": "data/artifacts/quant/e2/ocsr-printed/decoder_step.e2.static.onnx",
+  "metadata": {
+    "variant": "e2-static-int8-qdq",
+    "encoder_bytes": 57795358,
+    "decoder_bytes": 29106446,
+    "fp32_encoder_bytes": 208800707,
+    "fp32_decoder_bytes": 107011679,
+    "calibration_images": 2
+  },
+  "errors": []
+}

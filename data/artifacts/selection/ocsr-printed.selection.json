@@ -1,0 +1,41 @@
+{
+  "model": "ocsr-printed",
+  "selected_default": "e3-hybrid-staticenc-dyndec",
+  "safe_default": "e1-dynamic-int8",
+  "rationale": "E3 (static INT8 QDQ encoder + dynamic INT8 decoder) matched FP32 TF SMILES exactly on daidzein/caffeine fixtures and was faster in local CPU runs than E1, but encoder calibration used only 2 fixture images (in-sample). E1 is calibration-free with the same exact parity on tested fixtures and is the safer default until a larger calibration/golden set is evaluated. E2 static decoder failed parity; E4 FP16 decoder has a CPU runtime broadcast error in attention.",
+  "calibration": {
+    "images": 2,
+    "note": "Minimal fixture-only calibration; expand with representative printed structure images before promoting static variants."
+  },
+  "candidates": {
+    "fp32": {"total_bytes": 315812386, "parity": "exact vs TF on tested fixtures"},
+    "e1-dynamic-int8": {
+      "encoder": "data/artifacts/quant/e1/ocsr-printed/encoder.e1.dynamic.onnx",
+      "decoder": "data/artifacts/quant/e1/ocsr-printed/decoder_step.e1.dynamic.onnx",
+      "total_bytes": 85276199,
+      "parity": "exact on tested fixtures",
+      "status": "pass-safe"
+    },
+    "e2-static-int8-qdq": {
+      "total_bytes": 86901804,
+      "parity": "failed (garbage SMILES, incomplete behavior) on tested fixtures",
+      "status": "reject"
+    },
+    "e3-hybrid-staticenc-dyndec": {
+      "encoder": "data/artifacts/quant/e3/ocsr-printed/encoder.e3.static.onnx",
+      "decoder": "data/artifacts/quant/e3/ocsr-printed/decoder_step.e3.dynamic.onnx",
+      "total_bytes": 88513863,
+      "parity": "exact on tested fixtures (calibration in-sample)",
+      "status": "pass-promote-with-validation"
+    },
+    "e4-fp16": {
+      "total_bytes": 159378762,
+      "parity": "not runnable on CPU (decoder attention broadcast runtime error)",
+      "status": "reject-cpu"
+    }
+  },
+  "validation_fixtures": [
+    {"image": "tests/fixtures/selftest_daidzein.png", "smiles": "C1=CC(=CC=C1C2=COC3=CC(=CC=C3C2=O)O)O"},
+    {"image": "tests/fixtures/caffeine_pubchem.png", "smiles": "CN1C=NC2=C1C(=O)N(C)C(=O)N2C"}
+  ]
+}

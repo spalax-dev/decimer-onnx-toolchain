@@ -26,12 +26,12 @@
 - [ ] INT16 QDQ smoke test (opset 21 vs `com.microsoft`)
 - [ ] Record rough latency and decide go/no-go
 
-## M4 — Quantization & selection (next)
-- [x] E1 dynamic INT8: 209+107MB -> 55+31MB, **exact token/SMILES parity** on daidzein + caffeine
-- [ ] E2: static INT8 QDQ (calibration set)
-- [ ] E3: hybrid (static encoder + dynamic decoder)
-- [x] E4 FP16 (ORT converter, keep_io_types): 105+55MB but **decoder runtime broadcast error on CPU** (multi-head attention add) — not viable as-is; E1 remains preferred
-- [ ] Evaluate token parity/latency/size and write `selection.json`
+## M4 — Quantization & selection (in progress)
+- [x] E1 dynamic INT8 (no calibration): 55+31MB, **exact SMILES parity** on fixtures — safe default
+- [x] E2 static INT8 QDQ: 58+29MB, **failed parity** (garbage/incomplete) on fixtures with 2-image calibration — rejected
+- [x] E3 hybrid (static encoder QDQ + dynamic decoder): 58+31MB, **exact SMILES parity** on fixtures, faster than E1 locally; calibration minimal (2 images, in-sample) — selected default pending broader validation
+- [x] E4 FP16 (keep_io_types): 105+55MB, **decoder runtime broadcast error on CPU** (attention) — rejected on CPU
+- [x] Evaluation snapshot + `data/artifacts/selection/ocsr-printed.selection.json` (needs larger golden/calibration set)
 
 ## M1 — Skeleton & reproducibility
 - [ ] `scripts/check.sh`, lint/type/test config, CI skeleton
