@@ -41,9 +41,30 @@ def probe(
 
 
 @app.command("export")
-def export_cmd() -> None:
-    """Stage 3 (M2): export FP32 encoder/decoder ONNX graphs. Not implemented yet."""
-    typer.echo("export: scaffolded (M2).")
+def export_cmd(
+    model: str = typer.Option("ocsr-printed", help=f"Model key: {', '.join(available_models())}"),
+    data_dir: Path = typer.Option(Path("data/weights"), help="Cache directory for weights"),
+    out_dir: Path = typer.Option(Path("data/artifacts/fp32"), help="Output directory"),
+    opset: int = typer.Option(17, help="ONNX opset"),
+) -> None:
+    """Stage 3 (M0/M2): export FP32 encoder + decoder-step ONNX graphs."""
+    from decimer_onnx_export.to_onnx import export_fp32_onnx
+
+    model_dir = data_dir / model / "DECIMER_model"
+    if not model_dir.exists():
+        # try common alternative layout
+        candidates = list((data_dir / model).rglob("saved_model.pb"))
+        if not candidates:
+            raise typer.BadParameter(f"no saved_model.pb under {data_dir / model}; run fetch first")
+        model_dir = candidates[0].parent
+    res = export_fp32_onnx(model_dir, out_dir / model, opset=opset)
+    typer.echo(f"encoder: {res.encoder_path}")
+    typer.echo(f"decoder: {res.decoder_path}")
+    if res.errors:
+        for e in res.errors:
+            typer.echo(f"error: {e}", err=True)
+        raise typer.Exit(1)
+    typer.echo(f"meta: {res.metadata.get('meta_path') if res.metadata else ''}")
 
 
 @app.command()
@@ -60,3 +81,4 @@ def validate() -> None:
 
 if __name__ == "__main__":
     app()
+

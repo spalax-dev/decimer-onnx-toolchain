@@ -14,11 +14,15 @@
 - [x] Hand-drawn specialist OCSR (`ocsr-handdrawn`, Zenodo 10781330)
 - [x] DECIMER Image Classifier (`image-classifier`, Iagea/DECIMER-Image-Classifier @ pinned commit)
 
-## M0 — Feasibility spike (next)
-- [ ] Fetch weights (printed, hand-drawn, classifier) and inspect SavedModel/checkpoints
-- [ ] Extract or rebuild encoder + decoder (ADR-0001)
-- [ ] Export FP32 `encoder.onnx` + 1-step `decoder.onnx` (tf2onnx, opset 17)
-- [ ] Run greedy loop in Python; token parity vs TF on 3 images
+## M0 — Feasibility spike (in progress)
+- [x] Fetch weights (printed/hand-drawn cached; classifier available) and inspect SavedModel
+- [x] Confirm `m.DECIMER.encoder` + `m.DECIMER.transformer` callable from SavedModel (Path A viable)
+- [x] Freeze tokenizer to `vocab.json` (156 tokens, ids preserved)
+- [x] Export FP32 `encoder.onnx` + `decoder_step.onnx` (tf2onnx, opset 17)
+- [x] Component parity smoke: encoder maxabs ~7e-7, decoder probs maxabs ~1e-7
+- [x] Greedy loop token parity vs TF full SavedModel on preprocessed sample (**exact match**)
+- [ ] Fix decoder ONNX interface (positional encodings currently exposed as extra inputs)
+- [ ] Token parity on 3+ real chemical images (selftest/fixtures)
 - [ ] INT16 QDQ smoke test (opset 21 vs `com.microsoft`)
 - [ ] Record rough latency and decide go/no-go
 

@@ -1,0 +1,29 @@
+{
+  "opset": 17,
+  "encoder_path": "data/artifacts/fp32/ocsr-printed/encoder.fp32.onnx",
+  "decoder_path": "data/artifacts/fp32/ocsr-printed/decoder_step.fp32.onnx",
+  "metadata": {
+    "encoder": {
+      "inputs": [
+        "image:1"
+      ],
+      "outputs": [
+        "Identity:0"
+      ],
+      "nodes": 809
+    },
+    "decoder": {
+      "inputs": [
+        "tokens:6",
+        "enc_out:1",
+        "217602:0:1",
+        "217606:0:1"
+      ],
+      "outputs": [
+        "Identity:0"
+      ],
+      "nodes": 994
+    }
+  },
+  "errors": []
+}
