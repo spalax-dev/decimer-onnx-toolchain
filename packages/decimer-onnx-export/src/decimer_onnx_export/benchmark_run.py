@@ -245,10 +245,19 @@ CLASSIFIER_THRESHOLD = 0.000089  # upstream: score <= threshold => chemical stru
 def make_onnx_classifier_predict_fn(model_path: Path, threshold: float = CLASSIFIER_THRESHOLD):
     import onnxruntime as ort
     sess = ort.InferenceSession(str(model_path), providers=["CPUExecutionProvider"])
-    inp = sess.get_inputs()[0].name
+    inputs = sess.get_inputs()
     def _fn(img: Path):
         x = _classifier_preprocess_np(img)
-        logit = sess.run(None, {inp: x})[0]
+        feed: dict[str, Any] = {}
+        for i in inputs:
+            shape = [d if isinstance(d, int) and d > 0 else 1 for d in i.shape]
+            if i.name == "input_2" or shape[-3:] == [224, 224, 3]:
+                feed[i.name] = x
+            elif i.type == "tensor(float)" or "float" in str(i.type):
+                feed[i.name] = np.zeros(shape, dtype=np.float32)
+            else:
+                feed[i.name] = np.zeros(shape)
+        logit = sess.run(None, feed)[0]
         score = 1.0 / (1.0 + np.exp(-float(np.asarray(logit).reshape(-1)[0])))
         label = "structure" if score <= threshold else "no-structure"
         return {"label": label, "score": score, "logit": float(np.asarray(logit).reshape(-1)[0])}
