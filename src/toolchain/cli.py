@@ -7,7 +7,7 @@ from pathlib import Path
 
 import typer
 
-from decimer_onnx_export.fetch import available_models, fetch_model
+from toolchain.fetch import available_models, fetch_model
 
 app = typer.Typer(help="DECIMER export/quantize toolchain.", no_args_is_help=True)
 
@@ -36,7 +36,7 @@ def probe(
     data_dir: Path = typer.Option(Path("data/weights"), help="Cache directory for weights"),
 ) -> None:
     """Stage 2 (M0): inspect fetched weights / decide extraction path."""
-    from decimer_onnx_export.source import format_probe, probe_model
+    from toolchain.source import format_probe, probe_model
 
     typer.echo(format_probe(probe_model(model, data_dir=data_dir)))
 
@@ -49,7 +49,7 @@ def export_cmd(
     opset: int = typer.Option(17, help="ONNX opset"),
 ) -> None:
     """Stage 3 (M0/M2): export FP32 ONNX graphs."""
-    from decimer_onnx_export.to_onnx import export_classifier_fp32_onnx, export_fp32_onnx
+    from toolchain.to_onnx import export_classifier_fp32_onnx, export_fp32_onnx
 
     model_dir = data_dir / model / "DECIMER_model"
     if not model_dir.exists():
@@ -84,7 +84,7 @@ def quantize_cmd(
     calibration_dir: Path = typer.Option(None, help="Optional calibration image directory"),
 ) -> None:
     """Stage 4 (M4): build quantization candidates."""
-    from decimer_onnx_export.quantize import quantize_e1_dynamic, quantize_e2_static, quantize_e3_hybrid, quantize_e4_fp16
+    from toolchain.quantize import quantize_e1_dynamic, quantize_e2_static, quantize_e3_hybrid, quantize_e4_fp16
 
     fp = fp32_dir / model
     variants = [variant] if variant != "all" else ["e1", "e2", "e3", "e4"]
@@ -109,7 +109,7 @@ def fetch_benchmark_cmd(
     force: bool = typer.Option(False, help="Re-download/extract"),
 ) -> None:
     """Download pinned benchmark datasets with checksum verification."""
-    from decimer_onnx_export.benchmark_fetch import fetch_benchmark
+    from toolchain.benchmark_fetch import fetch_benchmark
 
     m = fetch_benchmark(suite, data_dir=data_dir, force=force)
     typer.echo(f"labels: {m.get('labels_path') or m.get('labels_count')}")
@@ -126,7 +126,7 @@ def import_benchmark_cmd(
     force: bool = typer.Option(False, help="Re-download images"),
 ) -> None:
     """Import external benchmark data (HF rows API or local 13378718) into local manifest format."""
-    from decimer_onnx_export.benchmark_import import import_classifier_13378718, import_hf_ocsr
+    from toolchain.benchmark_import import import_classifier_13378718, import_hf_ocsr
 
     if source.startswith("hf-"):
         config = source[3:].upper()
@@ -159,17 +159,20 @@ def benchmark_cmd(
     limit: int = typer.Option(None, help="Max rows (applied after split)"),
 ) -> None:
     """Stage 5: run benchmark/validation over a labeled suite or frozen split."""
-    from decimer_onnx_export.benchmark_run import (
+    from toolchain.benchmark_run import (
         benchmark_classifier, benchmark_ocsr,
         make_onnx_classifier_predict_fn, make_onnx_ocsr_predict_fn,
         make_tf_classifier_predict_fn, make_tf_ocsr_predict_fn,
     )
-    from decimer_onnx_export.frozen import PredictionCache, load_frozen, resolve_frozen_rows
+    from toolchain.frozen import PredictionCache, load_frozen, resolve_frozen_rows
 
     rows = None
     labels_path = labels
     if frozen_manifest:
+        from toolchain.benchmark_data import ensure_benchmark_data
         frozen = load_frozen(frozen_manifest)
+        # auto-detect/decompress curated benchmark data if missing
+        ensure_benchmark_data(frozen.get("model") or frozen.get("dossier") or "", registry=None)
         rows, labels_path = resolve_frozen_rows(frozen, split=split)
         model_key = model_key or frozen.get("model")
         typer.echo(f"frozen: {frozen_manifest} split={split} n={len(rows)} model={model_key}")
@@ -198,7 +201,7 @@ def benchmark_cmd(
         if tf_model_dir:
             # run tf pass for parity via cache-aware wrapper
             tf_fn = make_tf_classifier_predict_fn(tf_model_dir)
-            from decimer_onnx_export.benchmark_run import _cached_call, _image_id, _resolve_image
+            from toolchain.benchmark_run import _cached_call, _image_id, _resolve_image
             agree = tot = 0
             for row in (rows or []):
                 img = _resolve_image(row, labels_path); iid = _image_id(row)
@@ -246,12 +249,53 @@ def report_cmd(
     out: Path = typer.Option(None, help="Output path (default: docs/benchmark-report.md)"),
 ) -> None:
     """Generate benchmark report (glossary, acceptance criteria, machine info, results) from data/."""
-    from decimer_onnx_export.report import generate_report
+    from toolchain.report import generate_report
 
     targets = [out] if out else None
     generate_report(targets=targets)
     for p in ([out] if out else [Path("docs/benchmark-report.md")]):
         typer.echo(f"wrote {p}")
+
+
+@app.command("benchmark-data")
+def benchmark_data_cmd(
+    action: str = typer.Argument("status", help="status | ensure | ensure-all"),
+    benchmark_id: str = typer.Option(None, "--id", help="Benchmark id/dossier/model (for ensure)"),
+) -> None:
+    """Manage curated benchmark datasets (auto-detect compressed archives, decompress to fixed locations)."""
+    from toolchain.benchmark_data import load_registry, get_entry, is_available, ensure_benchmark_data, ROOT
+
+    reg = load_registry()
+    if action == "status":
+        for b in reg.get("benchmarks", []):
+            ok = is_available(b)
+            arch = ROOT / b["curated_archive"]
+            typer.echo(f"{b['id']}: available={ok} archive={arch.exists()} -> {b.get('decompress_to')} n={b.get('frozen_n')} sha256={'set' if b.get('sha256') else 'empty'}")
+            typer.echo(f"  source: {b['technical_sheet'].get('source_url')}")
+        return
+    if action == "ensure":
+        if not benchmark_id:
+            raise typer.BadParameter("--id required for ensure")
+        e = ensure_benchmark_data(benchmark_id)
+        if not e:
+            raise typer.BadParameter(f"unknown benchmark id {benchmark_id}")
+        typer.echo(f"ensured {e['id']} available={is_available(e)}")
+        return
+    if action == "ensure-all":
+        for b in reg.get("benchmarks", []):
+            ensure_benchmark_data(b["id"])
+            typer.echo(f"{b['id']}: available={is_available(b)}")
+        return
+    raise typer.BadParameter(f"unknown action {action}")
+
+
+@app.command("pipeline")
+@app.command("menu")
+def pipeline_cmd() -> None:
+    """Interactive menu to choose and run pipeline stages."""
+    from toolchain.pipeline import menu_loop
+
+    menu_loop()
 
 
 if __name__ == "__main__":

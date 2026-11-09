@@ -39,7 +39,7 @@ def _preprocess_export(image_path: Path) -> np.ndarray:
         arr = tensor.numpy() if hasattr(tensor, "numpy") else np.array(tensor)
         return np.asarray(arr, dtype=np.float32)
     except Exception:
-        from decimer_onnx.preprocess import preprocess_image
+        from runtime.preprocess import preprocess_image
         return preprocess_image(image_path).astype(np.float32)
 
 def _stub_shape_inference() -> None:
@@ -175,7 +175,7 @@ class DecoderCalibrationReader:
 
 
 def _calibration_images(data_dir: Path | None = None) -> list[Path]:
-    root = Path(__file__).resolve().parents[4]
+    root = Path(__file__).resolve().parents[2]
     candidates = []
     for base in [root / "tests" / "fixtures", root / "data" / "calibration"]:
         if base.exists():

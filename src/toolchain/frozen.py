@@ -11,7 +11,7 @@ import random
 from pathlib import Path
 from typing import Any, Iterable
 
-ROOT = Path(__file__).resolve().parents[4]
+ROOT = Path(__file__).resolve().parents[2]
 FROZEN_DIR = ROOT / "data" / "manifests" / "frozen"
 CACHE_DIR = ROOT / "data" / "cache" / "predictions"
 SEED_DEFAULT = 20260308
@@ -41,7 +41,11 @@ def resolve_frozen_rows(frozen: dict[str, Any], *, split: str = "eval") -> tuple
             elif subset in ("clef", "jpo"):
                 key = f"{subset}::{r['id']}"
             else:
-                key = r.get("_frozen_key") or f"{subset or frozen.get('dossier','x')}::{rid}"
+                # portable/curated labels may already carry a full stable key as id
+                if isinstance(rid, str) and rid.startswith(f"{subset or frozen.get('dossier','x')}::"):
+                    key = r.get("_frozen_key") or rid
+                else:
+                    key = r.get("_frozen_key") or f"{subset or frozen.get('dossier','x')}::{rid}"
             r = dict(r)
             r["_frozen_key"] = key
             r["_labels_path"] = str(lp)

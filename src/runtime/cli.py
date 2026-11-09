@@ -9,7 +9,7 @@ app = typer.Typer(help="Run DECIMER ONNX inference (runtime, no TF).", no_args_i
 
 
 def _load(encoder: Path, decoder: Path, vocab: Path):
-    from decimer_onnx.api import DecimerONNX
+    from runtime.api import DecimerONNX
 
     return DecimerONNX(encoder, decoder, vocab)
 

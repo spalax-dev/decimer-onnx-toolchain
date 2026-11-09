@@ -13,7 +13,7 @@ import zipfile
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
-from decimer_onnx_export.fetch import MANIFESTS_DIR, _download, _extract, _parse_checksum, verify
+from toolchain.fetch import MANIFESTS_DIR, _download, _extract, _parse_checksum, verify
 
 DEFAULT_BENCH_DIR = Path("data/benchmark")
 DECIMER_REPO_COMMIT = "9d0686127d21b572d5e78783874462b542836c6c"

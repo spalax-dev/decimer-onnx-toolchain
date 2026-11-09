@@ -7,13 +7,6 @@ resolution-markers = [
     "(platform_machine != 'aarch64' and sys_platform == 'linux') or (sys_platform != 'darwin' and sys_platform != 'linux')",
 ]
 
-[manifest]
-members = [
-    "decimer-onnx",
-    "decimer-onnx-export",
-    "decimer-onnx-toolchain",
-]
-
 [[package]]
 name = "absl-py"
 version = "2.5.1"
@@ -234,57 +227,30 @@ wheels = [
 ]
 
 [[package]]
-name = "decimer-onnx"
+name = "decimer-onnx-toolchain"
 version = "0.1.0"
-source = { editable = "packages/decimer-onnx" }
-dependencies = [
-    { name = "numpy" },
-    { name = "onnxruntime" },
-    { name = "pillow" },
-    { name = "typer" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "numpy", specifier = ">=1.26,<2" },
-    { name = "onnxruntime", specifier = ">=1.18,<2" },
-    { name = "pillow", specifier = ">=10.0" },
-    { name = "typer", specifier = ">=0.12" },
-]
-
-[[package]]
-name = "decimer-onnx-export"
-version = "0.1.0"
-source = { editable = "packages/decimer-onnx-export" }
+source = { editable = "." }
 dependencies = [
     { name = "decimer" },
     { name = "numpy" },
     { name = "onnx" },
     { name = "onnxruntime" },
+    { name = "pillow" },
     { name = "pyyaml" },
+    { name = "rdkit" },
     { name = "sympy" },
     { name = "tensorflow-cpu" },
     { name = "tf2onnx" },
     { name = "typer" },
 ]
 
-[package.metadata]
-requires-dist = [
-    { name = "decimer", specifier = "==2.8.1" },
-    { name = "numpy", specifier = ">=1.26,<2" },
-    { name = "onnx", specifier = "==1.16.2" },
-    { name = "onnxruntime", specifier = ">=1.18,<2" },
-    { name = "pyyaml", specifier = ">=6.0" },
-    { name = "sympy", specifier = ">=1.12" },
-    { name = "tensorflow-cpu", specifier = "==2.15.1" },
-    { name = "tf2onnx", specifier = "==1.16.1" },
-    { name = "typer", specifier = ">=0.12" },
+[package.optional-dependencies]
+runtime = [
+    { name = "numpy" },
+    { name = "onnxruntime" },
+    { name = "pillow" },
+    { name = "typer" },
 ]
-
-[[package]]
-name = "decimer-onnx-toolchain"
-version = "0.1.0"
-source = { virtual = "." }
 
 [package.dev-dependencies]
 dev = [
@@ -293,6 +259,24 @@ dev = [
 ]
 
 [package.metadata]
+requires-dist = [
+    { name = "decimer", specifier = "==2.8.1" },
+    { name = "numpy", specifier = ">=1.26,<2" },
+    { name = "numpy", marker = "extra == 'runtime'", specifier = ">=1.26,<2" },
+    { name = "onnx", specifier = "==1.16.2" },
+    { name = "onnxruntime", specifier = ">=1.18,<2" },
+    { name = "onnxruntime", marker = "extra == 'runtime'", specifier = ">=1.18,<2" },
+    { name = "pillow", specifier = ">=10.0" },
+    { name = "pillow", marker = "extra == 'runtime'", specifier = ">=10.0" },
+    { name = "pyyaml", specifier = ">=6.0" },
+    { name = "rdkit", specifier = ">=2024.3" },
+    { name = "sympy", specifier = ">=1.12" },
+    { name = "tensorflow-cpu", specifier = "==2.15.1" },
+    { name = "tf2onnx", specifier = "==1.16.1" },
+    { name = "typer", specifier = ">=0.12" },
+    { name = "typer", marker = "extra == 'runtime'", specifier = ">=0.12" },
+]
+provides-extras = ["runtime"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -819,6 +803,21 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/f2/6a/b627b4e0c1dd03718543519ffb2f1deea4a1e6d42fbab8021936a4d22589/pyyaml-6.0.3-cp311-cp311-musllinux_1_2_x86_64.whl", hash = "sha256:37503bfbfc9d2c40b344d06b2199cf0e96e97957ab1c1b546fd4f87e53e5d3e4", size = 794986, upload-time = "2025-09-25T21:32:07.367Z" },
     { url = "https://files.pythonhosted.org/packages/45/91/47a6e1c42d9ee337c4839208f30d9f09caa9f720ec7582917b264defc875/pyyaml-6.0.3-cp311-cp311-win32.whl", hash = "sha256:8098f252adfa6c80ab48096053f512f2321f0b998f98150cea9bd23d83e1467b", size = 142543, upload-time = "2025-09-25T21:32:08.95Z" },
     { url = "https://files.pythonhosted.org/packages/da/e3/ea007450a105ae919a72393cb06f122f288ef60bba2dc64b26e2646fa315/pyyaml-6.0.3-cp311-cp311-win_amd64.whl", hash = "sha256:9f3bfb4965eb874431221a3ff3fdcddc7e74e3b07799e0e84ca4a0f867d449bf", size = 158763, upload-time = "2025-09-25T21:32:09.96Z" },
+]
+
+[[package]]
+name = "rdkit"
+version = "2026.9.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+    { name = "pillow" },
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/7d/4e/72186bd012b8a972f18bf4c46beb72dbad89742c0c20634e3c344a704333/rdkit-2026.9.1-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:7e698af579efd99cb452e2f697044775169c109527e8a43223d789cefa0788ad", size = 25549859, upload-time = "2026-10-09T15:46:45.239Z" },
+    { url = "https://files.pythonhosted.org/packages/f5/fc/f074382ce085830330837c8a345dad8aff8b57ac343200e5c168a7476e8d/rdkit-2026.9.1-cp311-cp311-manylinux_2_28_aarch64.whl", hash = "sha256:68b267ea0b5847a4de0d71823e0bb2002dffb80d929872aa66bbe8d0b40ec256", size = 30303484, upload-time = "2026-10-09T15:46:48.638Z" },
+    { url = "https://files.pythonhosted.org/packages/4c/88/9e7543257ce2ceb8eb499d8e7e8c5c7591ec95c989678b84aed6b1ea59db/rdkit-2026.9.1-cp311-cp311-manylinux_2_28_x86_64.whl", hash = "sha256:03d09f957367eb4e9cb729ac191a43dbd0926f5ea6dcbf36b14682326130b92d", size = 31831765, upload-time = "2026-10-09T15:46:52.647Z" },
+    { url = "https://files.pythonhosted.org/packages/94/bc/bc1c113e0848116622471d4b2429e96cb72ff7ba7ed4c2099831e900f70c/rdkit-2026.9.1-cp311-cp311-win_amd64.whl", hash = "sha256:2f1f85e12398fe77cd3eeb45ac2f248e793db569e478a2268337ce20b5c0d5e3", size = 25358911, upload-time = "2026-10-09T15:46:55.914Z" },
 ]
 
 [[package]]

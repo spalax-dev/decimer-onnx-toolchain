@@ -1,0 +1,80 @@
+{
+  "version": 1,
+  "description": "Curated/frozen benchmark sets: technical sheet, curated archive (repo), and fixed decompression target. Pipeline benchmark stages auto-detect and decompress when needed.",
+  "benchmarks": [
+    {
+      "id": "ocsr-printed",
+      "dossier": "ocsr-printed",
+      "model": "ocsr-printed",
+      "frozen_n": 1400,
+      "frozen_manifest": "data/manifests/frozen/printed.frozen.json",
+      "technical_sheet": {
+        "name": "OCSR printed (curated frozen subset from CLEF+JPO, Keylab/OCSR-Benchmarks)",
+        "source_url": "https://huggingface.co/datasets/KohlbacherLab/OCSR-Benchmarks",
+        "source_record": "Keylab/OCSR-Benchmarks (HF); configs CLEF (test, 992), JPO (test, 449); observed dataset commit 2fdcdc59",
+        "license_note": "HF reports mixed-see-sources; verify original CLEF 2012 / JPO-ChemInfty-OSRA terms before redistribution. This curated archive contains only the frozen n=1400 subset used for evaluation.",
+        "max_n_evaluated": 1400
+      },
+      "curated_archive": "data/curated/ocsr-printed.frozen1400.tar.zst",
+      "curated_url": "",
+      "decompress_to": "data/benchmark",
+      "archive_root": ".",
+      "format": "tar.zst",
+      "sha256": "fbc90ac9758e2abf6dbabff0c3e1d4dda9cd4c08a095d438a6c1a46e8e8f6731",
+      "provides": [
+        "data/benchmark/hf-clef/labels.jsonl",
+        "data/benchmark/hf-clef/images",
+        "data/benchmark/hf-jpo/labels.jsonl",
+        "data/benchmark/hf-jpo/images"
+      ]
+    },
+    {
+      "id": "ocsr-handdrawn",
+      "dossier": "ocsr-handdrawn",
+      "model": "ocsr-handdrawn",
+      "frozen_n": 1400,
+      "frozen_manifest": "data/manifests/frozen/handdrawn.frozen.json",
+      "technical_sheet": {
+        "name": "DECIMER Hand-drawn molecule images (HDM, curated frozen subset)",
+        "source_url": "https://zenodo.org/records/7617107",
+        "source_record": "Zenodo 7617107, DOI 10.5281/zenodo.7617107; 5088 images; frozen subset n=1400",
+        "license_note": "CC-BY-4.0 (per Zenodo record). Curated archive contains only the frozen n=1400 subset.",
+        "max_n_evaluated": 1400
+      },
+      "curated_archive": "data/curated/ocsr-handdrawn.frozen1400.tar.zst",
+      "curated_url": "",
+      "decompress_to": "data/benchmark",
+      "archive_root": ".",
+      "format": "tar.zst",
+      "sha256": "3c8a70c984e82cd9b5e237be472deaca05b912452de8822d08fc410cfc39fb25",
+      "provides": [
+        "data/benchmark/handdrawn-hdm/labels.jsonl",
+        "data/benchmark/handdrawn-hdm/DECIMER_HDM_Dataset_Images"
+      ]
+    },
+    {
+      "id": "image-classifier",
+      "dossier": "image-classifier",
+      "model": "image-classifier",
+      "frozen_n": 4000,
+      "frozen_manifest": "data/manifests/frozen/classifier.frozen.json",
+      "technical_sheet": {
+        "name": "Chemical image classifier dataset (Zenodo 13378718, curated frozen subset, n=4000, 1000/class)",
+        "source_url": "https://zenodo.org/records/13378718",
+        "source_record": "Zenodo 13378718, md5 zip e7e47f2aa4af4b79874a19382cec06da; classified 16000 (4 classes); frozen 4000 stratified 1000/class, seed 20260308; eval 1000, pilot 300 (pilot⊂eval⊂frozen)",
+        "license_note": "Zenodo record indicates MIT; image sources are mixed (see record). Curated archive contains only the frozen n=10000 subset with explicit mapping (one/several_molecule->structure, other/rest->no-structure; reactions excluded from binary, reported separately).",
+        "max_n_evaluated": 4000
+      },
+      "curated_archive": "data/curated/image-classifier.frozen4000.tar.zst",
+      "curated_url": "",
+      "decompress_to": "data/benchmark",
+      "archive_root": ".",
+      "format": "tar.zst",
+      "sha256": "ba3649ff9dbb0747053fb545d498fe389b8e414a9353c75f4069d983a4413be8",
+      "provides": [
+        "data/benchmark/classifier-curated/labels.jsonl",
+        "data/benchmark/classifier-curated/classified"
+      ]
+    }
+  ]
+}

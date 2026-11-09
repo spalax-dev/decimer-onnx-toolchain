@@ -1,13 +1,48 @@
 [project]
 name = "decimer-onnx-toolchain"
 version = "0.1.0"
-description = "Reproducible pipeline: DECIMER → ONNX (FP32/INT8/FP16) for fast chemical structure recognition"
+description = "DECIMER → ONNX toolchain: runtime (no TF) + export/quantize/benchmark pipeline"
 readme = "README.md"
 requires-python = ">=3.11,<3.12"
-dependencies = []
+license = { file = "LICENSE" }
+# Default install includes everything needed for the full pipeline/toolchain.
+dependencies = [
+  "decimer==2.8.1",
+  "numpy>=1.26,<2",
+  "onnx==1.16.2",
+  "onnxruntime>=1.18,<2",
+  "pillow>=10.0",
+  "pyyaml>=6.0",
+  "rdkit>=2024.3",
+  "sympy>=1.12",
+  "tensorflow-cpu==2.15.1",
+  "tf2onnx==1.16.1",
+  "typer>=0.12",
+]
 
-[tool.uv.workspace]
-members = ["packages/*"]
+[project.optional-dependencies]
+# Minimal runtime for ONNX inference only (no TensorFlow/cv2/RDKit).
+runtime = [
+  "numpy>=1.26,<2",
+  "onnxruntime>=1.18,<2",
+  "pillow>=10.0",
+  "typer>=0.12",
+]
+
+[project.scripts]
+dtx = "toolchain.dtx:main"
+decimer-toolchain = "toolchain.dtx:main"
+# compatibility aliases
+decimer-onnx = "runtime.cli:app"
+decimer-export = "toolchain.cli:app"
+decimer-pipeline = "toolchain.pipeline:main_entry"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/runtime", "src/toolchain"]
 
 [dependency-groups]
 dev = [
@@ -17,8 +52,10 @@ dev = [
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["src"]
 markers = ["slow: requires model weights or heavy deps"]
 
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+src = ["src", "tests"]

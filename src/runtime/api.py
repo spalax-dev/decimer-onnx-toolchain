@@ -7,9 +7,9 @@ from pathlib import Path
 import numpy as np
 import onnxruntime as ort
 
-from decimer_onnx.decode import DecodeResult, greedy_decode
-from decimer_onnx.preprocess import preprocess_image
-from decimer_onnx.tokenizer import Vocab
+from runtime.decode import DecodeResult, greedy_decode
+from runtime.preprocess import preprocess_image
+from runtime.tokenizer import Vocab
 
 
 @dataclass

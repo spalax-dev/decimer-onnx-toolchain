@@ -18,7 +18,7 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
-from decimer_onnx_export.fetch import MANIFESTS_DIR, file_checksum
+from toolchain.fetch import MANIFESTS_DIR, file_checksum
 
 DEFAULT_BENCH_DIR = Path("data/benchmark")
 HF_ROWS_API = "https://datasets-server.huggingface.co/rows"

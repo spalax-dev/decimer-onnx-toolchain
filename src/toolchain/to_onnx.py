@@ -27,7 +27,7 @@ def _bake_decoder_positional_encodings(path: Path) -> dict[str, Any]:
     import onnx
     from onnx import numpy_helper
 
-    from decimer_onnx_export.graph import positional_encoding_1d, positional_encoding_2d
+    from toolchain.graph import positional_encoding_1d, positional_encoding_2d
 
     model = onnx.load(str(path))
     keep = []
@@ -60,7 +60,7 @@ def _bake_decoder_positional_encodings(path: Path) -> dict[str, Any]:
 def export_fp32_onnx(model_dir: Path, out_dir: Path, opset: int = 17) -> OnnxExportResult:
     import tf2onnx
 
-    from decimer_onnx_export.graph import build_export_graphs, load_saved_model
+    from toolchain.graph import build_export_graphs, load_saved_model
 
     out_dir.mkdir(parents=True, exist_ok=True)
     res = OnnxExportResult(opset=opset, metadata={}, errors=[])

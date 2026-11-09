@@ -14,8 +14,8 @@ from typing import Any, Callable
 
 import numpy as np
 
-from decimer_onnx_export.benchmark_import import CLASSIFIER_CATEGORY_MAP
-from decimer_onnx_export.frozen import PredictionCache
+from toolchain.benchmark_import import CLASSIFIER_CATEGORY_MAP
+from toolchain.frozen import PredictionCache
 
 
 def _load_labels(path: Path) -> list[dict[str, Any]]:
@@ -182,7 +182,7 @@ def benchmark_ocsr(labels_path: Path | None = None, *, rows: list[dict[str, Any]
 
 
 def make_onnx_ocsr_predict_fn(encoder: Path, decoder: Path, vocab: Path):
-    from decimer_onnx.api import DecimerONNX
+    from runtime.api import DecimerONNX
     model = DecimerONNX(encoder, decoder, vocab)
     def _fn(img: Path):
         p = model.predict(img)
