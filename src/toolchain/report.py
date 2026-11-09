@@ -338,57 +338,99 @@ def _classifier_row(report_path: Path, *, fp32_path: Path | None = None) -> str 
 
 def _render_pilots(lines: list[str], pending: list[str]) -> None:
     pilot = ROOT / "data/benchmark/pilot"
-    if not pilot.exists():
+    evald = ROOT / "data/benchmark/eval-1000"
+    if not pilot.exists() and not evald.exists():
         return
-    # OCSR pilots
     configs = [
-        ("5.P1 `ocsr-printed` — piloto congelado (pilot, TF+cache)", "printed", ROOT/"data/manifests/frozen/printed.frozen.json"),
-        ("5.P2 `ocsr-handdrawn` — piloto congelado (pilot, TF+cache)", "handdrawn", ROOT/"data/manifests/frozen/handdrawn.frozen.json"),
+        ("`ocsr-printed`", "printed", ROOT/"data/manifests/frozen/printed.frozen.json"),
+        ("`ocsr-handdrawn`", "handdrawn", ROOT/"data/manifests/frozen/handdrawn.frozen.json"),
     ]
+    header = "| Variante | n | **canonical RDKit (primaria, comp.)** | exact string | tf_match string (+ tf_canonical) | Δcanonical pp | Δtf pp | Δexact pp | valid | incomplete | p50 ms | p95 ms | tamaño MB | Reporte |"
+    sep = "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|"
     for title, prefix, fman in configs:
-        fp32 = pilot / f"{prefix}.fp32.pilot300.json"
-        e1 = pilot / f"{prefix}.int8-dyn-all.pilot300.json"
-        rows = [
-            _pilot_ocsr_row("FP32 (+TF)", fp32, fp32_path=fp32),
-            _pilot_ocsr_row("E1 dynamic INT8 all (+TF)", e1, fp32_path=fp32),
-        ]
-        got = [r for r in rows if r]
-        if not got:
-            continue
         man = _load_json(fman) or {}
         meta = ""
         if man:
             meta = f" (frozen n={man.get('frozen_n')}, eval={man.get('eval_n')}, pilot={man.get('pilot_n')}, seed={man.get('seed')}, source=`{fman.relative_to(ROOT)}`)"
-        lines.append(f"### {title}{meta}")
-        lines.append("")
-        lines.append("| Variante | n | **canonical RDKit (primaria, comp.)** | exact string | tf_match string (+ tf_canonical) | Δcanonical pp | Δtf pp | Δexact pp | valid | incomplete | p50 ms | p95 ms | tamaño MB | Reporte |")
-        lines.append("|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|")
-        lines.extend(got)
-        lines.append("")
+        # eval-1000 (primary evidence when present)
+        fp32e = evald / f"{prefix}.fp32.eval1000.json"
+        e1e = evald / f"{prefix}.int8-dyn-all.eval1000.json"
+        erows = [
+            _pilot_ocsr_row("FP32 (+TF)", fp32e, fp32_path=fp32e),
+            _pilot_ocsr_row("E1 dynamic INT8 all (+TF)", e1e, fp32_path=fp32e),
+        ]
+        egot = [r for r in erows if r]
+        if egot:
+            lines.append(f"### 5.E {title} — **eval-1000 congelado** (split `eval`, TF+cache){meta}")
+            lines.append("")
+            lines.append(header); lines.append(sep); lines.extend(egot); lines.append("")
+        # pilot + exploratory variants
+        fp32 = pilot / f"{prefix}.fp32.pilot300.json"
+        e1 = pilot / f"{prefix}.int8-dyn-all.pilot300.json"
+        e1s = pilot / f"{prefix}.e1s-sel-noattn.pilot300.json"
+        prows = [
+            _pilot_ocsr_row("FP32 (+TF)", fp32, fp32_path=fp32),
+            _pilot_ocsr_row("E1 dynamic INT8 all (+TF)", e1, fp32_path=fp32),
+            _pilot_ocsr_row("E1s selective dyn (decoder sin atención) (+TF)", e1s, fp32_path=fp32),
+        ]
+        pgot = [r for r in prows if r]
+        if pgot:
+            lines.append(f"### 5.P {title} — piloto congelado (split `pilot`, TF+cache){meta}")
+            lines.append("")
+            lines.append(header); lines.append(sep); lines.extend(pgot); lines.append("")
+        if egot and not any((pilot / f"{prefix}.e1s-sel-noattn.eval1000.json").exists() for _ in [0]):
+            pending.append(f"E1s OCSR `{prefix}`: solo piloto medido (mixed en piloto, 117MB > E1 81MB, latencia alta); promover a eval-1000 solo si se define criterio que lo favorezca.")
+    if (evald / "printed.fp32.eval1000.json").exists():
+        pending = [p for p in pending if "eval-1000 pendiente" not in p.lower()]
 
 
 def _render_classifier(lines: list[str], pending: list[str]) -> None:
+    evald = ROOT / "data/benchmark/eval-1000"
     pilot = ROOT / "data/benchmark/pilot"
-    fp32 = pilot / "classifier.fp32.pilot300.json"
-    e1 = pilot / "classifier.int8-dyn-all.pilot300.json"
-    rows = [_classifier_row(p, fp32_path=fp32) for p in [fp32, e1]]
-    got = [r for r in rows if r]
+    fp32e = evald / "classifier.fp32.eval1000.json"
+    candidates = [
+        ("FP32 (ref)", fp32e),
+        ("E1 dynamic INT8 all", evald / "classifier.int8-dyn-all.eval1000.json"),
+        ("E1s selective dyn (no Conv)", evald / "classifier.e1s-sel.eval1000.json"),
+        ("E4 FP16 (seleccionada, compresión ≥50%, acc ≥70%)", evald / "classifier.e4-fp16.eval1000.json"),
+        ("E2 static QDQ (holdout calib)", evald / "classifier.e2-static-holdout.eval1000.json"),
+    ]
+    rows = [_classifier_row(p, fp32_path=fp32e) for _, p in candidates]
+    got = [(lbl, row) for (lbl, _p), row in zip(candidates, rows) if row]
+    # replace generic variant label with our display label
+    got2 = []
+    for lbl, row in got:
+        # row starts with | `variant` (`split`) | ...
+        parts = row.split("|")
+        if len(parts) > 2:
+            parts[1] = f" {lbl} "
+            row = "|".join(parts)
+        got2.append(row)
     lines.append("### 5.5 `image-classifier` (Zenodo 13378718, congelado)")
     lines.append("")
-    if got:
-        fman = _load_json(ROOT/"data/manifests/frozen/classifier.frozen.json") or {}
-        if fman:
-            lines.append(f"Frozen: n={fman.get('frozen_n')}, eval={fman.get('eval_n')}, pilot={fman.get('pilot_n')}, seed={fman.get('seed')}, clases 10k={fman.get('class_allocated')}. Binaria sobre `one/several_molecule→structure`, `other→no-structure`; `reactions` excluida del binario y reportada aparte. Tamaño: FP32 16M, E1 int8-dyn-all 4.4M (`data/artifacts/*/image-classifier/*.onnx`).")
-            lines.append("")
-        lines.append("| Variante (split) | total filas | Binaria acc | Matriz `[[TP,FN],[FP,TN]]` | Δacc vs FP32 | Paridad TF (incl. reactions) | reactions (separada) | p50 ms | p95 ms | Reporte |")
-        lines.append("|---|---:|---:|---|---:|---:|---|---:|---:|---|")
-        lines.extend(got)
+    fman = _load_json(ROOT/"data/manifests/frozen/classifier.frozen.json") or {}
+    if fman:
+        lines.append(f"Frozen: n={fman.get('frozen_n')}, eval={fman.get('eval_n')}, pilot={fman.get('pilot_n')}, seed={fman.get('seed')}, clases {fman.get('class_allocated')}. Binaria sobre `one/several_molecule→structure`, `other→no-structure` (threshold `0.000089`); `reactions` excluida del binario y reportada aparte. Objetivo: **accuracy ≥70%** mejorando compresión.")
         lines.append("")
+    if got2:
+        lines.append("| Variante (split) | total filas | Binaria acc (no-reaction) | Matriz `[[TN,FP],[FN,TP]]` | Δacc vs FP32 | Paridad TF (incl. reactions) | reactions (separada) | p50 ms | p95 ms | Reporte |")
+        lines.append("|---|---:|---:|---|---:|---:|---|---:|---:|---|")
+        lines.extend(got2)
+        lines.append("")
+        if (evald / "classifier.e4-fp16.eval1000.json").exists():
+            lines.append("> **Decisión (clasificador, por ahora):** `E4 FP16` cumple el objetivo (acc ≈ FP32, ≥70%; **-49% tamaño**, 15.35→7.78 MB; paridad TF 0.998; latencia CPU similar). INT8 en Conv (E1-all/E2 static holdout) regresa bajo 70%; E1s preserva accuracy pero no comprime.")
+            lines.append("")
+    else:
+        # fallback pilot
+        fp32 = pilot / "classifier.fp32.pilot300.json"
+        rows = [_classifier_row(p, fp32_path=fp32) for p in [fp32, pilot / "classifier.int8-dyn-all.pilot300.json"]]
+        if any(rows):
+            lines.append("(Sin eval-1000; mostrando piloto.)"); lines.append("")
     lines.append("| Suite | Estado | Nota |")
     lines.append("|---|---|---|")
-    lines.append("| Zenodo 6670746 | OUT OF SCOPE | No descargar/usar (126.6 GB, archivo único, sin test separado expuesto). |")
-    status = "Piloto ejecutado (FP32/E1); eval-1000 pendiente" if got else "Preparado, no ejecutado"
-    lines.append(f"| Zenodo 13378718 | {status} | 4→binario mapeado explícitamente; `reactions` separada. |")
+    lines.append("| Zenodo 6670746 | OUT OF SCOPE | No descargar/usar (126.6 GB). |")
+    status = "eval-1000 ejecutado (FP32/E1/E1s/E4/E2)" if got2 else "Preparado"
+    lines.append(f"| Zenodo 13378718 | {status} | 4→binario mapeado; `reactions` separada. |")
     lines.append("")
 
 
