@@ -23,9 +23,11 @@ Importador: `decimer-export import-benchmark --source classifier-13378718 --root
 
 Reportar **4×4** y **binario colapsado**; la exclusión de `reactions` es explícita.
 
-## `n` / IDs
-- **Iteración:** cap estratificado por clase, seed + IDs en manifiesto (p. ej. `[TBD]`, hasta 10k), para iterar rápido.
-- **Reporte final:** split completo definido (p. ej. `for_model/test` o el acordado), documentado.
+## `n` / IDs (congelado)
+- **Pool congelado objetivo n=10000**, **estratificado por las 4 clases, clases raras sobrerrepresentadas** (seed `20260308`, método determinístico: floor por clase + remanente ponderado por sqrt(capacidad); ver `data/manifests/frozen/classifier.frozen.spec.json`).
+- **Estado:** `pending_data` hasta importar etiquetas 13378718 (`decimer-export import-benchmark --source classifier-13378718 --root <zip_extraido>`). Generar: `python -m decimer_onnx_export.frozen --classifier-labels <labels.jsonl> --out data/manifests/frozen/classifier.frozen.json`.
+- **Eval n=1000**, **Piloto n=300** = primeras 300 del eval (orden congelado fijo), mismos IDs para todas las variantes. Resto del pool para análisis/reporte ampliado según se defina.
+- Cache de predicciones: `(model, variant, image_id)`.
 
 ## Métricas
 - Matriz 4×4, matriz binaria (solo 3 categorías mapeadas), accuracy/precision/recall/F1 según se defina `[TBD]`.
@@ -40,8 +42,13 @@ Reportar **4×4** y **binario colapsado**; la exclusión de `reactions` es expl�
 | Fidelidad export (si aplica) | `[TBD]` |
 | Latencia p95 | `≤ [TBD] ms` |
 
-## Variantes a comparar
-FP32 + variantes de cuantización `[TBD]` tras exportar clasificador.
+## Variantes a comparar (orden de medición)
+1. **FP32** (control)
+2. **INT8 dynamic (all)**
+3. **INT8 dynamic (sin atención / MLP selectivo)** `[pendiente generar]`
+4. **FP16**
+
+Registro por variante: `model_key=image-classifier`, `variant_key` estable. Pendiente export ONNX + wiring predict.
 
 ## Estado
 - Pesos: fetch disponible (`--model image-classifier`, commit pin). **Export ONNX no realizado.** Wiring predict en CLI/harness pendiente.

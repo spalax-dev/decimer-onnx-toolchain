@@ -12,9 +12,11 @@ Validar conversión DECIMER hand-drawn → ONNX: fidelidad vs TF y calidad SMILE
 
 Estratificar por subfuente si es identificable desde IDs/estructura original.
 
-## `n` / IDs
-- **Full dossier n=5088** (reporte final).
-- **Iteración:** subconjunto **congelado** de IDs (seed + IDs en manifiesto) para comparar variantes a bajo costo. `--limit 500` usado hasta ahora es muestra *ad hoc*; reemplazar por subconjunto fijo/manifiesto para comparaciones formales. No igualar a 1441 (no se compara con impreso).
+## `n` / IDs (congelado)
+- **Pool congelado n=1400** (seed `20260308`, selección determinística desde 5088 HDM) → `data/manifests/frozen/handdrawn.frozen.json`.
+- **Eval n=1000** = primeras 1000 del pool congelado (orden fijo). **Piloto n=300** = primeras 300 del eval (mismos IDs para todas las variantes).
+- **Full dossier n=5088** reservado para reporte final. `--limit 500` previo = muestra ad hoc (no usar como base de decisión formal). Todas las variantes comparadas sobre los mismos IDs del split (pareado).
+- Cache de predicciones: `(model, variant, image_id)` en `data/cache/predictions/` (gitignored).
 
 ## Métricas
 - `tf_match` (ONNX==TF, fidelidad end-to-end; contrato de preprocesado registrado).
@@ -30,8 +32,14 @@ Estratificar por subfuente si es identificable desde IDs/estructura original.
 | `valid` / `incomplete` | `≥ [TBD]%` / `≤ [TBD]%` |
 | Latencia p95 | `≤ [TBD] ms` (hardware fijo) |
 
-## Variantes a comparar
-FP32 (control), **E1 dynamic INT8**, **E3 hybrid static-enc QDQ + dynamic-dec**.
+## Variantes a comparar (orden de medición)
+1. **FP32** (control fidelidad)
+2. **INT8 dynamic (all)** — (actual: artefactos E1)
+3. **INT8 dynamic (sin atención)** `[pendiente generar]`
+4. **FP16** `[pendiente; evaluar viabilidad ORT CPU/target]`
+5. **INT8 estática (si 2–4 fallan criterios)** — holdout `[condicional]`
+
+Registro por variante: `model_key=ocsr-handdrawn`, `variant_key` estable, artefactos y config.
 
 ## Calibración (E3)
 Política `[TBD]`: fuente, `n`, método fijos; evaluación en **holdout**. Evidencia actual: E3 calibrado con 32 HDM mostró `tf_match` 0/500 y 203 incompletos en muestra ad hoc — recalibrar/evaluar bajo protocolo holdout antes de concluir.

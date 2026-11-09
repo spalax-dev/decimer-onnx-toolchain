@@ -1,0 +1,22 @@
+{
+  "dossier": "classifier",
+  "model": "image-classifier",
+  "status": "pending_data",
+  "reason": "Zenodo 13378718 labels not imported locally (requires extracted dataset_for_image_classifier.zip). Run import-benchmark --source classifier-13378718, then generate frozen manifest.",
+  "target_frozen_n": 10000,
+  "strategy": "stratified by original 4 classes (one_molecule, several_molecules, other, reactions), rare classes overrepresented",
+  "allocation": {
+    "method": "deterministic seed; per-class floor = min(available, max(500, ceil(10000/4))) to boost rare classes, capped by availability; distribute remaining slots by sqrt(available_count) weights across classes with capacity, then fill to 10000; if total availability < 10000 use all available and record actual n",
+    "seed": 20260308,
+    "overrepresented": "rare classes receive >= proportional share via floor + sqrt-weighted remainder"
+  },
+  "splits_definition": {
+    "frozen_n": 10000,
+    "eval_n": 1000,
+    "pilot_n": 300,
+    "pilot": "first 300 of eval (frozen order)",
+    "eval": "first 1000 of frozen (frozen order)",
+    "remainder": "frozen[1000:]"
+  },
+  "generator": "python -m decimer_onnx_export.frozen --classifier-labels <labels.jsonl> --out data/manifests/frozen/classifier.frozen.json"
+}

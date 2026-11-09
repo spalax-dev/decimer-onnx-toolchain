@@ -134,37 +134,59 @@ def import_benchmark_cmd(
 
 @app.command("benchmark")
 def benchmark_cmd(
-    labels: Path = typer.Option(..., "--labels", exists=True, help="labels.jsonl path"),
+    labels: Path = typer.Option(None, "--labels", help="labels.jsonl path"),
+    frozen_manifest: Path = typer.Option(None, "--frozen-manifest", help="Frozen manifest JSON (dossier)"),
+    split: str = typer.Option("eval", help="Frozen split: pilot, eval, frozen"),
     task: str = typer.Option("ocsr", help="Task: ocsr, classifier"),
     encoder: Path = typer.Option(None, help="ONNX encoder path (OCSR)"),
     decoder: Path = typer.Option(None, help="ONNX decoder path (OCSR)"),
     vocab: Path = typer.Option(Path("data/artifacts/tokenizer_SMILES.vocab.json"), help="Vocab JSON"),
     tf_model_dir: Path = typer.Option(None, help="Optional TF SavedModel dir for parity baseline"),
+    model_key: str = typer.Option(None, help="Model key for prediction cache, e.g. ocsr-printed"),
+    variant_key: str = typer.Option(None, help="Variant key for prediction cache, e.g. fp32, e1-dyn, e3"),
+    cache_dir: Path = typer.Option(None, help="Prediction cache dir (default: data/cache/predictions)"),
+    no_cache: bool = typer.Option(False, help="Disable prediction cache"),
     out: Path = typer.Option(None, help="Write JSON report here"),
-    limit: int = typer.Option(None, help="Max rows"),
+    limit: int = typer.Option(None, help="Max rows (applied after split)"),
 ) -> None:
-    """Stage 5: run benchmark/validation over a labeled suite."""
+    """Stage 5: run benchmark/validation over a labeled suite or frozen split."""
     from decimer_onnx_export.benchmark_run import benchmark_classifier, benchmark_ocsr, make_onnx_ocsr_predict_fn, make_tf_ocsr_predict_fn
+    from decimer_onnx_export.frozen import PredictionCache, load_frozen, resolve_frozen_rows
 
+    rows = None
+    labels_path = labels
+    if frozen_manifest:
+        frozen = load_frozen(frozen_manifest)
+        rows, labels_path = resolve_frozen_rows(frozen, split=split)
+        model_key = model_key or frozen.get("model")
+        typer.echo(f"frozen: {frozen_manifest} split={split} n={len(rows)} model={model_key}")
+    elif labels is None:
+        raise typer.BadParameter("--labels or --frozen-manifest required")
+    elif not labels.exists():
+        raise typer.BadParameter(f"labels not found: {labels}")
+
+    cache = None if no_cache else PredictionCache(cache_dir)
     if task == "ocsr":
         if encoder is None or decoder is None:
             raise typer.BadParameter("--encoder and --decoder required for ocsr")
         predict = make_onnx_ocsr_predict_fn(encoder, decoder, vocab)
         tf_pred = make_tf_ocsr_predict_fn(tf_model_dir, vocab) if tf_model_dir else None
-        report = benchmark_ocsr(labels, predict_fn=predict, tf_predict_fn=tf_pred, limit=limit)
+        report = benchmark_ocsr(labels_path, rows=rows, predict_fn=predict, tf_predict_fn=tf_pred, limit=limit,
+                                cache=cache, model_key=model_key, variant_key=variant_key)
     elif task == "classifier":
         raise typer.BadParameter("classifier benchmark requires --predict integration (export classifier ONNX first); use benchmark_run.benchmark_classifier with a predict_fn")
     else:
         raise typer.BadParameter(f"unknown task {task}")
+    if frozen_manifest:
+        report["frozen_manifest"] = str(frozen_manifest); report["split"] = split
     text = json.dumps(report, indent=2, ensure_ascii=False)
     if out:
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(text + "\n", encoding="utf-8")
         typer.echo(f"wrote {out}")
-    # summary
-    typer.echo(f"count={report.get('count')} exact={report.get('exact_match')} exact_rate={report.get('exact_match_rate'):.3f} tf_match={report.get('tf_match')}")
-    if report.get("latency_ms"):
-        typer.echo(f"latency_ms p50={report['latency_ms']['p50']:.1f} p95={report['latency_ms']['p95']:.1f}")
+    typer.echo(f"count={report.get('count')} exact={report.get('exact_match')} exact_rate={report.get('exact_match_rate'):.3f} tf_match={report.get('tf_match')} cache_hits={report.get('cache_hits')}")
+    if report.get("latency_ms") and report["latency_ms"].get("p50") is not None:
+        typer.echo(f"latency_ms p50={report['latency_ms']['p50']:.1f} p95={report['latency_ms']['p95']:.1f} n_measured={report['latency_ms'].get('n_measured')}")
 
 
 @app.command("validate")
