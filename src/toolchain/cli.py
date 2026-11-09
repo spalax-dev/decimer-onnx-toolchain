@@ -148,6 +148,7 @@ def benchmark_cmd(
     frozen_manifest: Path = typer.Option(None, "--frozen-manifest", help="Frozen manifest JSON (dossier)"),
     split: str = typer.Option("eval", help="Frozen split: pilot, eval, frozen"),
     task: str = typer.Option("ocsr", help="Task: ocsr, classifier"),
+    predictor: str = typer.Option(None, help="External OCSR predictor (bypasses encoder/decoder/TF): imago"),
     encoder: Path = typer.Option(None, help="ONNX encoder path (OCSR), or classifier ONNX model path"),
     decoder: Path = typer.Option(None, help="ONNX decoder path (OCSR)"),
     classifier_onnx: Path = typer.Option(None, "--classifier-onnx", help="Classifier ONNX model path"),
@@ -163,6 +164,7 @@ def benchmark_cmd(
     """Stage 5: run benchmark/validation over a labeled suite or frozen split."""
     from toolchain.benchmark_run import (
         benchmark_classifier, benchmark_ocsr,
+        make_imago_predict_fn,
         make_onnx_classifier_predict_fn, make_onnx_ocsr_predict_fn,
         make_tf_classifier_predict_fn, make_tf_ocsr_predict_fn,
     )
@@ -185,12 +187,22 @@ def benchmark_cmd(
 
     cache = None if no_cache else PredictionCache(cache_dir)
     if task == "ocsr":
-        if encoder is None or decoder is None:
-            raise typer.BadParameter("--encoder and --decoder required for ocsr")
-        predict = make_onnx_ocsr_predict_fn(encoder, decoder, vocab)
-        tf_pred = make_tf_ocsr_predict_fn(tf_model_dir, vocab) if tf_model_dir else None
-        report = benchmark_ocsr(labels_path, rows=rows, predict_fn=predict, tf_predict_fn=tf_pred, limit=limit,
-                                cache=cache, model_key=model_key, variant_key=variant_key)
+        if predictor:
+            if predictor.lower() != "imago":
+                raise typer.BadParameter(f"unknown external predictor: {predictor} (supported: imago)")
+            model_key = model_key or "external-imago"
+            variant_key = variant_key or "imago-2.0.0rc1"
+            typer.echo(f"external predictor: imago (model_key={model_key} variant_key={variant_key})")
+            predict = make_imago_predict_fn()
+            report = benchmark_ocsr(labels_path, rows=rows, predict_fn=predict, tf_predict_fn=None, limit=limit,
+                                    cache=cache, model_key=model_key, variant_key=variant_key)
+        else:
+            if encoder is None or decoder is None:
+                raise typer.BadParameter("--encoder and --decoder required for ocsr (or use --predictor imago)")
+            predict = make_onnx_ocsr_predict_fn(encoder, decoder, vocab)
+            tf_pred = make_tf_ocsr_predict_fn(tf_model_dir, vocab) if tf_model_dir else None
+            report = benchmark_ocsr(labels_path, rows=rows, predict_fn=predict, tf_predict_fn=tf_pred, limit=limit,
+                                    cache=cache, model_key=model_key, variant_key=variant_key)
     elif task == "classifier":
         onnx_path = classifier_onnx or encoder
         if onnx_path is None:

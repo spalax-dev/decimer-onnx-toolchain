@@ -344,3 +344,28 @@ def make_tf_classifier_predict_fn(model_dir: Path, threshold: float = CLASSIFIER
         logit_val = logit.numpy() if hasattr(logit, "numpy") else np.asarray(logit)
         return {"label": label, "score": score, "logit": float(np.asarray(logit_val).reshape(-1)[0])}
     return _fn
+
+
+def make_imago_predict_fn(version: str = "2.0.0rc1"):
+    """External baseline predictor: EPAM Imago (image -> molfile -> canonical SMILES via RDKit)."""
+    from imago import Imago
+    from rdkit import Chem, RDLogger
+    RDLogger.DisableLog("rdApp.*")
+
+    im = Imago()
+
+    def _fn(img: Path):
+        try:
+            im.load_image_from_file(str(img))
+            im.recognize()
+            molblock = im.molecule
+            if not molblock:
+                return {"smiles": "", "incomplete": True, "predictor": "imago", "predictor_version": version}
+            m = Chem.MolFromMolBlock(str(molblock))
+            if m is None:
+                return {"smiles": "", "incomplete": True, "predictor": "imago", "predictor_version": version, "raw_molfile_present": True}
+            smi = Chem.MolToSmiles(m, canonical=True)
+            return {"smiles": smi or "", "incomplete": not bool(smi), "predictor": "imago", "predictor_version": version}
+        except Exception as e:  # noqa: BLE001
+            return {"smiles": "", "incomplete": True, "predictor": "imago", "predictor_version": version, "error": str(e)[:200]}
+    return _fn
