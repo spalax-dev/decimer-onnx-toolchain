@@ -19,8 +19,9 @@ See [`TODO.md`](TODO.md) for progress.
 
 ## Benchmark report
 
-- [`docs/benchmark-spec.md`](docs/benchmark-spec.md): especificación/protocolo (bloques de tarea, matriz 2×2 OCSR cross-domain + clasificador separado, data cards/compatibilidad, contratos, 3 vistas de reporte, orden de trabajo; criterios numéricos como placeholders).
-- [`docs/benchmark-report.md`](docs/benchmark-report.md): informe neutral auto-generado (glosario, criterios definidos, máquina, procedencia, resultados numéricos desde `data/benchmark/**/*.json` y manifiestos).
+- [`docs/benchmark-spec.md`](docs/benchmark-spec.md): especificación general — **tres dossiers independientes** (impreso, manuscrito, clasificador), sin ranking entre modelos; fuentes por dossier, `n` por IDs congelados, 3 vistas dentro de dossier, 6670746 fuera de scope.
+- Dossiers: [`docs/benchmark-dossier-printed.md`](docs/benchmark-dossier-printed.md) · [`docs/benchmark-dossier-handdrawn.md`](docs/benchmark-dossier-handdrawn.md) · [`docs/benchmark-dossier-classifier.md`](docs/benchmark-dossier-classifier.md)
+- [`docs/benchmark-report.md`](docs/benchmark-report.md): informe neutral auto-generado (pendiente alinear a 3 secciones por dossier).
 - Regenerar: `uv run decimer-export report`
 
 ## Quick start (bootstrap)
