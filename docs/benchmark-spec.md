@@ -40,10 +40,21 @@ Cada modelo se valida contra **su** suite, con **su** métrica, **su** criterio 
 
 ## 4. Contratos compartidos (infraestructura)
 
-### 4.1 Etiquetas / métricas por bloque
-- **OCSR (impreso/manuscrito):** `tf_match` (fidelidad ONNX↔TF, protocolo registrado), exactitud SMILES **canónica (RDKit)** en env benchmark/export + `exact_match` cadena como dato, `valid`/`incomplete` (heurística), latencia p50/p95. Comparación de variantes dentro del dossier: **McNemar** sobre pares discordantes + Δ pp con **IC bootstrap**; reportar `n` + IC.
-- **Clasificador:** **matriz 4×4** (`one_molecule`, `several_molecules`, `other`, `reactions`) + binario colapsado visible (`one/several_molecule→structure`, `other→no-structure`) con **`reactions` excluida del binario** y reportada aparte (`ambiguous_excluded`). Fidelidad ONNX↔TF si hay baseline.
-- **Criterios numéricos:** placeholders `[TBD]` por dossier (pueden diferir entre dossiers).
+### 4.1 Protocolo de medición pareado (por variante)
+Cada variante se mide sobre el **mismo set congelado / mismos IDs** (piloto ⊂ eval ⊂ pool; nunca mezclar sets entre variantes). Por cada corrida registrar:
+- **Precisión/tarea:** métrica definida por dossier (OCSR: idealmente exactitud SMILES **canónica con RDKit** `[pendiente integrar]` + `exact_match` cadena como dato; fidelidad `tf_match` ONNX↔TF). Reportar **Δ absoluto en pp contra FP32** (misma métrica, mismos IDs) además del valor absoluto.
+- **Latencia:** **p50 y p95** en el **mismo hardware** y **mismo execution provider** (p. ej. ORT `CPUExecutionProvider`), registrados. No reportar solo media; la cola (p95) es relevante.
+- **Tamaño en disco:** MB de los artefactos del modelo (encoder+decoder u equivalente), por variante.
+- **Throughput:** si se procesan lotes, reportar lotes/s o imágenes/s con tamaño de lote `[si aplica]`.
+- **Comparación de variantes (pareada):** **McNemar** sobre pares discordantes + Δ pp con **IC bootstrap**; reportar `n` + IC.
+- **Caché:** predicciones por `(model_key, variant_key, image_id)` para no recalcular (`data/cache/predictions/`, gitignored).
+
+**Advertencia de medición:** la cuantización dinámica (INT8) **no siempre es más rápida** (el overhead de cuantizar activaciones en runtime puede anular/peorar la ganancia). La latencia se mide, no se asume.
+
+### 4.2 Etiquetas / métricas por bloque
+- **OCSR (impreso/manuscrito):** `tf_match` (fidelidad ONNX↔TF, protocolo registrado), exactitud canónica RDKit `[TBD integrar]` + `exact_match` cadena, `valid`/`incomplete`, latencia p50/p95, tamaño, throughput si aplica.
+- **Clasificador:** **matriz 4×4** (`one_molecule`, `several_molecules`, `other`, `reactions`) + binario colapsado visible (`one/several_molecule→structure`, `other→no-structure`) con **`reactions` excluida del binario** y reportada aparte (`ambiguous_excluded`). Fidelidad ONNX↔baseline si aplica.
+- **Criterios numéricos:** placeholders `[TBD]` por dossier (pueden diferir). Criterios típicos a fijar: `Δ vs FP32 ≤ [TBD] pp` (precisión/fidelidad), p95 `≤ [TBD] ms`.
 
 ### 4.2 Preprocesado (registrado por modelo)
 Registrar entrada, resize/normalización/canales, ruta TF baseline vs runtime ONNX usada en `tf_match`, versión. Control **FP32+TF** antes de concluir sobre cuantización (separa export/preprocess vs cuantización).

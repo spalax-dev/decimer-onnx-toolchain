@@ -18,11 +18,11 @@ Estratificar por subfuente si es identificable desde IDs/estructura original.
 - **Full dossier n=5088** reservado para reporte final. `--limit 500` previo = muestra ad hoc (no usar como base de decisión formal). Todas las variantes comparadas sobre los mismos IDs del split (pareado).
 - Cache de predicciones: `(model, variant, image_id)` en `data/cache/predictions/` (gitignored).
 
-## Métricas
-- `tf_match` (ONNX==TF, fidelidad end-to-end; contrato de preprocesado registrado).
-- Exactitud SMILES **canónica (RDKit)** `[pendiente integrar]` + `exact_match` cadena como dato.
-- `valid`, `incomplete` (heurística), latencia p50/p95.
-- Comparación de variantes (mismos IDs): **McNemar** + Δ pp con **IC bootstrap**; `n`+IC. Muestras parciales etiquetadas explícitamente, no mezcladas con full sin marcar `n`.
+## Métricas (protocolo pareado)
+- `tf_match` (ONNX==TF, fidelidad). Exactitud SMILES **canónica (RDKit)** `[pendiente integrar]` + `exact_match` cadena. `valid`, `incomplete`.
+- Latencia **p50/p95** (mismo hardware, ORT `CPUExecutionProvider`), **tamaño MB**, **throughput** si lotes. No solo media.
+- **Δ absoluto en pp vs FP32** (misma métrica, mismos IDs) + valor absoluto. **McNemar** + Δ pp con **IC bootstrap**; `n`+IC. Piloto ⊂ eval ⊂ pool congelado; muestras ad hoc no se usan para decisión formal. Cache `(model,variant,image_id)`.
+- Nota: INT8 dinámico puede no ser más rápido; medir latencia.
 
 ## Criterios de aceptación (placeholders `[TBD]`)
 | Criterio | Umbral |

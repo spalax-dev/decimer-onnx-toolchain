@@ -2,7 +2,7 @@
 
 > Documento generado automáticamente a partir de reportes JSON/manifiestos en `data/`. No incluye decisiones ni juicios sobre los resultados; reporta mediciones, definiciones y criterios de aceptación definidos para la evaluación.
 
-**Generado (UTC):** `2026-11-09T02:59:27.992392+00:00`  
+**Generado (UTC):** `2026-11-09T04:17:18.500594+00:00`  
 **Generador:** `decimer_onnx_export.report.generate_report` / `decimer-export report`  
 **Rama/commits relevantes:** `main` (workspace fetch/export/runtime/cuantización/benchmark).
 
@@ -16,18 +16,20 @@
 | **SMILES** | Simplified Molecular Input Line Entry System: cadena textual que representa una estructura molecular. |
 | **Modelo TF (baseline)** | Modelo DECIMER original ejecutado en TensorFlow (SavedModel), usado como referencia de comportamiento. |
 | **Modelo ONNX** | Modelo convertido a ONNX (encoder + `decoder_step`) ejecutado con ONNX Runtime (ORT). |
-| **FP32** | Exportación ONNX en precisión flotante de 32 bits. |
-| **E1 (dynamic INT8)** | Cuantización dinámica INT8 (pesos/ops cuantizados según configuración de ORT; sin calibración). |
-| **E3 (hybrid static-enc + dynamic-dec)** | Encoder cuantizado estático INT8/QDQ con calibración + decoder cuantizado dinámico INT8. |
-| **Calibración** | Proceso de alimentación de muestras representativas para cuantización estática (rango/escala). El conjunto y tamaño de calibración se reportan por experimento. |
-| **Paridad TF↔ONNX (export)** | Equivalencia de comportamiento entre el modelo TF baseline y el modelo ONNX bajo el mismo protocolo de prueba. |
-| **`exact_match` (vs etiqueta)** | Proporción de casos donde el SMILES predicho es **idéntico como cadena** al SMILES etiqueta del dataset (`got == expected`). |
-| **`tf_match`** | Proporción de casos donde el SMILES (o salida comparable) del pipeline ONNX es **idéntico** al del pipeline TF baseline para la misma entrada, bajo el harness de benchmark. En los experimentos OCSR con `--tf-model-dir`, el harness compara la predicción ONNX (preprocesado/runtime del harness ONNX) con la predicción TF de referencia; reporta `tf_smiles` y `tf_match` por caso. |
-| **`valid`** | Conteo/tasa según la heurística del harness: predicción no vacía y no marcada como incompleta (heurística sin RDKit). |
-| **`incomplete`** | Predicción marcada como incompleta por el decodificador/harness (p. ej., secuencia no finalizada según el criterio del tokenizador/decodificación). |
-| **Latencia p50 / p95 (ms)** | Percentiles 50/95 del tiempo por muestra medido por el harness (ms), sobre las muestras evaluadas; incluye el costo de inferencia medido en ese bucle. |
-| **Matriz de confusión binaria (clasificador)** | Conteo TP/TN/FP/FN sobre las clases binarias `structure` / `no-structure`, calculada solo sobre categorías mapeadas como incluidas en binario. |
-| **`reactions` (clasificador, métrica separada)** | Categoría tratada como ambigua/excluida del cómputo binario; se reporta aparte (conteo y predicciones), no dentro de TP/TN/FP/FN binarios. |
+| **FP32** | Exportación ONNX en precisión flotante de 32 bits (control de fidelidad). |
+| **INT8 dynamic (all)** | Cuantización dinámica INT8 aplicada a ops soportados (p. ej. E1); sin calibración. |
+| **INT8 dynamic (sin atención)** | Variante dinámica que excluye atención (u ops selectivas) `[según artefacto]`. |
+| **FP16** | Pesos/compute en media precisión donde aplique. |
+| **INT8 estática (QDQ/calibración)** | Cuantización estática con calibración (p. ej. E3 híbrido); evaluación en holdout según protocolo. |
+| **Δ vs FP32 (pp)** | Diferencia absoluta en puntos porcentuales respecto a FP32, calculada sobre la **misma métrica y los mismos IDs** (pareado): `métrica_variante − métrica_FP32`. |
+| **`tf_match`** | Proporción de casos donde la salida ONNX es idéntica al baseline TF (fidelidad ONNX↔TF, según harness/protocolo). |
+| **`exact_match` (vs etiqueta)** | Proporción de casos donde el SMILES predicho es idéntico como cadena a la etiqueta (`got == expected`); sensible a canonicalización. |
+| **Exactitud canónica (RDKit)** | Comparación sobre SMILES canónico `[pendiente integrar en harness]`. |
+| **`valid` / `incomplete`** | Heurísticas del harness (sin RDKit): no vacío/no incompleto; secuencia no finalizada. |
+| **Latencia p50 / p95 (ms)** | Percentiles 50/95 por muestra (mismo hardware/provider). No usar solo media; p95 refleja cola. |
+| **Tamaño (MB)** | Tamaño en disco de artefactos (encoder+decoder) de la variante. |
+| **Throughput** | Imágenes/s o lotes/s si se evalúa en lote `[si aplica]`. |
+| **McNemar** | Prueba pareada sobre pares discordantes (A acierta/B falla vs inverso) para comparar variantes en el mismo set. |
 
 ## 2. Criterios de aceptación (definidos para la evaluación)
 
@@ -35,13 +37,15 @@ Criterios definidos como referencia de medición (sin aplicar veredictos en este
 
 | Criterio | Definición / condición de aceptación |
 |---|---|
-| **Fidelidad de cuantización/export (estricta)** | `tf_match = 100%` (todas las muestras evaluadas producen salida idéntica al baseline TF bajo el mismo protocolo). |
-| **Fidelidad de cuantización/export (tasa)** | `tf_match_rate` medida sobre el conjunto evaluado; se reporta como `tf_match/count`. Cualquier umbral numérico (p. ej., ≥99%, ≥95%) es un parámetro de aceptación externo si se define; este informe solo reporta la tasa observada. |
-| **Exactitud vs etiqueta** | `exact_match_rate = exact_match/count` sobre etiquetas del dataset. Aceptación depende de si la comparación usa canonicalización (p. ej., RDKit) y del objetivo (paridad de modelo vs. exactitud de tarea). |
-| **Validez / completitud** | Tasas `valid_rate` e `incomplete_rate` reportadas por el harness. Criterios de aceptación (p. ej., incompletos ≤ X%) son parámetros externos si se definen. |
-| **Latencia** | `p50/p95` en ms. Criterios de aceptación (p. ej., p95 ≤ X ms en hardware Y) son parámetros externos si se definen. |
-| **Clasificador binario** | Matriz de confusión y métricas derivadas calculadas **solo** sobre `one_molecule`, `several_molecules`, `other` según el mapeo explícito; `reactions` se reporta por separado y **excluida** del binario. |
-| **Reproducibilidad/procedencia** | Cada conjunto/artefacto reporta fuente, identificador/commit/record, checksums cuando aplican, ruta de manifiesto o labels, y notas de licencia/procedencia. |
+| **Comparación pareada** | Todas las variantes se miden sobre el **mismo set/IDs congelados** (piloto ⊂ eval ⊂ pool). Δ vs FP32 en pp sobre mismos IDs. |
+| **Fidelidad (tasa / estricta)** | `tf_match_rate = tf_match/count` (ONNX==TF). Estricto: 100%. Umbral numérico (`≥ [TBD]%`) es parámetro externo si se define. |
+| **Δ vs FP32 (precisión/fidelidad)** | Diferencia absoluta en pp vs FP32, misma métrica e IDs. Umbral `≤ [TBD] pp` es parámetro externo si se define. |
+| **Exactitud (canónica / cadena)** | Canónica RDKit `[TBD integrar]` preferida para tarea química; `exact_match` cadena reportada como dato (sensible a canonicalización). |
+| **Validez / completitud** | `valid_rate`, `incomplete_rate`. Umbrales externos si se definen. |
+| **Latencia** | **p50/p95** ms, mismo hardware y execution provider (p. ej. ORT CPU). No solo media. Umbral p95 externo si se define. INT8 dinámico no implica menor latencia. |
+| **Tamaño / throughput** | MB en disco (artefactos); throughput (img/s, batch) si aplica. |
+| **Clasificador** | Matriz 4×4 + binaria sobre 3 clases mapeadas; `reactions` separada/excluida del binario. |
+| **Reproducibilidad** | Fuente/pin/manifiesto/checksums, IDs congelados (seed), hardware/provider/versiones. |
 
 ## 3. Fuentes de datos y procedencia (hechos)
 
@@ -57,7 +61,7 @@ Criterios definidos como referencia de medición (sin aplicar veredictos en este
 
 ## 4. Características de la máquina (recolección automática)
 
-Recolectado automáticamente el `2026-11-09T02:59:27.906629+00:00` mediante `platform`, `lscpu` y `free`.
+Recolectado automáticamente el `2026-11-09T04:17:18.457373+00:00` mediante `platform`, `lscpu` y `free`.
 
 | Campo | Valor |
 |---|---|
@@ -73,7 +77,7 @@ Recolectado automáticamente el `2026-11-09T02:59:27.906629+00:00` mediante `pla
 | Cachés L1d/L1i/L2/L3 | `128 KiB (4 instances)` / `128 KiB (4 instances)` / `1 MiB (4 instances)` / `6 MiB (1 instance)` |
 | Flags CPU relevantes | `fma sse4_2 avx avx2` |
 | RAM total | 15.42 GiB (16555552768 bytes) |
-| RAM disponible (al recolectar) | 6.89 GiB |
+| RAM disponible (al recolectar) | 9.73 GiB |
 
 ### Versiones de paquetes (entorno de ejecución)
 
@@ -92,29 +96,29 @@ Recolectado automáticamente el `2026-11-09T02:59:27.906629+00:00` mediante `pla
 
 ## 5. Resultados
 
-Columnas: `exact` = exact_match vs etiqueta; `tf_match` = paridad ONNX==TF baseline (ver glosario). `—` = no medido/no disponible en ese reporte.
+Protocolo: variantes comparadas sobre **mismos IDs** cuando aplica (pareado, piloto ⊂ eval ⊂ pool congelado). Latencia **p50/p95** (mismo hardware/provider), no solo media; INT8 dinámico puede no ser más rápido. **Δ vs FP32** = diferencia en pp sobre IDs comunes (misma métrica). `—` = no medido/no disponible.
 
 ### 5.1 `ocsr-printed` — golden CLEF (Keylab/OCSR-Benchmarks, n=992)
 
-| Variante | n | exact vs label | tf_match (ONNX==TF) | valid | incomplete | p50 ms | p95 ms | Reporte |
-|---|---:|---:|---:|---:|---:|---:|---:|---|
-| E1 dynamic INT8 (+TF) | 992 | 7 (0.0071) | 838/992 (0.8448) | 991 (0.9990) | 1 | 5871.20 | 10230.40 | `data/benchmark/hf-clef/report.e1.tf.json` |
-| E3 static-enc + dyn-dec (tf_match por join a TF de E1) | 992 | 6 (0.0060) | 444/992 (0.4476) [join] | 990 (0.9980) | 2 | 2861.30 | 4919.40 | `data/benchmark/hf-clef/report.e3.tfjoined.json` |
+| Variante | n | exact vs label | tf_match (ONNX==TF) | Δtf_match pp vs FP32 | Δexact pp vs FP32 | valid | incomplete | p50 ms | p95 ms | tamaño MB (enc+dec) | Reporte |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|
+| E1 dynamic INT8 (+TF) | 992 | 7 (0.0071) | 838/992 (0.8448) | — | — | 991 (0.9990) | 1 | 5871.20 | 10230.40 | 81.3 | `data/benchmark/hf-clef/report.e1.tf.json` |
+| E3 static-enc + dyn-dec (tf_match por join a TF de E1) | 992 | 6 (0.0060) | 444/992 (0.4476) [join] | — | — | 990 (0.9980) | 2 | 2861.30 | 4919.40 | 84.4 | `data/benchmark/hf-clef/report.e3.tfjoined.json` |
 
 ### 5.2 `ocsr-printed` — golden JPO (Keylab/OCSR-Benchmarks, n=449)
 
-| Variante | n | exact vs label | tf_match (ONNX==TF) | valid | incomplete | p50 ms | p95 ms | Reporte |
-|---|---:|---:|---:|---:|---:|---:|---:|---|
-| E1 dynamic INT8 (+TF) | 449 | 9 (0.0200) | 264/449 (0.5880) | 412 (0.9176) | 37 | 6149.83 | 17156.27 | `data/benchmark/hf-jpo/report.e1.tf.json` |
-| E3 static-enc + dyn-dec (tf_match por join a TF de E1) | 449 | 3 (0.0067) | 123/449 (0.2739) [join] | 393 (0.8753) | 56 | 2767.13 | 26985.81 | `data/benchmark/hf-jpo/report.e3.tfjoined.json` |
+| Variante | n | exact vs label | tf_match (ONNX==TF) | Δtf_match pp vs FP32 | Δexact pp vs FP32 | valid | incomplete | p50 ms | p95 ms | tamaño MB (enc+dec) | Reporte |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|
+| E1 dynamic INT8 (+TF) | 449 | 9 (0.0200) | 264/449 (0.5880) | — | — | 412 (0.9176) | 37 | 6149.83 | 17156.27 | 81.3 | `data/benchmark/hf-jpo/report.e1.tf.json` |
+| E3 static-enc + dyn-dec (tf_match por join a TF de E1) | 449 | 3 (0.0067) | 123/449 (0.2739) [join] | — | — | 393 (0.8753) | 56 | 2767.13 | 26985.81 | 84.4 | `data/benchmark/hf-jpo/report.e3.tfjoined.json` |
 
-### 5.3 `ocsr-handdrawn` — HDM Zenodo 7617107 (muestra `--limit 500`)
+### 5.3 `ocsr-handdrawn` — HDM Zenodo 7617107 (muestra ad hoc `--limit 500`, no decisión formal)
 
-| Variante | n | exact vs label | tf_match (ONNX==TF) | valid | incomplete | p50 ms | p95 ms | Reporte |
-|---|---:|---:|---:|---:|---:|---:|---:|---|
-| FP32 (+TF) | 500 | 198 (0.3960) | 471/500 (0.9420) | 499 (0.9980) | 1 | 1988.25 | 4504.17 | `data/benchmark/handdrawn-hdm/report.fp32.tf.limit500.json` |
-| E1 dynamic INT8 (+TF) | 500 | 195 (0.3900) | 448/500 (0.8960) | 499 (0.9980) | 1 | 6239.98 | 9709.75 | `data/benchmark/handdrawn-hdm/report.e1.tf.limit500.json` |
-| E3 static-enc + dyn-dec (+TF, calib 32 HDM) | 500 | 0 (0.0000) | 0/500 (0.0000) | 297 (0.5940) | 203 | 25397.42 | 31685.82 | `data/benchmark/handdrawn-hdm/report.e3.tf.limit500.json` |
+| Variante | n | exact vs label | tf_match (ONNX==TF) | Δtf_match pp vs FP32 | Δexact pp vs FP32 | valid | incomplete | p50 ms | p95 ms | tamaño MB (enc+dec) | Reporte |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|
+| FP32 (+TF) | 500 | 198 (0.3960) | 471/500 (0.9420) | (ref) | (ref) | 499 (0.9980) | 1 | 1988.25 | 4504.17 | 301.2 | `data/benchmark/handdrawn-hdm/report.fp32.tf.limit500.json` |
+| E1 dynamic INT8 (+TF) | 500 | 195 (0.3900) | 448/500 (0.8960) | -4.60 pp | -0.60 pp | 499 (0.9980) | 1 | 6239.98 | 9709.75 | 81.3 | `data/benchmark/handdrawn-hdm/report.e1.tf.limit500.json` |
+| E3 static-enc + dyn-dec (+TF, calib 32 HDM) | 500 | 0 (0.0000) | 0/500 (0.0000) | -94.20 pp | -39.60 pp | 297 (0.5940) | 203 | 25397.42 | 31685.82 | 84.4 | `data/benchmark/handdrawn-hdm/report.e3.tf.limit500.json` |
 
 ### 5.4 `ocsr-handdrawn` — HDM completo (5088)
 
@@ -126,8 +130,8 @@ Columnas: `exact` = exact_match vs etiqueta; `tf_match` = paridad ONNX==TF basel
 
 | Suite | Estado | Nota |
 |---|---|---|
-| Zenodo 6670746 | No descargado | Archivo único 126.6 GB; sin test separado expuesto por API. |
-| Zenodo 13378718 | Preparado, no ejecutado | Requiere extracción local y exportación ONNX del clasificador; binario con `reactions` separada. |
+| Zenodo 6670746 | OUT OF SCOPE | No descargar/usar (126.6 GB, archivo único, sin test separado expuesto). |
+| Zenodo 13378718 | Preparado, no ejecutado | Requiere extracción local, export ONNX y wiring; 4×4 + binario (3 clases), `reactions` separada. |
 
 ## 7. Archivos de referencia
 

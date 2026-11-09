@@ -91,28 +91,77 @@ def _fmt_ms(v: Any) -> str:
         return "—"
 
 
-def _row(label: str, report_path: Path, *, tf_join_note: str = "") -> str | None:
+def _delta_pp(var_path: Path, fp32_path: Path, field: str) -> str:
+    v = _load_json(var_path); f = _load_json(fp32_path)
+    if not v or not f:
+        return "—"
+    vd = {str(d.get("id")): d for d in v.get("details", [])}
+    fd = {str(d.get("id")): d for d in f.get("details", [])}
+    ids = [i for i in vd.keys() if i in fd]
+    if not ids:
+        # fallback to aggregate if same count and no details overlap
+        vr, fr = v.get(f"{field}_rate"), f.get(f"{field}_rate")
+        if vr is not None and fr is not None and v.get("count") == f.get("count"):
+            return f"{(vr-fr)*100:+.2f} pp (agg)"
+        return "—"
+    vb = sum(1 for i in ids if vd[i].get(field) is True)
+    fb = sum(1 for i in ids if fd[i].get(field) is True)
+    dpp = (vb - fb) / len(ids) * 100
+    note = "" if len(ids) == v.get("count") == f.get("count") else f", n={len(ids)}"
+    return f"{dpp:+.2f} pp{note}"
+
+
+def _artifact_size_mb(report_path: Path) -> str:
+    # heuristic based on known artifact layout
+    name = str(report_path)
+    mapping = [
+        ("ocsr-printed", "fp32", "data/artifacts/fp32/ocsr-printed/encoder.fp32.onnx", "data/artifacts/fp32/ocsr-printed/decoder_step.fp32.onnx"),
+        ("hf-clef", "fp32", "data/artifacts/fp32/ocsr-printed/encoder.fp32.onnx", "data/artifacts/fp32/ocsr-printed/decoder_step.fp32.onnx"),
+        ("hf-jpo", "fp32", "data/artifacts/fp32/ocsr-printed/encoder.fp32.onnx", "data/artifacts/fp32/ocsr-printed/decoder_step.fp32.onnx"),
+        ("printed", "e1", "data/artifacts/quant/e1/ocsr-printed/encoder.e1.dynamic.onnx", "data/artifacts/quant/e1/ocsr-printed/decoder_step.e1.dynamic.onnx"),
+        ("hf-clef", "e1", "data/artifacts/quant/e1/ocsr-printed/encoder.e1.dynamic.onnx", "data/artifacts/quant/e1/ocsr-printed/decoder_step.e1.dynamic.onnx"),
+        ("hf-jpo", "e1", "data/artifacts/quant/e1/ocsr-printed/encoder.e1.dynamic.onnx", "data/artifacts/quant/e1/ocsr-printed/decoder_step.e1.dynamic.onnx"),
+        ("hf-clef", "e3", "data/artifacts/quant/e3/ocsr-printed/encoder.e3.static.onnx", "data/artifacts/quant/e3/ocsr-printed/decoder_step.e3.dynamic.onnx"),
+        ("hf-jpo", "e3", "data/artifacts/quant/e3/ocsr-printed/encoder.e3.static.onnx", "data/artifacts/quant/e3/ocsr-printed/decoder_step.e3.dynamic.onnx"),
+        ("handdrawn-hdm", "fp32", "data/artifacts/fp32/ocsr-handdrawn/encoder.fp32.onnx", "data/artifacts/fp32/ocsr-handdrawn/decoder_step.fp32.onnx"),
+        ("handdrawn-hdm", "e1", "data/artifacts/quant/e1/ocsr-handdrawn/encoder.e1.dynamic.onnx", "data/artifacts/quant/e1/ocsr-handdrawn/decoder_step.e1.dynamic.onnx"),
+        ("handdrawn-hdm", "e3", "data/artifacts/quant/e3/ocsr-handdrawn/encoder.e3.static.onnx", "data/artifacts/quant/e3/ocsr-handdrawn/decoder_step.e3.dynamic.onnx"),
+    ]
+    for ctx, var, enc, dec in mapping:
+        if ctx in name and (f"/{var}." in name or f".{var}." in name or f"report.{var}" in name):
+            total = 0; ok = False
+            for p in [ROOT/enc, ROOT/dec]:
+                if p.exists(): total += p.stat().st_size; ok = True
+            if ok: return f"{total/1024/1024:.1f}"
+    return "—"
+
+
+def _row(label: str, report_path: Path, *, tf_join_note: str = "", fp32_path: Path | None = None) -> str | None:
     r = _load_json(report_path)
     if not r:
         return None
     n = r.get("count")
-    ex = r.get("exact_match")
-    exr = r.get("exact_match_rate")
-    tfm = r.get("tf_match")
-    tfmr = r.get("tf_match_rate")
+    ex = r.get("exact_match"); exr = r.get("exact_match_rate")
+    tfm = r.get("tf_match"); tfmr = r.get("tf_match_rate")
     tf_cell = _fmt_rate(tfm, n)
     if tfm is None:
         tf_cell = "—"
     elif tf_join_note:
         tf_cell = f"{tfm}/{n} ({tfmr:.4f}) {tf_join_note}" if tfmr is not None else f"{tfm}/{n} {tf_join_note}"
-    valid = r.get("valid")
-    vr = r.get("valid_rate")
-    inc = r.get("incomplete")
+    valid = r.get("valid"); vr = r.get("valid_rate"); inc = r.get("incomplete")
     lat = r.get("latency_ms") or {}
+    size = _artifact_size_mb(report_path)
+    if fp32_path and report_path != fp32_path and fp32_path.exists():
+        dtf = _delta_pp(report_path, fp32_path, "tf_match") if tfm is not None and (_load_json(fp32_path) or {}).get("tf_match") is not None else "—"
+        dex = _delta_pp(report_path, fp32_path, "exact_match")
+    elif fp32_path and report_path == fp32_path:
+        dtf = dex = "(ref)"
+    else:
+        dtf = dex = "—"
     rep = str(report_path.relative_to(ROOT)) if report_path.is_relative_to(ROOT) else str(report_path)
     return (
-        f"| {label} | {n} | {ex} ({exr:.4f}) | {tf_cell} | {valid} ({vr:.4f}) | {inc} | "
-        f"{_fmt_ms(lat.get('p50'))} | {_fmt_ms(lat.get('p95'))} | `{rep}` |"
+        f"| {label} | {n} | {ex} ({exr:.4f}) | {tf_cell} | {dtf} | {dex} | {valid} ({vr:.4f}) | {inc} | "
+        f"{_fmt_ms(lat.get('p50'))} | {_fmt_ms(lat.get('p95'))} | {size} | `{rep}` |"
     )
 
 
@@ -124,18 +173,20 @@ GLOSSARY = r"""## 1. Glosario
 | **SMILES** | Simplified Molecular Input Line Entry System: cadena textual que representa una estructura molecular. |
 | **Modelo TF (baseline)** | Modelo DECIMER original ejecutado en TensorFlow (SavedModel), usado como referencia de comportamiento. |
 | **Modelo ONNX** | Modelo convertido a ONNX (encoder + `decoder_step`) ejecutado con ONNX Runtime (ORT). |
-| **FP32** | Exportación ONNX en precisión flotante de 32 bits. |
-| **E1 (dynamic INT8)** | Cuantización dinámica INT8 (pesos/ops cuantizados según configuración de ORT; sin calibración). |
-| **E3 (hybrid static-enc + dynamic-dec)** | Encoder cuantizado estático INT8/QDQ con calibración + decoder cuantizado dinámico INT8. |
-| **Calibración** | Proceso de alimentación de muestras representativas para cuantización estática (rango/escala). El conjunto y tamaño de calibración se reportan por experimento. |
-| **Paridad TF↔ONNX (export)** | Equivalencia de comportamiento entre el modelo TF baseline y el modelo ONNX bajo el mismo protocolo de prueba. |
-| **`exact_match` (vs etiqueta)** | Proporción de casos donde el SMILES predicho es **idéntico como cadena** al SMILES etiqueta del dataset (`got == expected`). |
-| **`tf_match`** | Proporción de casos donde el SMILES (o salida comparable) del pipeline ONNX es **idéntico** al del pipeline TF baseline para la misma entrada, bajo el harness de benchmark. En los experimentos OCSR con `--tf-model-dir`, el harness compara la predicción ONNX (preprocesado/runtime del harness ONNX) con la predicción TF de referencia; reporta `tf_smiles` y `tf_match` por caso. |
-| **`valid`** | Conteo/tasa según la heurística del harness: predicción no vacía y no marcada como incompleta (heurística sin RDKit). |
-| **`incomplete`** | Predicción marcada como incompleta por el decodificador/harness (p. ej., secuencia no finalizada según el criterio del tokenizador/decodificación). |
-| **Latencia p50 / p95 (ms)** | Percentiles 50/95 del tiempo por muestra medido por el harness (ms), sobre las muestras evaluadas; incluye el costo de inferencia medido en ese bucle. |
-| **Matriz de confusión binaria (clasificador)** | Conteo TP/TN/FP/FN sobre las clases binarias `structure` / `no-structure`, calculada solo sobre categorías mapeadas como incluidas en binario. |
-| **`reactions` (clasificador, métrica separada)** | Categoría tratada como ambigua/excluida del cómputo binario; se reporta aparte (conteo y predicciones), no dentro de TP/TN/FP/FN binarios. |"""
+| **FP32** | Exportación ONNX en precisión flotante de 32 bits (control de fidelidad). |
+| **INT8 dynamic (all)** | Cuantización dinámica INT8 aplicada a ops soportados (p. ej. E1); sin calibración. |
+| **INT8 dynamic (sin atención)** | Variante dinámica que excluye atención (u ops selectivas) `[según artefacto]`. |
+| **FP16** | Pesos/compute en media precisión donde aplique. |
+| **INT8 estática (QDQ/calibración)** | Cuantización estática con calibración (p. ej. E3 híbrido); evaluación en holdout según protocolo. |
+| **Δ vs FP32 (pp)** | Diferencia absoluta en puntos porcentuales respecto a FP32, calculada sobre la **misma métrica y los mismos IDs** (pareado): `métrica_variante − métrica_FP32`. |
+| **`tf_match`** | Proporción de casos donde la salida ONNX es idéntica al baseline TF (fidelidad ONNX↔TF, según harness/protocolo). |
+| **`exact_match` (vs etiqueta)** | Proporción de casos donde el SMILES predicho es idéntico como cadena a la etiqueta (`got == expected`); sensible a canonicalización. |
+| **Exactitud canónica (RDKit)** | Comparación sobre SMILES canónico `[pendiente integrar en harness]`. |
+| **`valid` / `incomplete`** | Heurísticas del harness (sin RDKit): no vacío/no incompleto; secuencia no finalizada. |
+| **Latencia p50 / p95 (ms)** | Percentiles 50/95 por muestra (mismo hardware/provider). No usar solo media; p95 refleja cola. |
+| **Tamaño (MB)** | Tamaño en disco de artefactos (encoder+decoder) de la variante. |
+| **Throughput** | Imágenes/s o lotes/s si se evalúa en lote `[si aplica]`. |
+| **McNemar** | Prueba pareada sobre pares discordantes (A acierta/B falla vs inverso) para comparar variantes en el mismo set. |"""
 
 CRITERIA = r"""## 2. Criterios de aceptación (definidos para la evaluación)
 
@@ -143,13 +194,15 @@ Criterios definidos como referencia de medición (sin aplicar veredictos en este
 
 | Criterio | Definición / condición de aceptación |
 |---|---|
-| **Fidelidad de cuantización/export (estricta)** | `tf_match = 100%` (todas las muestras evaluadas producen salida idéntica al baseline TF bajo el mismo protocolo). |
-| **Fidelidad de cuantización/export (tasa)** | `tf_match_rate` medida sobre el conjunto evaluado; se reporta como `tf_match/count`. Cualquier umbral numérico (p. ej., ≥99%, ≥95%) es un parámetro de aceptación externo si se define; este informe solo reporta la tasa observada. |
-| **Exactitud vs etiqueta** | `exact_match_rate = exact_match/count` sobre etiquetas del dataset. Aceptación depende de si la comparación usa canonicalización (p. ej., RDKit) y del objetivo (paridad de modelo vs. exactitud de tarea). |
-| **Validez / completitud** | Tasas `valid_rate` e `incomplete_rate` reportadas por el harness. Criterios de aceptación (p. ej., incompletos ≤ X%) son parámetros externos si se definen. |
-| **Latencia** | `p50/p95` en ms. Criterios de aceptación (p. ej., p95 ≤ X ms en hardware Y) son parámetros externos si se definen. |
-| **Clasificador binario** | Matriz de confusión y métricas derivadas calculadas **solo** sobre `one_molecule`, `several_molecules`, `other` según el mapeo explícito; `reactions` se reporta por separado y **excluida** del binario. |
-| **Reproducibilidad/procedencia** | Cada conjunto/artefacto reporta fuente, identificador/commit/record, checksums cuando aplican, ruta de manifiesto o labels, y notas de licencia/procedencia. |"""
+| **Comparación pareada** | Todas las variantes se miden sobre el **mismo set/IDs congelados** (piloto ⊂ eval ⊂ pool). Δ vs FP32 en pp sobre mismos IDs. |
+| **Fidelidad (tasa / estricta)** | `tf_match_rate = tf_match/count` (ONNX==TF). Estricto: 100%. Umbral numérico (`≥ [TBD]%`) es parámetro externo si se define. |
+| **Δ vs FP32 (precisión/fidelidad)** | Diferencia absoluta en pp vs FP32, misma métrica e IDs. Umbral `≤ [TBD] pp` es parámetro externo si se define. |
+| **Exactitud (canónica / cadena)** | Canónica RDKit `[TBD integrar]` preferida para tarea química; `exact_match` cadena reportada como dato (sensible a canonicalización). |
+| **Validez / completitud** | `valid_rate`, `incomplete_rate`. Umbrales externos si se definen. |
+| **Latencia** | **p50/p95** ms, mismo hardware y execution provider (p. ej. ORT CPU). No solo media. Umbral p95 externo si se define. INT8 dinámico no implica menor latencia. |
+| **Tamaño / throughput** | MB en disco (artefactos); throughput (img/s, batch) si aplica. |
+| **Clasificador** | Matriz 4×4 + binaria sobre 3 clases mapeadas; `reactions` separada/excluida del binario. |
+| **Reproducibilidad** | Fuente/pin/manifiesto/checksums, IDs congelados (seed), hardware/provider/versiones. |"""
 
 PROVENANCE = r"""## 3. Fuentes de datos y procedencia (hechos)
 
@@ -202,7 +255,12 @@ Recolectado automáticamente el `{info.get('collected_at_utc','')}` mediante `pl
 def render_results() -> tuple[str, list[str]]:
     b = ROOT / "data" / "benchmark"
     pending: list[str] = []
-    lines = ["## 5. Resultados", "", "Columnas: `exact` = exact_match vs etiqueta; `tf_match` = paridad ONNX==TF baseline (ver glosario). `—` = no medido/no disponible en ese reporte.", ""]
+    lines = [
+        "## 5. Resultados",
+        "",
+        "Protocolo: variantes comparadas sobre **mismos IDs** cuando aplica (pareado, piloto ⊂ eval ⊂ pool congelado). Latencia **p50/p95** (mismo hardware/provider), no solo media; INT8 dinámico puede no ser más rápido. **Δ vs FP32** = diferencia en pp sobre IDs comunes (misma métrica). `—` = no medido/no disponible.",
+        "",
+    ]
 
     def table(title: str, rows: list[str | None]):
         got = [r for r in rows if r]
@@ -210,8 +268,8 @@ def render_results() -> tuple[str, list[str]]:
             return
         lines.append(f"### {title}")
         lines.append("")
-        lines.append("| Variante | n | exact vs label | tf_match (ONNX==TF) | valid | incomplete | p50 ms | p95 ms | Reporte |")
-        lines.append("|---|---:|---:|---:|---:|---:|---:|---:|---|")
+        lines.append("| Variante | n | exact vs label | tf_match (ONNX==TF) | Δtf_match pp vs FP32 | Δexact pp vs FP32 | valid | incomplete | p50 ms | p95 ms | tamaño MB (enc+dec) | Reporte |")
+        lines.append("|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|")
         lines.extend(got)
         lines.append("")
 
@@ -223,10 +281,11 @@ def render_results() -> tuple[str, list[str]]:
         _row("E1 dynamic INT8 (+TF)", b/"hf-jpo/report.e1.tf.json"),
         _row("E3 static-enc + dyn-dec (tf_match por join a TF de E1)", b/"hf-jpo/report.e3.tfjoined.json", tf_join_note="[join]"),
     ])
-    table("5.3 `ocsr-handdrawn` — HDM Zenodo 7617107 (muestra `--limit 500`)", [
-        _row("FP32 (+TF)", b/"handdrawn-hdm/report.fp32.tf.limit500.json"),
-        _row("E1 dynamic INT8 (+TF)", b/"handdrawn-hdm/report.e1.tf.limit500.json"),
-        _row("E3 static-enc + dyn-dec (+TF, calib 32 HDM)", b/"handdrawn-hdm/report.e3.tf.limit500.json"),
+    hdm_fp32 = b/"handdrawn-hdm/report.fp32.tf.limit500.json"
+    table("5.3 `ocsr-handdrawn` — HDM Zenodo 7617107 (muestra ad hoc `--limit 500`, no decisión formal)", [
+        _row("FP32 (+TF)", hdm_fp32, fp32_path=hdm_fp32),
+        _row("E1 dynamic INT8 (+TF)", b/"handdrawn-hdm/report.e1.tf.limit500.json", fp32_path=hdm_fp32),
+        _row("E3 static-enc + dyn-dec (+TF, calib 32 HDM)", b/"handdrawn-hdm/report.e3.tf.limit500.json", fp32_path=hdm_fp32),
     ])
     # full HDM
     full = b/"handdrawn-hdm/report.e1.tf.full5088.json"
@@ -247,8 +306,8 @@ def render_results() -> tuple[str, list[str]]:
     lines.append("")
     lines.append("| Suite | Estado | Nota |")
     lines.append("|---|---|---|")
-    lines.append("| Zenodo 6670746 | No descargado | Archivo único 126.6 GB; sin test separado expuesto por API. |")
-    lines.append("| Zenodo 13378718 | Preparado, no ejecutado | Requiere extracción local y exportación ONNX del clasificador; binario con `reactions` separada. |")
+    lines.append("| Zenodo 6670746 | OUT OF SCOPE | No descargar/usar (126.6 GB, archivo único, sin test separado expuesto). |")
+    lines.append("| Zenodo 13378718 | Preparado, no ejecutado | Requiere extracción local, export ONNX y wiring; 4×4 + binario (3 clases), `reactions` separada. |")
     lines.append("")
     return "\n".join(lines), pending
 

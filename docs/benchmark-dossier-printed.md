@@ -18,11 +18,11 @@ Validar conversión DECIMER printed → ONNX: fidelidad vs TF y calidad SMILES e
 - Todas las variantes comparadas sobre los **mismos IDs** del split (pareado). Vista por fuente primaria + pooled intra-dossier etiquetado (CLEF+JPO dentro del split).
 - Cache de predicciones: `(model, variant, image_id)` en `data/cache/predictions/` (gitignored), reutilizable vía `--model-key/--variant-key/--cache-dir`.
 
-## Métricas
-- `tf_match` (ONNX==TF, fidelidad end-to-end según harness; contrato de preprocesado registrado).
-- Exactitud SMILES **canónica (RDKit)** `[pendiente integrar]` + `exact_match` cadena como dato.
-- `valid`, `incomplete` (heurística), latencia p50/p95 (CPU/máquina registrada).
-- Comparación de variantes: **McNemar** (pares discordantes) + Δ pp con **IC bootstrap**; `n`+IC en reporte.
+## Métricas (protocolo pareado)
+- `tf_match` (ONNX==TF, fidelidad end-to-end; contrato de preprocesado registrado). Exactitud SMILES **canónica (RDKit)** `[pendiente integrar]` + `exact_match` cadena como dato. `valid`, `incomplete`.
+- Latencia **p50/p95** (mismo hardware, ORT `CPUExecutionProvider`), **tamaño MB** (encoder+decoder), **throughput** si lotes. No solo media.
+- Reportar **Δ absoluto en pp vs FP32** (misma métrica, mismos IDs) + valor absoluto. Comparación pareada: **McNemar** + Δ pp con **IC bootstrap**; `n`+IC. Piloto ⊂ eval ⊂ pool congelado. Cache `(model,variant,image_id)`.
+- Nota: INT8 dinámico puede no ser más rápido (overhead de activaciones); medir latencia.
 
 ## Criterios de aceptación (placeholders `[TBD]`)
 | Criterio | Umbral |

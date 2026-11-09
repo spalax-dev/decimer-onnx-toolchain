@@ -29,11 +29,11 @@ Reportar **4×4** y **binario colapsado**; la exclusión de `reactions` es expl�
 - **Eval n=1000**, **Piloto n=300** = primeras 300 del eval (orden congelado fijo), mismos IDs para todas las variantes. Resto del pool para análisis/reporte ampliado según se defina.
 - Cache de predicciones: `(model, variant, image_id)`.
 
-## Métricas
-- Matriz 4×4, matriz binaria (solo 3 categorías mapeadas), accuracy/precision/recall/F1 según se defina `[TBD]`.
-- `reactions`: conteo y distribución de predicciones, reportada aparte.
-- Fidelidad ONNX↔baseline/TF si se define baseline comparable `[TBD]`.
-- Latencia p50/p95 (hardware fijo).
+## Métricas (protocolo pareado)
+- Matriz 4×4 + binaria (solo 3 categorías mapeadas), accuracy/precision/recall/F1 `[TBD]`. `reactions` aparte.
+- Fidelidad ONNX↔baseline/TF si aplica `[TBD]`. Latencia **p50/p95** (mismo hardware, mismo provider), **tamaño MB**, **throughput** si lotes. No solo media.
+- **Δ absoluto en pp vs FP32** (misma métrica, mismos IDs congelados) + valor absoluto. Comparación pareada: **McNemar** + IC bootstrap donde aplique; `n`+IC. Piloto ⊂ eval ⊂ pool congelado. Cache `(model,variant,image_id)`.
+- Nota: INT8 dinámico puede no ser más rápido; medir latencia.
 
 ## Criterios de aceptación (placeholders `[TBD]`)
 | Criterio | Umbral |
