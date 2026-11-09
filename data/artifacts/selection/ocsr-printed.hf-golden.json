@@ -1,0 +1,74 @@
+{
+  "benchmark": "Keylab/OCSR-Benchmarks",
+  "metric_note": "tf_match = ONNX vs TF baseline (export/quant fidelity). exact_match vs label is affected by aromatic/Kekule canonicalization without RDKit; low exact is partly label-form/model-domain, not quantization.",
+  "subsets": {
+    "hf-clef": {
+      "e1": {
+        "path": "data/benchmark/hf-clef/report.e1.tf.json",
+        "count": 992,
+        "exact": 7,
+        "exact_rate": 0.0071,
+        "tf_match": 838,
+        "tf_match_rate": 0.8448,
+        "valid": 991,
+        "valid_rate": 0.999,
+        "incomplete": 1,
+        "latency_p50_ms": 5871.2,
+        "latency_p95_ms": 10230.4
+      },
+      "e3": {
+        "path": "data/benchmark/hf-clef/report.e3.json",
+        "count": 992,
+        "exact": 6,
+        "exact_rate": 0.006,
+        "tf_match": null,
+        "tf_match_rate": null,
+        "valid": 990,
+        "valid_rate": 0.998,
+        "incomplete": 2,
+        "latency_p50_ms": 2861.3,
+        "latency_p95_ms": 4919.4
+      },
+      "e3_tf_joined": {
+        "path": "data/benchmark/hf-clef/report.e3.tfjoined.json",
+        "tf_match": 444,
+        "count": 992,
+        "tf_match_rate": 0.4476
+      }
+    },
+    "hf-jpo": {
+      "e1": {
+        "path": "data/benchmark/hf-jpo/report.e1.tf.json",
+        "count": 449,
+        "exact": 9,
+        "exact_rate": 0.02,
+        "tf_match": 264,
+        "tf_match_rate": 0.588,
+        "valid": 412,
+        "valid_rate": 0.9176,
+        "incomplete": 37,
+        "latency_p50_ms": 6149.8,
+        "latency_p95_ms": 17156.3
+      },
+      "e3": {
+        "path": "data/benchmark/hf-jpo/report.e3.json",
+        "count": 449,
+        "exact": 3,
+        "exact_rate": 0.0067,
+        "tf_match": null,
+        "tf_match_rate": null,
+        "valid": 393,
+        "valid_rate": 0.8753,
+        "incomplete": 56,
+        "latency_p50_ms": 2767.1,
+        "latency_p95_ms": 26985.8
+      },
+      "e3_tf_joined": {
+        "path": "data/benchmark/hf-jpo/report.e3.tfjoined.json",
+        "tf_match": 123,
+        "count": 449,
+        "tf_match_rate": 0.2739
+      }
+    }
+  }
+}
