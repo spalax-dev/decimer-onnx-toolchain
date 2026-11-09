@@ -97,6 +97,41 @@ class EncoderCalibrationReader:
         self._i = 0
 
 
+class ClassifierCalibrationReader:
+    """Feeds preprocessed images + required extra inputs to the image classifier for static calibration."""
+
+    def __init__(self, image_paths: Iterable[Path], model_path: Path):
+        import onnxruntime as ort
+        from toolchain.benchmark_run import _classifier_preprocess_np
+        self.image_paths = list(image_paths)
+        self._pre = _classifier_preprocess_np
+        sess = ort.InferenceSession(str(model_path), providers=["CPUExecutionProvider"])
+        self._feed_names = [i.name for i in sess.get_inputs()]
+        self._feeds_meta = {i.name: (i.shape, i.type) for i in sess.get_inputs()}
+        self._i = 0
+
+    def get_next(self):
+        if self._i >= len(self.image_paths):
+            return None
+        x = self._pre(self.image_paths[self._i]).astype(np.float32)  # NHWC [1,224,224,3]
+        self._i += 1
+        feed = {}
+        for name in self._feed_names:
+            if name in ("input_2", "image", "images", "input_1", "input") or "input" in name.lower():
+                feed[name] = x
+            else:
+                # extra inputs observed as [1,1,1,3] float zeros
+                shape, _ = self._feeds_meta[name]
+                shp = [1 if (d is None or isinstance(d, str) or d <= 0) else int(d) for d in shape]
+                if not shp:
+                    shp = [1, 1, 1, 3]
+                feed[name] = np.zeros(shp, dtype=np.float32)
+        return feed
+
+    def rewind(self):
+        self._i = 0
+
+
 class DecoderCalibrationReader:
     """Feeds (tokens, enc_out) pairs to the decoder for static calibration.
 
@@ -183,13 +218,52 @@ def _calibration_images(data_dir: Path | None = None) -> list[Path]:
             candidates.extend(sorted(base.glob("*.jpg")))
     if data_dir and data_dir.exists():
         candidates.extend(sorted(data_dir.glob("*.png")))
+        candidates.extend(sorted(data_dir.glob("*.jpg")))
+        candidates.extend(sorted(data_dir.glob("**/*.png")))
+        candidates.extend(sorted(data_dir.glob("**/*.jpg")))
+        candidates.extend(sorted(data_dir.glob("**/*.tif")))
+        candidates.extend(sorted(data_dir.glob("**/*.TIF")))
     # unique, existing
     seen = set()
     out = []
     for p in candidates:
-        if p.exists() and p not in seen:
-            seen.add(p)
+        rp = p.resolve() if p.exists() else p
+        if p.exists() and rp not in seen:
+            seen.add(rp)
             out.append(p)
+    return out
+
+
+def _classifier_holdout_calibration_images(limit: int = 128, seed: int = 20260308) -> list[Path]:
+    """Sample calibration images from classifier frozen non-eval splits (holdout, no leakage)."""
+    import json, random
+    root = Path(__file__).resolve().parents[2]
+    man = root / "data/manifests/frozen/classifier.frozen.json"
+    if not man.exists():
+        return []
+    m = json.loads(man.read_text(encoding="utf-8"))
+    splits = m.get("splits") or {}
+    eval_set = set(splits.get("eval") or [])
+    pool = [iid for iid in (splits.get("frozen") or []) if iid not in eval_set]
+    if not pool:
+        pool = list(splits.get("remainder") or [])
+    rng = random.Random(seed)
+    rng.shuffle(pool)
+    base = root / "data/benchmark/classifier-curated/classified"
+    out = []
+    for iid in pool:
+        # portable: classifier::<folder>/<file>
+        rel = iid.split("::", 1)[1] if "::" in iid else iid
+        p = base / rel
+        # handle rest->? folder name as stored
+        if not p.exists():
+            # try alternate rest folder naming
+            alt = base / rel.replace("other/", "rest/")
+            p = alt if alt.exists() else p
+        if p.exists():
+            out.append(p)
+        if len(out) >= limit:
+            break
     return out
 
 
@@ -230,11 +304,51 @@ def quantize_e1_dynamic(fp32_dir: Path, out_dir: Path) -> QuantizeResult:
 
 
 def quantize_e2_static(fp32_dir: Path, out_dir: Path, calibration_dir: Path | None = None) -> QuantizeResult:
-    """E2: static INT8 QDQ (encoder + decoder) with calibration."""
+    """E2: static INT8 QDQ with calibration. Supports classifier (single file, holdout calib) and OCSR (enc+dec)."""
     CalibrationDataReader, QuantFormat, QuantType, quantize_static = _ort_static()
-    # ensure base recognized by type checkers/runtime
     _ = CalibrationDataReader
     out_dir.mkdir(parents=True, exist_ok=True)
+    clf_in = fp32_dir / "classifier.fp32.onnx"
+    if clf_in.exists():
+        res = QuantizeResult(variant="e2-static-int8-qdq-classifier")
+        out = out_dir / "classifier.e2.static.onnx"
+        images = _calibration_images(calibration_dir) if calibration_dir else []
+        if not images:
+            images = _classifier_holdout_calibration_images(limit=128)
+        if not images:
+            res.errors.append("no calibration images found for classifier (holdout/frozen or calibration_dir)")
+            _meta(res, clf_in, clf_in, {"calibration_images": 0, "mode": "classifier"})
+            (out_dir / "e2.static.meta.json").write_text(json.dumps(asdict(res), indent=2) + "\n", encoding="utf-8")
+            return res
+
+        class _ClfReader(CalibrationDataReader):
+            def __init__(self):
+                self.r = ClassifierCalibrationReader(images, clf_in)
+
+            def get_next(self):
+                return self.r.get_next()
+
+            def rewind(self):
+                self.r.rewind()
+
+        try:
+            quantize_static(
+                str(clf_in),
+                str(out),
+                _ClfReader(),
+                quant_format=QuantFormat.QDQ,
+                per_channel=True,
+                weight_type=QuantType.QInt8,
+                activation_type=QuantType.QUInt8,
+                op_types_to_quantize=["Conv", "MatMul", "Gemm", "Add"],
+            )
+            res.encoder_path = str(out)
+        except Exception as e:  # noqa: BLE001
+            res.errors.append(f"classifier e2 failed: {e}")
+        _meta(res, clf_in, clf_in, {"calibration_images": len(images), "mode": "classifier", "calibration": "holdout_frozen_non_eval" if not calibration_dir else "dir"})
+        (out_dir / "e2.static.meta.json").write_text(json.dumps(asdict(res), indent=2) + "\n", encoding="utf-8")
+        return res
+
     res = QuantizeResult(variant="e2-static-int8-qdq")
     enc_in = fp32_dir / "encoder.fp32.onnx"
     dec_in = fp32_dir / "decoder_step.fp32.onnx"
