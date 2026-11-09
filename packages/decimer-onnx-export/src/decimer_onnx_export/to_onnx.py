@@ -125,3 +125,44 @@ def export_fp32_onnx(model_dir: Path, out_dir: Path, opset: int = 17) -> OnnxExp
     )
     res.metadata["meta_path"] = str(meta_path)
     return res
+
+
+def export_classifier_fp32_onnx(model_dir: Path, out_dir: Path, opset: int = 17) -> dict[str, Any]:
+    """Export DECIMER Image Classifier (single graph) to FP32 ONNX."""
+    import onnx
+    import tensorflow as tf
+    import tf2onnx
+
+    out_dir.mkdir(parents=True, exist_ok=True)
+    # model_dir may be .../image-classifier or .../image-classifier/model
+    sm = model_dir / "saved_model.pb"
+    if not sm.exists() and (model_dir / "model" / "saved_model.pb").exists():
+        model_dir = model_dir / "model"
+    out_path = out_dir / "classifier.fp32.onnx"
+    meta: dict[str, Any] = {"opset": opset, "model_dir": str(model_dir), "errors": []}
+    try:
+        model = tf.saved_model.load(str(model_dir))
+        sig = model.signatures.get("serving_default")
+        if sig is None:
+            raise RuntimeError("serving_default signature not found")
+        # concrete function with fixed-ish signature; keep dynamic batch
+        input_spec = tf.TensorSpec(shape=[None, 224, 224, 3], dtype=tf.float32, name="input_2")
+        @tf.function(input_signature=[input_spec])
+        def fn(x):
+            out = sig(input_2=x)
+            # return the single output tensor
+            if isinstance(out, dict):
+                return list(out.values())[0]
+            return out
+        model_proto, _ = tf2onnx.convert.from_function(fn, input_signature=[input_spec], opset=opset, output_path=str(out_path))
+        onnx.save(model_proto, str(out_path))
+        meta["output_path"] = str(out_path)
+        meta["inputs"] = [f"{i.name}:{[d.dim_value or d.dim_param for d in i.type.tensor_type.shape.dim]}" for i in model_proto.graph.input]
+        meta["outputs"] = [o.name for o in model_proto.graph.output]
+        meta["nodes"] = len(model_proto.graph.node)
+    except Exception as e:  # noqa: BLE001
+        meta["errors"].append(f"classifier export failed: {e}")
+    meta_path = out_dir / "export.classifier.fp32.meta.json"
+    meta_path.write_text(json.dumps(meta, indent=2) + "\n", encoding="utf-8")
+    meta["meta_path"] = str(meta_path)
+    return meta

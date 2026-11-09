@@ -48,16 +48,24 @@ def export_cmd(
     out_dir: Path = typer.Option(Path("data/artifacts/fp32"), help="Output directory"),
     opset: int = typer.Option(17, help="ONNX opset"),
 ) -> None:
-    """Stage 3 (M0/M2): export FP32 encoder + decoder-step ONNX graphs."""
-    from decimer_onnx_export.to_onnx import export_fp32_onnx
+    """Stage 3 (M0/M2): export FP32 ONNX graphs."""
+    from decimer_onnx_export.to_onnx import export_classifier_fp32_onnx, export_fp32_onnx
 
     model_dir = data_dir / model / "DECIMER_model"
     if not model_dir.exists():
-        # try common alternative layout
         candidates = list((data_dir / model).rglob("saved_model.pb"))
         if not candidates:
             raise typer.BadParameter(f"no saved_model.pb under {data_dir / model}; run fetch first")
         model_dir = candidates[0].parent
+    if model == "image-classifier":
+        meta = export_classifier_fp32_onnx(model_dir, out_dir / model, opset=opset)
+        typer.echo(f"classifier: {meta.get('output_path')}")
+        if meta.get("errors"):
+            for e in meta["errors"]:
+                typer.echo(f"error: {e}", err=True)
+            raise typer.Exit(1)
+        typer.echo(f"meta: {meta.get('meta_path')}")
+        return
     res = export_fp32_onnx(model_dir, out_dir / model, opset=opset)
     typer.echo(f"encoder: {res.encoder_path}")
     typer.echo(f"decoder: {res.decoder_path}")
@@ -138,8 +146,9 @@ def benchmark_cmd(
     frozen_manifest: Path = typer.Option(None, "--frozen-manifest", help="Frozen manifest JSON (dossier)"),
     split: str = typer.Option("eval", help="Frozen split: pilot, eval, frozen"),
     task: str = typer.Option("ocsr", help="Task: ocsr, classifier"),
-    encoder: Path = typer.Option(None, help="ONNX encoder path (OCSR)"),
+    encoder: Path = typer.Option(None, help="ONNX encoder path (OCSR), or classifier ONNX model path"),
     decoder: Path = typer.Option(None, help="ONNX decoder path (OCSR)"),
+    classifier_onnx: Path = typer.Option(None, "--classifier-onnx", help="Classifier ONNX model path"),
     vocab: Path = typer.Option(Path("data/artifacts/tokenizer_SMILES.vocab.json"), help="Vocab JSON"),
     tf_model_dir: Path = typer.Option(None, help="Optional TF SavedModel dir for parity baseline"),
     model_key: str = typer.Option(None, help="Model key for prediction cache, e.g. ocsr-printed"),
@@ -150,7 +159,11 @@ def benchmark_cmd(
     limit: int = typer.Option(None, help="Max rows (applied after split)"),
 ) -> None:
     """Stage 5: run benchmark/validation over a labeled suite or frozen split."""
-    from decimer_onnx_export.benchmark_run import benchmark_classifier, benchmark_ocsr, make_onnx_ocsr_predict_fn, make_tf_ocsr_predict_fn
+    from decimer_onnx_export.benchmark_run import (
+        benchmark_classifier, benchmark_ocsr,
+        make_onnx_classifier_predict_fn, make_onnx_ocsr_predict_fn,
+        make_tf_classifier_predict_fn, make_tf_ocsr_predict_fn,
+    )
     from decimer_onnx_export.frozen import PredictionCache, load_frozen, resolve_frozen_rows
 
     rows = None
@@ -174,7 +187,27 @@ def benchmark_cmd(
         report = benchmark_ocsr(labels_path, rows=rows, predict_fn=predict, tf_predict_fn=tf_pred, limit=limit,
                                 cache=cache, model_key=model_key, variant_key=variant_key)
     elif task == "classifier":
-        raise typer.BadParameter("classifier benchmark requires --predict integration (export classifier ONNX first); use benchmark_run.benchmark_classifier with a predict_fn")
+        onnx_path = classifier_onnx or encoder
+        if onnx_path is None:
+            raise typer.BadParameter("--classifier-onnx (or --encoder) required for classifier")
+        predict = make_onnx_classifier_predict_fn(onnx_path)
+        tf_pred = make_tf_classifier_predict_fn(tf_model_dir) if tf_model_dir else None
+        report = benchmark_classifier(labels_path, rows=rows, predict_fn=predict, limit=limit,
+                                      cache=cache, model_key=model_key, variant_key=variant_key)
+        # add tf parity summary if we have tf predictions? classifier harness doesn't take tf_pred; compute simple parity
+        if tf_model_dir:
+            # run tf pass for parity via cache-aware wrapper
+            tf_fn = make_tf_classifier_predict_fn(tf_model_dir)
+            from decimer_onnx_export.benchmark_run import _cached_call, _image_id, _resolve_image
+            agree = tot = 0
+            for row in (rows or []):
+                img = _resolve_image(row, labels_path); iid = _image_id(row)
+                tfp, _, _ = _cached_call(cache, model_key, "tf-baseline", iid, tf_fn, img, time_it=False)
+                # find matching detail
+                det = next((d for d in report["details"] if d.get("id")==iid), None)
+                if det:
+                    tot += 1; agree += int(det.get("predicted")== (tfp.get("label") if isinstance(tfp,dict) else tfp))
+            report["tf_parity"] = {"agree": agree, "total": tot, "rate": (agree/tot if tot else None)}
     else:
         raise typer.BadParameter(f"unknown task {task}")
     if frozen_manifest:
@@ -184,9 +217,13 @@ def benchmark_cmd(
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(text + "\n", encoding="utf-8")
         typer.echo(f"wrote {out}")
-    typer.echo(f"count={report.get('count')} exact={report.get('exact_match')} exact_rate={report.get('exact_match_rate'):.3f} tf_match={report.get('tf_match')} cache_hits={report.get('cache_hits')}")
-    if report.get("latency_ms") and report["latency_ms"].get("p50") is not None:
-        typer.echo(f"latency_ms p50={report['latency_ms']['p50']:.1f} p95={report['latency_ms']['p95']:.1f} n_measured={report['latency_ms'].get('n_measured')}")
+    if task == "classifier":
+        cm = report.get("binary_confusion_matrix", {})
+        typer.echo(f"count={report.get('total_rows')} binary_acc={cm.get('accuracy')} confusion={cm.get('matrix_rows_expected_cols_predicted')} tf_parity={report.get('tf_parity')} cache_hits={report.get('cache_hits')} reactions={report.get('reactions_separate_metric',{}).get('count')}")
+    else:
+        typer.echo(f"count={report.get('count')} exact={report.get('exact_match')} exact_rate={report.get('exact_match_rate'):.3f} tf_match={report.get('tf_match')} cache_hits={report.get('cache_hits')}")
+        if report.get("latency_ms") and report["latency_ms"].get("p50") is not None:
+            typer.echo(f"latency_ms p50={report['latency_ms']['p50']:.1f} p95={report['latency_ms']['p95']:.1f} n_measured={report['latency_ms'].get('n_measured')}")
 
 
 @app.command("validate")

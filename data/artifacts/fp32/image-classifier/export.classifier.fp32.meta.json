@@ -1,0 +1,15 @@
+{
+  "opset": 17,
+  "model_dir": "data/weights/image-classifier/model",
+  "errors": [],
+  "output_path": "data/artifacts/fp32/image-classifier/classifier.fp32.onnx",
+  "inputs": [
+    "input_2:['unk__1294', 224, 224, 3]",
+    "45214:0:[1, 1, 1, 3]",
+    "45216:0:[1, 1, 1, 3]"
+  ],
+  "outputs": [
+    "Identity:0"
+  ],
+  "nodes": 296
+}

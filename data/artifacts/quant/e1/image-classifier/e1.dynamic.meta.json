@@ -1,0 +1,15 @@
+{
+  "variant": "e1-dynamic-int8-classifier",
+  "encoder_path": "data/artifacts/quant/e1/image-classifier/classifier.e1.dynamic.onnx",
+  "decoder_path": null,
+  "metadata": {
+    "variant": "e1-dynamic-int8-classifier",
+    "encoder_bytes": 4537486,
+    "decoder_bytes": null,
+    "fp32_encoder_bytes": 16098741,
+    "fp32_decoder_bytes": 16098741,
+    "calibration_images": 0,
+    "mode": "classifier"
+  },
+  "errors": []
+}

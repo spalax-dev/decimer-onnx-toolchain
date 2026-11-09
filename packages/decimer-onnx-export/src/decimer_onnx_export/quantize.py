@@ -194,9 +194,21 @@ def _calibration_images(data_dir: Path | None = None) -> list[Path]:
 
 
 def quantize_e1_dynamic(fp32_dir: Path, out_dir: Path) -> QuantizeResult:
-    """E1: dynamic INT8. No calibration."""
+    """E1: dynamic INT8. No calibration. Supports OCSR (enc+dec) and classifier (single file)."""
     QuantType, quantize_dynamic = _ort_dynamic()
     out_dir.mkdir(parents=True, exist_ok=True)
+    clf_in = fp32_dir / "classifier.fp32.onnx"
+    if clf_in.exists():
+        res = QuantizeResult(variant="e1-dynamic-int8-classifier")
+        out = out_dir / "classifier.e1.dynamic.onnx"
+        try:
+            quantize_dynamic(str(clf_in), str(out), op_types_to_quantize=["MatMul", "Gemm", "Conv"], per_channel=True, reduce_range=False, weight_type=QuantType.QInt8)
+            res.encoder_path = str(out)
+        except Exception as e:  # noqa: BLE001
+            res.errors.append(f"classifier e1 failed: {e}")
+        _meta(res, clf_in, clf_in, {"calibration_images": 0, "mode": "classifier"})
+        (out_dir / "e1.dynamic.meta.json").write_text(json.dumps(asdict(res), indent=2) + "\n", encoding="utf-8")
+        return res
     res = QuantizeResult(variant="e1-dynamic-int8")
     enc_in = fp32_dir / "encoder.fp32.onnx"
     dec_in = fp32_dir / "decoder_step.fp32.onnx"
@@ -212,7 +224,7 @@ def quantize_e1_dynamic(fp32_dir: Path, out_dir: Path) -> QuantizeResult:
         res.decoder_path = str(dec_out)
     except Exception as e:  # noqa: BLE001
         res.errors.append(f"decoder e1 failed: {e}")
-    _meta(res, enc_in, dec_in)
+    _meta(res, enc_in, dec_in, {"calibration_images": 0})
     (out_dir / "e1.dynamic.meta.json").write_text(json.dumps(asdict(res), indent=2) + "\n", encoding="utf-8")
     return res
 

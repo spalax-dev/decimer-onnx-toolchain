@@ -211,3 +211,81 @@ def make_tf_ocsr_predict_fn(model_dir: Path, vocab_path: Path):
         smiles = "".join(id2tok.get(i, "") for i in ids if i not in (0, 13, 14)).translate(fromto)
         return {"smiles": smiles, "incomplete": (not ids or ids[-1] != 14), "token_ids": ids}
     return _fn
+
+
+def _classifier_preprocess_np(path: Path, desired_size: int = 224) -> np.ndarray:
+    """Match DECIMER Image Classifier preprocessing (grayscale->RGB, aspect resize+pad white, 0-255 float)."""
+    from PIL import Image
+    img = Image.open(path)
+    if img.mode == "RGBA":
+        bg = Image.new("RGB", img.size, (255, 255, 255))
+        bg.paste(img, mask=img.split()[3])
+        img = bg
+    img = img.convert("L").convert("RGB")
+    old = img.size
+    if old[0] != desired_size or old[1] != desired_size:
+        ratio = float(desired_size) / max(old)
+        new_size = (int(old[0] * ratio), int(old[1] * ratio))
+        try:
+            resample = Image.Resampling.LANCZOS
+        except Exception:
+            resample = Image.LANCZOS
+        img = img.resize(new_size, resample)
+    else:
+        new_size = old
+    canvas = Image.new("RGB", (desired_size, desired_size), "white")
+    canvas.paste(img, ((desired_size - new_size[0]) // 2, (desired_size - new_size[1]) // 2))
+    arr = np.asarray(canvas, dtype=np.float32)  # efficientnet.preprocess_input is pass-through in this env
+    return np.expand_dims(arr, 0)
+
+
+CLASSIFIER_THRESHOLD = 0.000089  # upstream: score <= threshold => chemical structure
+
+
+def make_onnx_classifier_predict_fn(model_path: Path, threshold: float = CLASSIFIER_THRESHOLD):
+    import onnxruntime as ort
+    sess = ort.InferenceSession(str(model_path), providers=["CPUExecutionProvider"])
+    inp = sess.get_inputs()[0].name
+    def _fn(img: Path):
+        x = _classifier_preprocess_np(img)
+        logit = sess.run(None, {inp: x})[0]
+        score = 1.0 / (1.0 + np.exp(-float(np.asarray(logit).reshape(-1)[0])))
+        label = "structure" if score <= threshold else "no-structure"
+        return {"label": label, "score": score, "logit": float(np.asarray(logit).reshape(-1)[0])}
+    return _fn
+
+
+def make_tf_classifier_predict_fn(model_dir: Path, threshold: float = CLASSIFIER_THRESHOLD):
+    import os
+    os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "3")
+    import tensorflow as tf
+    from PIL import Image
+    # resolve model dir
+    sm = model_dir / "saved_model.pb"
+    if not sm.exists() and (model_dir / "model" / "saved_model.pb").exists():
+        model_dir = model_dir / "model"
+    m = tf.saved_model.load(str(model_dir))
+    sig = m.signatures.get("serving_default")
+    def _fn(img: Path):
+        # match upstream exactly for baseline
+        pil = Image.open(img)
+        if pil.mode == "RGBA":
+            bg = Image.new("RGB", pil.size, (255,255,255)); bg.paste(pil, mask=pil.split()[3]); pil = bg
+        pil = pil.convert("L").convert("RGB")
+        old = pil.size; desired=224
+        if old[0]!=desired or old[1]!=desired:
+            ratio = desired/max(old); new_size=(int(old[0]*ratio),int(old[1]*ratio))
+            try: resample=Image.Resampling.LANCZOS
+            except Exception: resample=Image.LANCZOS
+            pil = pil.resize(new_size, resample)
+        else: new_size=old
+        canvas = Image.new("RGB",(desired,desired),"white")
+        canvas.paste(pil, ((desired-new_size[0])//2,(desired-new_size[1])//2))
+        arr = np.asarray(canvas, dtype=np.float32)[None, ...]
+        arr = tf.keras.applications.efficientnet.preprocess_input(arr)
+        out = sig(input_2=tf.constant(arr))
+        logit = list(out.values())[0] if isinstance(out, dict) else out
+        score = float(tf.nn.sigmoid(logit).numpy().reshape(-1)[0])
+        label = "structure" if score <= threshold else "no-structure"
+        return {"label": label, "score": score, "logit": float(np.asarray(logit).numpy().reshape(-1)[0])}
+    return _fn
