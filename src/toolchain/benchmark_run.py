@@ -160,7 +160,7 @@ def benchmark_ocsr(labels_path: Path | None = None, *, rows: list[dict[str, Any]
     if limit:
         rows = rows[:limit]
     out_rows = []
-    exact = tfm = valid = incomplete_n = 0
+    exact = tfm = tf_can_m = tf_can_comp = valid = incomplete_n = 0
     latencies = []
     cache_hits = tf_cache_hits = 0
     canonical_match_n = canonical_comparable_n = 0
@@ -194,7 +194,11 @@ def benchmark_ocsr(labels_path: Path | None = None, *, rows: list[dict[str, Any]
             rec["tf_smiles"] = tf_sm
             rec["tf_match"] = got == tf_sm
             rec["tf_canonical_smiles"] = _canonical_smiles(tf_sm)
-            rec["tf_canonical_match"] = (cg == rec["tf_canonical_smiles"]) if (cg is not None and rec["tf_canonical_smiles"] is not None) else None
+            tcm = (cg == rec["tf_canonical_smiles"]) if (cg is not None and rec["tf_canonical_smiles"] is not None) else None
+            rec["tf_canonical_match"] = tcm
+            if tcm is not None:
+                tf_can_comp += 1
+                tf_can_m += int(tcm)
             rec["tf_cache_hit"] = tfhit
             tfm += int(rec["tf_match"])
         out_rows.append(rec)
@@ -217,6 +221,8 @@ def benchmark_ocsr(labels_path: Path | None = None, *, rows: list[dict[str, Any]
         res["model_key"] = model_key; res["variant_key"] = variant_key
     if tf_predict_fn is not None:
         res["tf_match"] = tfm; res["tf_match_rate"] = tfm / n; res["tf_cache_hits"] = tf_cache_hits
+        res["tf_canonical_match"] = tf_can_m; res["tf_canonical_comparable"] = tf_can_comp
+        res["tf_canonical_match_rate"] = (tf_can_m / tf_can_comp if tf_can_comp else None)
     return res
 
 

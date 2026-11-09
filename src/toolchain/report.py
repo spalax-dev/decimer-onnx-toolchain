@@ -151,13 +151,16 @@ def _row(label: str, report_path: Path, *, tf_join_note: str = "", fp32_path: Pa
     ex = r.get("exact_match"); exr = r.get("exact_match_rate")
     cm = r.get("canonical_match"); ccomp = r.get("canonical_comparable"); cmr = r.get("canonical_match_rate")
     tfm = r.get("tf_match"); tfmr = r.get("tf_match_rate")
+    tcm, tcc, tcr = _tf_canonical_stats(r)
     tf_cell = _fmt_rate(tfm, n)
     if tfm is None:
         tf_cell = "—"
     elif tf_join_note:
         tf_cell = f"{tfm}/{n} ({tfmr:.4f}) {tf_join_note}" if tfmr is not None else f"{tfm}/{n} {tf_join_note}"
+    if tcm is not None and tcc:
+        tf_cell = f"{tf_cell} / can {tcm}/{tcc} ({tcr:.3f})"
     valid = r.get("valid"); vr = r.get("valid_rate"); inc = r.get("incomplete")
-    lat = r.get("latency_ms") or {}
+    p50, p95, note = _latency_from_details(r)
     size = _artifact_size_mb(report_path)
     if fp32_path and report_path != fp32_path and fp32_path.exists():
         fr = _load_json(fp32_path) or {}
@@ -169,10 +172,10 @@ def _row(label: str, report_path: Path, *, tf_join_note: str = "", fp32_path: Pa
     else:
         dtf = dex = dcan = "—"
     rep = str(report_path.relative_to(ROOT)) if report_path.is_relative_to(ROOT) else str(report_path)
-    can_cell = f"{cm}/{ccomp} ({cmr:.4f})" if (cm is not None and ccomp) else "—"
+    can_cell = f"**{cm}/{ccomp} ({cmr:.4f})**" if (cm is not None and ccomp) else "—"
     return (
-        f"| {label} | {n} | {ex} ({exr:.4f}) | {can_cell} | {tf_cell} | {dtf} | {dex} | {dcan} | {valid} ({vr:.4f}) | {inc} | "
-        f"{_fmt_ms(lat.get('p50'))} | {_fmt_ms(lat.get('p95'))} | {size} | `{rep}` |"
+        f"| {label} | {n} | {can_cell} | {ex} ({exr:.4f}) | {tf_cell} | {dcan} | {dtf} | {dex} | {valid} ({vr:.4f}) | {inc} | "
+        f"{p50}{note} | {p95} | {size} | `{rep}` |"
     )
 
 
@@ -191,10 +194,10 @@ Las métricas se calculan con el mismo harness sobre el mismo conjunto de imáge
 | **INT8 dynamic (sin atención)** | Variante dinámica que excluye atención u ops selectivas. | — | `[según artefacto/disponibilidad]`. |
 | **FP16** | Pesos/cómputo en media precisión donde aplique. | — | `[según viabilidad/runtime]`. |
 | **INT8 estática (QDQ/calibración)** | Cuantización estática con datos de calibración (p. ej. E3 híbrido). | — | Sensible a calibración/distribución; evaluar en holdout según protocolo. |
-| **`exact_match` string (vs label)** | Coincidencia **exacta como texto** entre la predicción y la etiqueta/SMILES esperado: `predicho == esperado`. Se reporta `aciertos/n (tasa)`. | `121 (0.4033)` = 121 de 300 cadenas idénticas (40.33%). | **No canoniza** SMILES (sin RDKit en el cálculo reportado). Dos SMILES químicamente equivalentes pueden diferir (orden, aromaticidad/Kekulé) y contar como *no* exactos. Por eso puede ser bajo aun con moléculas correctas. |
-| **Exactitud canónica (RDKit)** | Comparación tras canonicalizar SMILES con RDKit (equivalencia química de representación). | — | RDKit está instalado; el harness OCSR (`benchmark_run`) calcula `canonical_match` (igualdad de SMILES canónicos RDKit) cuando ambos parsean, además de `exact_match` string. Preferible para exactitud química. |
-| **`tf_match` ONNX↔TF** | Fidelidad de conversión: proporción de casos donde la salida **ONNX** es idéntica a la del **baseline TF** para la misma imagen, según el pipeline del harness. | `279/300 (0.9300)` = en 279 casos ONNX produjo lo mismo que TF. | Mide **paridad ONNX ≈ TF**, **no** corrección química frente a la etiqueta. Depende del baseline/pipeline usado. |
-| **Δ vs FP32 (pp), Δtf / Δexact** | Diferencia absoluta en **puntos porcentuales** respecto a FP32, sobre la **misma métrica y los mismos IDs** (pareado): `métrica_variante − métrica_FP32`. | `-4.33 pp` = 4.33 pp menos que FP32 (p. ej. 0.8867−0.9300). `(ref)` = referencia FP32. | “pp” es diferencia absoluta (no cambio relativo). Permite ver impacto de cuantizar/variar frente a FP32 en el mismo set. |
+| **`canonical_match` RDKit (primaria, vs label)** | **Métrica primaria OCSR (calidad química):** igualdad de SMILES **canónicos RDKit** entre predicción y etiqueta, contada solo cuando **ambos parsean** (`aciertos/comparables (tasa)`). | `210/292 (0.7192)` = 210 aciertos sobre 292 comparables. | Preferible para equivalencia de representación. Depende de RDKit/parseo; el denominador es `canonical_comparable` (puede ser < n). Casos no comparables se interpretan junto con `valid`/`incomplete`. |
+| **`exact_match` string (secundaria, vs label)** | Coincidencia **exacta como texto** `predicho == esperado` (sin canonicalizar). | `121 (0.4033)` = 121/300 cadenas idénticas. | **Secundaria** para química: SMILES equivalentes pueden diferir y contar como no exactos. Útil como señal de salida cruda/consistencia textual. |
+| **`tf_match` ONNX↔TF (fidelidad, string)** | Fidelidad de conversión: salida **ONNX** idéntica (string) a la del **baseline TF** para la misma imagen. `tf_canonical` (cuando se reporta) es la fidelidad en forma canónica. | `279/300 (0.9300)`. | Mide **paridad ONNX ≈ TF**, **no** corrección química frente a la etiqueta. |
+| **Δ vs FP32 (pp): Δcanonical / Δtf / Δexact** | Diferencia absoluta en **puntos porcentuales** vs FP32, sobre la **misma métrica y mismos IDs** (pareado). | `-1.03 pp` en canónica = 1.03 pp menos que FP32. `(ref)` = FP32. | **Primario para calidad:** `Δcanonical`. “pp” es diferencia absoluta. |
 | **`valid` / `incomplete`** | Heurísticas del harness (sin RDKit): `valid_rate` = fracción marcada válida por reglas simples (p. ej. no vacía/no inválida heurística); `incomplete` = secuencias que no finalizaron (p. ej. sin fin de secuencia). | `0.9967 / 1` = 99.67% válidas heurísticamente, 1 incompleta de 300. | Aproximación; **no** garantiza validez química real. |
 | **Latencia p50 / p95 (ms)** | Tiempo por imagen (ms) en el mismo hardware y execution provider (aquí, ORT CPU): **p50** = mediana (50% ≤ t), **p95** = cola (95% ≤ t). | `3455 / 4676` = mediana ~3.46 s, cola p95 ~4.68 s. | No usar solo media. No comparable entre máquinas/configuraciones sin control. Si hay `cache_hits`, la latencia no es fresca/comparable (a veces `n/a`). |
 | **Tamaño (MB)** | Tamaño en disco de los artefactos de la variante (p. ej. encoder+decoder). | — | `[si se calcula]`. |
@@ -254,6 +257,20 @@ def _latency_from_details(d: dict[str, Any]) -> tuple[str, str, str]:
     return _fmt_ms(p50), _fmt_ms(p95), note
 
 
+def _tf_canonical_stats(r: dict[str, Any]) -> tuple[int | None, int | None, float | None]:
+    """Top-level tf_canonical aggregate or computed from details."""
+    if r.get("tf_canonical_comparable") is not None:
+        return r.get("tf_canonical_match"), r.get("tf_canonical_comparable"), r.get("tf_canonical_match_rate")
+    det = r.get("details") or []
+    if not det or not any("tf_canonical_match" in d for d in det[:3]):
+        return None, None, None
+    comp = [d for d in det if d.get("tf_canonical_match") is not None]
+    if not comp:
+        return (None, 0, None) if any(d.get("tf_smiles") is not None for d in det) else (None, None, None)
+    m = sum(1 for d in comp if d.get("tf_canonical_match"))
+    return m, len(comp), m / len(comp)
+
+
 def _pilot_ocsr_row(label: str, report_path: Path, *, fp32_path: Path | None = None) -> str | None:
     r = _load_json(report_path)
     if not r:
@@ -262,6 +279,7 @@ def _pilot_ocsr_row(label: str, report_path: Path, *, fp32_path: Path | None = N
     ex = r.get("exact_match"); exr = r.get("exact_match_rate")
     cm = r.get("canonical_match"); ccomp = r.get("canonical_comparable"); cmr = r.get("canonical_match_rate")
     tfm = r.get("tf_match"); tfmr = r.get("tf_match_rate")
+    tcm, tcc, tcr = _tf_canonical_stats(r)
     valid = r.get("valid"); vr = r.get("valid_rate"); inc = r.get("incomplete")
     p50, p95, note = _latency_from_details(r)
     size = _artifact_size_mb(report_path)
@@ -278,9 +296,12 @@ def _pilot_ocsr_row(label: str, report_path: Path, *, fp32_path: Path | None = N
         dtf = dex = dcan = "—"
     rep = str(report_path.relative_to(ROOT)) if report_path.is_relative_to(ROOT) else str(report_path)
     tf_cell = _fmt_rate(tfm, n) if tfm is not None else "—"
-    can_cell = f"{cm}/{ccomp} ({cmr:.4f})" if (cm is not None and ccomp) else "—"
+    if tcm is not None and tcc:
+        tf_cell = f"{tf_cell} / can {tcm}/{tcc} ({tcr:.3f})"
+    can_cell = f"**{cm}/{ccomp} ({cmr:.4f})**" if (cm is not None and ccomp) else "—"
+    # Primary = canonical RDKit
     return (
-        f"| {label} | {n} | {ex} ({exr:.4f}) | {can_cell} | {tf_cell} | {dtf} | {dex} | {dcan} | {valid} ({vr:.4f}) | {inc} | "
+        f"| {label} | {n} | {can_cell} | {ex} ({exr:.4f}) | {tf_cell} | {dcan} | {dtf} | {dex} | {valid} ({vr:.4f}) | {inc} | "
         f"{p50}{note} | {p95} | {size} | `{rep}` |"
     )
 
@@ -340,7 +361,7 @@ def _render_pilots(lines: list[str], pending: list[str]) -> None:
             meta = f" (frozen n={man.get('frozen_n')}, eval={man.get('eval_n')}, pilot={man.get('pilot_n')}, seed={man.get('seed')}, source=`{fman.relative_to(ROOT)}`)"
         lines.append(f"### {title}{meta}")
         lines.append("")
-        lines.append("| Variante | n | exact string | canonical RDKit (comp.) | tf_match (ONNX==TF) | Δtf pp | Δexact pp | Δcanonical pp | valid | incomplete | p50 ms | p95 ms | tamaño MB | Reporte |")
+        lines.append("| Variante | n | **canonical RDKit (primaria, comp.)** | exact string | tf_match string (+ tf_canonical) | Δcanonical pp | Δtf pp | Δexact pp | valid | incomplete | p50 ms | p95 ms | tamaño MB | Reporte |")
         lines.append("|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|")
         lines.extend(got)
         lines.append("")
@@ -422,7 +443,7 @@ def render_results() -> tuple[str, list[str]]:
             return
         lines.append(f"### {title}")
         lines.append("")
-        lines.append("| Variante | n | exact string | canonical RDKit (comp.) | tf_match (ONNX==TF) | Δtf pp | Δexact pp | Δcanonical pp | valid | incomplete | p50 ms | p95 ms | tamaño MB (enc+dec) | Reporte |")
+        lines.append("| Variante | n | **canonical RDKit (primaria, comp.)** | exact string | tf_match string (+ tf_canonical) | Δcanonical pp | Δtf pp | Δexact pp | valid | incomplete | p50 ms | p95 ms | tamaño MB (enc+dec) | Reporte |")
         lines.append("|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|")
         lines.extend(got)
         lines.append("")

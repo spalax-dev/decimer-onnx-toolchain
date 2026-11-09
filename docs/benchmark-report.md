@@ -2,7 +2,7 @@
 
 > Documento generado automáticamente a partir de reportes JSON/manifiestos en `data/`. No incluye decisiones ni juicios sobre los resultados; reporta mediciones, definiciones y criterios de aceptación definidos para la evaluación.
 
-**Generado (UTC):** `2026-11-09T21:07:48.882850+00:00`  
+**Generado (UTC):** `2026-11-09T22:21:34.141214+00:00`  
 **Generador:** `toolchain.report.generate_report` / `dtx report` (alias: `decimer-export report`)  
 **Rama/commits relevantes:** `main` (workspace fetch/export/runtime/cuantización/benchmark).
 
@@ -23,10 +23,10 @@ Las métricas se calculan con el mismo harness sobre el mismo conjunto de imáge
 | **INT8 dynamic (sin atención)** | Variante dinámica que excluye atención u ops selectivas. | — | `[según artefacto/disponibilidad]`. |
 | **FP16** | Pesos/cómputo en media precisión donde aplique. | — | `[según viabilidad/runtime]`. |
 | **INT8 estática (QDQ/calibración)** | Cuantización estática con datos de calibración (p. ej. E3 híbrido). | — | Sensible a calibración/distribución; evaluar en holdout según protocolo. |
-| **`exact_match` string (vs label)** | Coincidencia **exacta como texto** entre la predicción y la etiqueta/SMILES esperado: `predicho == esperado`. Se reporta `aciertos/n (tasa)`. | `121 (0.4033)` = 121 de 300 cadenas idénticas (40.33%). | **No canoniza** SMILES (sin RDKit en el cálculo reportado). Dos SMILES químicamente equivalentes pueden diferir (orden, aromaticidad/Kekulé) y contar como *no* exactos. Por eso puede ser bajo aun con moléculas correctas. |
-| **Exactitud canónica (RDKit)** | Comparación tras canonicalizar SMILES con RDKit (equivalencia química de representación). | — | RDKit está instalado; el harness OCSR (`benchmark_run`) calcula `canonical_match` (igualdad de SMILES canónicos RDKit) cuando ambos parsean, además de `exact_match` string. Preferible para exactitud química. |
-| **`tf_match` ONNX↔TF** | Fidelidad de conversión: proporción de casos donde la salida **ONNX** es idéntica a la del **baseline TF** para la misma imagen, según el pipeline del harness. | `279/300 (0.9300)` = en 279 casos ONNX produjo lo mismo que TF. | Mide **paridad ONNX ≈ TF**, **no** corrección química frente a la etiqueta. Depende del baseline/pipeline usado. |
-| **Δ vs FP32 (pp), Δtf / Δexact** | Diferencia absoluta en **puntos porcentuales** respecto a FP32, sobre la **misma métrica y los mismos IDs** (pareado): `métrica_variante − métrica_FP32`. | `-4.33 pp` = 4.33 pp menos que FP32 (p. ej. 0.8867−0.9300). `(ref)` = referencia FP32. | “pp” es diferencia absoluta (no cambio relativo). Permite ver impacto de cuantizar/variar frente a FP32 en el mismo set. |
+| **`canonical_match` RDKit (primaria, vs label)** | **Métrica primaria OCSR (calidad química):** igualdad de SMILES **canónicos RDKit** entre predicción y etiqueta, contada solo cuando **ambos parsean** (`aciertos/comparables (tasa)`). | `210/292 (0.7192)` = 210 aciertos sobre 292 comparables. | Preferible para equivalencia de representación. Depende de RDKit/parseo; el denominador es `canonical_comparable` (puede ser < n). Casos no comparables se interpretan junto con `valid`/`incomplete`. |
+| **`exact_match` string (secundaria, vs label)** | Coincidencia **exacta como texto** `predicho == esperado` (sin canonicalizar). | `121 (0.4033)` = 121/300 cadenas idénticas. | **Secundaria** para química: SMILES equivalentes pueden diferir y contar como no exactos. Útil como señal de salida cruda/consistencia textual. |
+| **`tf_match` ONNX↔TF (fidelidad, string)** | Fidelidad de conversión: salida **ONNX** idéntica (string) a la del **baseline TF** para la misma imagen. `tf_canonical` (cuando se reporta) es la fidelidad en forma canónica. | `279/300 (0.9300)`. | Mide **paridad ONNX ≈ TF**, **no** corrección química frente a la etiqueta. |
+| **Δ vs FP32 (pp): Δcanonical / Δtf / Δexact** | Diferencia absoluta en **puntos porcentuales** vs FP32, sobre la **misma métrica y mismos IDs** (pareado). | `-1.03 pp` en canónica = 1.03 pp menos que FP32. `(ref)` = FP32. | **Primario para calidad:** `Δcanonical`. “pp” es diferencia absoluta. |
 | **`valid` / `incomplete`** | Heurísticas del harness (sin RDKit): `valid_rate` = fracción marcada válida por reglas simples (p. ej. no vacía/no inválida heurística); `incomplete` = secuencias que no finalizaron (p. ej. sin fin de secuencia). | `0.9967 / 1` = 99.67% válidas heurísticamente, 1 incompleta de 300. | Aproximación; **no** garantiza validez química real. |
 | **Latencia p50 / p95 (ms)** | Tiempo por imagen (ms) en el mismo hardware y execution provider (aquí, ORT CPU): **p50** = mediana (50% ≤ t), **p95** = cola (95% ≤ t). | `3455 / 4676` = mediana ~3.46 s, cola p95 ~4.68 s. | No usar solo media. No comparable entre máquinas/configuraciones sin control. Si hay `cache_hits`, la latencia no es fresca/comparable (a veces `n/a`). |
 | **Tamaño (MB)** | Tamaño en disco de los artefactos de la variante (p. ej. encoder+decoder). | — | `[si se calcula]`. |
@@ -65,7 +65,7 @@ Criterios definidos como referencia de medición (sin aplicar veredictos en este
 
 ## 4. Características de la máquina (recolección automática)
 
-Recolectado automáticamente el `2026-11-09T21:07:48.808061+00:00` mediante `platform`, `lscpu` y `free`.
+Recolectado automáticamente el `2026-11-09T22:21:34.079774+00:00` mediante `platform`, `lscpu` y `free`.
 
 | Campo | Valor |
 |---|---|
@@ -81,7 +81,7 @@ Recolectado automáticamente el `2026-11-09T21:07:48.808061+00:00` mediante `pla
 | Cachés L1d/L1i/L2/L3 | `128 KiB (4 instances)` / `128 KiB (4 instances)` / `1 MiB (4 instances)` / `6 MiB (1 instance)` |
 | Flags CPU relevantes | `fma sse4_2 avx avx2` |
 | RAM total | 15.42 GiB (16555552768 bytes) |
-| RAM disponible (al recolectar) | 10.73 GiB |
+| RAM disponible (al recolectar) | 9.31 GiB |
 
 ### Versiones de paquetes (entorno de ejecución)
 
@@ -105,39 +105,39 @@ Protocolo: variantes comparadas sobre **mismos IDs** cuando aplica (pareado, pil
 
 ### 5.P1 `ocsr-printed` — piloto congelado (pilot, TF+cache) (frozen n=1400, eval=1000, pilot=300, seed=20260308, source=`data/manifests/frozen/printed.frozen.json`)
 
-| Variante | n | exact string | canonical RDKit (comp.) | tf_match (ONNX==TF) | Δtf pp | Δexact pp | Δcanonical pp | valid | incomplete | p50 ms | p95 ms | tamaño MB | Reporte |
+| Variante | n | **canonical RDKit (primaria, comp.)** | exact string | tf_match string (+ tf_canonical) | Δcanonical pp | Δtf pp | Δexact pp | valid | incomplete | p50 ms | p95 ms | tamaño MB | Reporte |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|
-| FP32 (+TF) | 300 | 1 (0.0033) | 187/263 (0.7110) | 248/300 (0.8267) | (ref) | (ref) | (ref) | 290 (0.9667) | 10 | — (cache, sin latencia fresca) | — | 301.2 | `data/benchmark/pilot/printed.fp32.pilot300.json` |
-| E1 dynamic INT8 all (+TF) | 300 | 1 (0.0033) | 182/266 (0.6842) | 230/300 (0.7667) | -6.00 pp | +0.00 pp | -2.68 pp | 292 (0.9733) | 8 | — (cache, sin latencia fresca) | — | 81.3 | `data/benchmark/pilot/printed.int8-dyn-all.pilot300.json` |
+| FP32 (+TF) | 300 | **187/263 (0.7110)** | 1 (0.0033) | 248/300 (0.8267) / can 230/263 (0.875) | (ref) | (ref) | (ref) | 290 (0.9667) | 10 | — (cache, sin latencia fresca) | — | 301.2 | `data/benchmark/pilot/printed.fp32.pilot300.json` |
+| E1 dynamic INT8 all (+TF) | 300 | **182/266 (0.6842)** | 1 (0.0033) | 230/300 (0.7667) / can 219/262 (0.836) | -2.68 pp | -6.00 pp | +0.00 pp | 292 (0.9733) | 8 | — (cache, sin latencia fresca) | — | 81.3 | `data/benchmark/pilot/printed.int8-dyn-all.pilot300.json` |
 
 ### 5.P2 `ocsr-handdrawn` — piloto congelado (pilot, TF+cache) (frozen n=1400, eval=1000, pilot=300, seed=20260308, source=`data/manifests/frozen/handdrawn.frozen.json`)
 
-| Variante | n | exact string | canonical RDKit (comp.) | tf_match (ONNX==TF) | Δtf pp | Δexact pp | Δcanonical pp | valid | incomplete | p50 ms | p95 ms | tamaño MB | Reporte |
+| Variante | n | **canonical RDKit (primaria, comp.)** | exact string | tf_match string (+ tf_canonical) | Δcanonical pp | Δtf pp | Δexact pp | valid | incomplete | p50 ms | p95 ms | tamaño MB | Reporte |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|
-| FP32 (+TF) | 300 | 121 (0.4033) | 210/292 (0.7192) | 279/300 (0.9300) | (ref) | (ref) | (ref) | 299 (0.9967) | 1 | — (cache, sin latencia fresca) | — | 301.2 | `data/benchmark/pilot/handdrawn.fp32.pilot300.json` |
-| E1 dynamic INT8 all (+TF) | 300 | 116 (0.3867) | 204/293 (0.6962) | 266/300 (0.8867) | -4.33 pp | -1.67 pp | -2.29 pp | 299 (0.9967) | 1 | — (cache, sin latencia fresca) | — | 81.3 | `data/benchmark/pilot/handdrawn.int8-dyn-all.pilot300.json` |
+| FP32 (+TF) | 300 | **210/292 (0.7192)** | 121 (0.4033) | 279/300 (0.9300) / can 273/291 (0.938) | (ref) | (ref) | (ref) | 299 (0.9967) | 1 | — (cache, sin latencia fresca) | — | 301.2 | `data/benchmark/pilot/handdrawn.fp32.pilot300.json` |
+| E1 dynamic INT8 all (+TF) | 300 | **204/293 (0.6962)** | 116 (0.3867) | 266/300 (0.8867) / can 263/290 (0.907) | -2.29 pp | -4.33 pp | -1.67 pp | 299 (0.9967) | 1 | — (cache, sin latencia fresca) | — | 81.3 | `data/benchmark/pilot/handdrawn.int8-dyn-all.pilot300.json` |
 
 ### 5.1 `ocsr-printed` — golden CLEF (Keylab/OCSR-Benchmarks, n=992, evidencia histórica)
 
-| Variante | n | exact string | canonical RDKit (comp.) | tf_match (ONNX==TF) | Δtf pp | Δexact pp | Δcanonical pp | valid | incomplete | p50 ms | p95 ms | tamaño MB (enc+dec) | Reporte |
+| Variante | n | **canonical RDKit (primaria, comp.)** | exact string | tf_match string (+ tf_canonical) | Δcanonical pp | Δtf pp | Δexact pp | valid | incomplete | p50 ms | p95 ms | tamaño MB (enc+dec) | Reporte |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|
-| E1 dynamic INT8 (+TF) | 992 | 7 (0.0071) | — | 838/992 (0.8448) | — | — | — | 991 (0.9990) | 1 | 5871.20 | 10230.40 | 81.3 | `data/benchmark/hf-clef/report.e1.tf.json` |
-| E3 static-enc + dyn-dec (tf_match por join a TF de E1) | 992 | 6 (0.0060) | — | 444/992 (0.4476) [join] | — | — | — | 990 (0.9980) | 2 | 2861.30 | 4919.40 | 84.4 | `data/benchmark/hf-clef/report.e3.tfjoined.json` |
+| E1 dynamic INT8 (+TF) | 992 | — | 7 (0.0071) | 838/992 (0.8448) | — | — | — | 991 (0.9990) | 1 | 5871.20 | 10230.40 | 81.3 | `data/benchmark/hf-clef/report.e1.tf.json` |
+| E3 static-enc + dyn-dec (tf_match por join a TF de E1) | 992 | — | 6 (0.0060) | 444/992 (0.4476) [join] | — | — | — | 990 (0.9980) | 2 | 2861.30 | 4919.40 | 84.4 | `data/benchmark/hf-clef/report.e3.tfjoined.json` |
 
 ### 5.2 `ocsr-printed` — golden JPO (Keylab/OCSR-Benchmarks, n=449, evidencia histórica)
 
-| Variante | n | exact string | canonical RDKit (comp.) | tf_match (ONNX==TF) | Δtf pp | Δexact pp | Δcanonical pp | valid | incomplete | p50 ms | p95 ms | tamaño MB (enc+dec) | Reporte |
+| Variante | n | **canonical RDKit (primaria, comp.)** | exact string | tf_match string (+ tf_canonical) | Δcanonical pp | Δtf pp | Δexact pp | valid | incomplete | p50 ms | p95 ms | tamaño MB (enc+dec) | Reporte |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|
-| E1 dynamic INT8 (+TF) | 449 | 9 (0.0200) | — | 264/449 (0.5880) | — | — | — | 412 (0.9176) | 37 | 6149.83 | 17156.27 | 81.3 | `data/benchmark/hf-jpo/report.e1.tf.json` |
-| E3 static-enc + dyn-dec (tf_match por join a TF de E1) | 449 | 3 (0.0067) | — | 123/449 (0.2739) [join] | — | — | — | 393 (0.8753) | 56 | 2767.13 | 26985.81 | 84.4 | `data/benchmark/hf-jpo/report.e3.tfjoined.json` |
+| E1 dynamic INT8 (+TF) | 449 | — | 9 (0.0200) | 264/449 (0.5880) | — | — | — | 412 (0.9176) | 37 | 6149.83 | 17156.27 | 81.3 | `data/benchmark/hf-jpo/report.e1.tf.json` |
+| E3 static-enc + dyn-dec (tf_match por join a TF de E1) | 449 | — | 3 (0.0067) | 123/449 (0.2739) [join] | — | — | — | 393 (0.8753) | 56 | 2767.13 | 26985.81 | 84.4 | `data/benchmark/hf-jpo/report.e3.tfjoined.json` |
 
 ### 5.3 `ocsr-handdrawn` — HDM Zenodo 7617107 (muestra ad hoc `--limit 500`, no decisión formal)
 
-| Variante | n | exact string | canonical RDKit (comp.) | tf_match (ONNX==TF) | Δtf pp | Δexact pp | Δcanonical pp | valid | incomplete | p50 ms | p95 ms | tamaño MB (enc+dec) | Reporte |
+| Variante | n | **canonical RDKit (primaria, comp.)** | exact string | tf_match string (+ tf_canonical) | Δcanonical pp | Δtf pp | Δexact pp | valid | incomplete | p50 ms | p95 ms | tamaño MB (enc+dec) | Reporte |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|
-| FP32 (+TF) | 500 | 198 (0.3960) | — | 471/500 (0.9420) | (ref) | (ref) | (ref) | 499 (0.9980) | 1 | 1988.25 | 4504.17 | 301.2 | `data/benchmark/handdrawn-hdm/report.fp32.tf.limit500.json` |
-| E1 dynamic INT8 (+TF) | 500 | 195 (0.3900) | — | 448/500 (0.8960) | -4.60 pp | -0.60 pp | — | 499 (0.9980) | 1 | 6239.98 | 9709.75 | 81.3 | `data/benchmark/handdrawn-hdm/report.e1.tf.limit500.json` |
-| E3 static-enc + dyn-dec (+TF, calib 32 HDM) | 500 | 0 (0.0000) | — | 0/500 (0.0000) | -94.20 pp | -39.60 pp | — | 297 (0.5940) | 203 | 25397.42 | 31685.82 | 84.4 | `data/benchmark/handdrawn-hdm/report.e3.tf.limit500.json` |
+| FP32 (+TF) | 500 | — | 198 (0.3960) | 471/500 (0.9420) | (ref) | (ref) | (ref) | 499 (0.9980) | 1 | 1988.25 | 4504.17 | 301.2 | `data/benchmark/handdrawn-hdm/report.fp32.tf.limit500.json` |
+| E1 dynamic INT8 (+TF) | 500 | — | 195 (0.3900) | 448/500 (0.8960) | — | -4.60 pp | -0.60 pp | 499 (0.9980) | 1 | 6239.98 | 9709.75 | 81.3 | `data/benchmark/handdrawn-hdm/report.e1.tf.limit500.json` |
+| E3 static-enc + dyn-dec (+TF, calib 32 HDM) | 500 | — | 0 (0.0000) | 0/500 (0.0000) | — | -94.20 pp | -39.60 pp | 297 (0.5940) | 203 | 25397.42 | 31685.82 | 84.4 | `data/benchmark/handdrawn-hdm/report.e3.tf.limit500.json` |
 
 ### 5.4 `ocsr-handdrawn` — HDM completo (5088)
 
