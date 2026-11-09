@@ -352,6 +352,76 @@ def quantize_e3_hybrid(fp32_dir: Path, out_dir: Path, calibration_dir: Path | No
     return res
 
 
+def _attention_node_names(model_path: Path) -> list[str]:
+    """Return node names matching attention patterns (for selective quantization exclusion)."""
+    import onnx
+
+    m = onnx.load(str(model_path))
+    pats = ("multi_head", "attention", "self_attention", "cross_attention", "SelfAttention", "MultiHead")
+    out = []
+    for n in m.graph.node:
+        blob = (n.name or "") + " " + " ".join(n.input) + " " + " ".join(n.output)
+        low = blob.lower()
+        if any(p.lower() in low for p in pats):
+            out.append(n.name)
+    # nodes_to_exclude expects node names; keep only non-empty unique
+    return sorted({x for x in out if x})
+
+
+def quantize_e1s_selective(fp32_dir: Path, out_dir: Path) -> QuantizeResult:
+    """E1s: selective dynamic INT8.
+    - classifier: quantize MatMul/Gemm only (exclude Conv) to avoid E1-all regression.
+    - OCSR: encoder Conv+MatMul+Gemm dynamic; decoder MatMul/Gemm dynamic excluding attention nodes.
+    """
+    QuantType, quantize_dynamic = _ort_dynamic()
+    out_dir.mkdir(parents=True, exist_ok=True)
+    clf_in = fp32_dir / "classifier.fp32.onnx"
+    if clf_in.exists():
+        res = QuantizeResult(variant="e1s-selective-dynamic-int8-classifier")
+        out = out_dir / "classifier.e1s.dynamic.onnx"
+        try:
+            quantize_dynamic(
+                str(clf_in), str(out),
+                op_types_to_quantize=["MatMul", "Gemm"],  # exclude Conv (E1-all regressed badly)
+                per_channel=True, reduce_range=False, weight_type=QuantType.QInt8,
+            )
+            res.encoder_path = str(out)
+        except Exception as e:  # noqa: BLE001
+            res.errors.append(f"classifier e1s failed: {e}")
+        _meta(res, clf_in, clf_in, {"calibration_images": 0, "mode": "classifier", "op_types_to_quantize": ["MatMul", "Gemm"], "excluded": "Conv"})
+        (out_dir / "e1s.dynamic.meta.json").write_text(json.dumps(asdict(res), indent=2) + "\n", encoding="utf-8")
+        return res
+
+    res = QuantizeResult(variant="e1s-selective-dynamic-int8-noattn")
+    enc_in = fp32_dir / "encoder.fp32.onnx"
+    dec_in = fp32_dir / "decoder_step.fp32.onnx"
+    enc_out = out_dir / "encoder.e1s.dynamic.onnx"
+    dec_out = out_dir / "decoder_step.e1s.dynamic.onnx"
+    try:
+        quantize_dynamic(
+            str(enc_in), str(enc_out),
+            op_types_to_quantize=["Conv", "MatMul", "Gemm"],
+            per_channel=True, reduce_range=False, weight_type=QuantType.QInt8,
+        )
+        res.encoder_path = str(enc_out)
+    except Exception as e:  # noqa: BLE001
+        res.errors.append(f"encoder e1s failed: {e}")
+    dec_excl = _attention_node_names(dec_in)
+    try:
+        quantize_dynamic(
+            str(dec_in), str(dec_out),
+            op_types_to_quantize=["MatMul", "Gemm"],
+            nodes_to_exclude=dec_excl or None,
+            per_channel=True, reduce_range=False, weight_type=QuantType.QInt8,
+        )
+        res.decoder_path = str(dec_out)
+    except Exception as e:  # noqa: BLE001
+        res.errors.append(f"decoder e1s failed: {e}")
+    _meta(res, enc_in, dec_in, {"calibration_images": 0, "decoder_nodes_excluded_attention": len(dec_excl), "decoder_nodes_excluded": dec_excl[:40]})
+    (out_dir / "e1s.dynamic.meta.json").write_text(json.dumps(asdict(res), indent=2) + "\n", encoding="utf-8")
+    return res
+
+
 def quantize_e4_fp16(fp32_dir: Path, out_dir: Path) -> QuantizeResult:
     """E4: FP16 conversion (safety net). Known CPU runtime issue in decoder attention (see E4 notes)."""
     import onnx
