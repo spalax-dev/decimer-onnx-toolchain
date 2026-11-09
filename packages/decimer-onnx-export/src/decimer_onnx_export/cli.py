@@ -182,5 +182,18 @@ def validate_cmd(
                   tf_model_dir=tf_model_dir, out=out, limit=limit)
 
 
+@app.command("report")
+def report_cmd(
+    out: Path = typer.Option(None, help="Primary output (default: docs/benchmark-report.md and informe.md)"),
+) -> None:
+    """Generate benchmark report (glossary, acceptance criteria, machine info, results) from data/."""
+    from decimer_onnx_export.report import generate_report
+
+    targets = [out] if out else None
+    generate_report(targets=targets)
+    for p in ([out] if out else [Path("docs/benchmark-report.md"), Path("informe.md")]):
+        typer.echo(f"wrote {p}")
+
+
 if __name__ == "__main__":
     app()
