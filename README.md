@@ -19,7 +19,8 @@ See [`TODO.md`](TODO.md) for progress.
 
 ## Benchmark report
 
-- [`docs/benchmark-report.md`](docs/benchmark-report.md): glosario, criterios de aceptación definidos para la evaluación, características de la máquina (recolección automática), procedencia y resultados numéricos generados desde `data/benchmark/**/*.json` y manifiestos.
+- [`docs/benchmark-spec.md`](docs/benchmark-spec.md): especificación/protocolo (bloques de tarea, matriz 2×2 OCSR cross-domain + clasificador separado, data cards/compatibilidad, contratos, 3 vistas de reporte, orden de trabajo; criterios numéricos como placeholders).
+- [`docs/benchmark-report.md`](docs/benchmark-report.md): informe neutral auto-generado (glosario, criterios definidos, máquina, procedencia, resultados numéricos desde `data/benchmark/**/*.json` y manifiestos).
 - Regenerar: `uv run decimer-export report`
 
 ## Quick start (bootstrap)
