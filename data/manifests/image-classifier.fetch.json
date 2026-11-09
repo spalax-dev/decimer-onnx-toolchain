@@ -1,0 +1,88 @@
+{
+  "model": {
+    "key": "image-classifier",
+    "record": "https://github.com/Iagea/DECIMER-Image-Classifier",
+    "title": "DECIMER Image Classifier (EfficientNetB0, structure vs non-structure)",
+    "license": "MIT (upstream code); trained weights from pinned commit",
+    "files": [
+      {
+        "name": "saved_model.pb",
+        "url": "https://raw.githubusercontent.com/Iagea/DECIMER-Image-Classifier/d21f4cb005f20571bb5e75b08ca375f56655884b/decimer_image_classifier/model/saved_model.pb",
+        "size": 5845477,
+        "checksum": "sha256:1f1f192e3a63c8985f20d8a0777a558458ef829379e5373fdad25bc0b4161978",
+        "extract": false,
+        "dest": "model/saved_model.pb"
+      },
+      {
+        "name": "keras_metadata.pb",
+        "url": "https://raw.githubusercontent.com/Iagea/DECIMER-Image-Classifier/d21f4cb005f20571bb5e75b08ca375f56655884b/decimer_image_classifier/model/keras_metadata.pb",
+        "size": 769952,
+        "checksum": "sha256:4c6f6149a612a52736ecc808434645242f746c57f7b38bb9eea2851112ee3cc6",
+        "extract": false,
+        "dest": "model/keras_metadata.pb"
+      },
+      {
+        "name": "variables.index",
+        "url": "https://raw.githubusercontent.com/Iagea/DECIMER-Image-Classifier/d21f4cb005f20571bb5e75b08ca375f56655884b/decimer_image_classifier/model/variables/variables.index",
+        "size": 19547,
+        "checksum": "sha256:bc74ce41019f517f4f766868d6b037566dbdf9da307af2414eb28ec7263680d6",
+        "extract": false,
+        "dest": "model/variables/variables.index"
+      },
+      {
+        "name": "variables.data-00000-of-00001",
+        "url": "https://raw.githubusercontent.com/Iagea/DECIMER-Image-Classifier/d21f4cb005f20571bb5e75b08ca375f56655884b/decimer_image_classifier/model/variables/variables.data-00000-of-00001",
+        "size": 19694056,
+        "checksum": "sha256:d4153f669cb35242739d0b901f5b9083d31acd5fcdb8d2c46d2a3589f9d1ed5a",
+        "extract": false,
+        "dest": "model/variables/variables.data-00000-of-00001"
+      }
+    ]
+  },
+  "fetched": [
+    {
+      "file": {
+        "name": "saved_model.pb",
+        "url": "https://raw.githubusercontent.com/Iagea/DECIMER-Image-Classifier/d21f4cb005f20571bb5e75b08ca375f56655884b/decimer_image_classifier/model/saved_model.pb",
+        "size": 5845477,
+        "checksum": "sha256:1f1f192e3a63c8985f20d8a0777a558458ef829379e5373fdad25bc0b4161978",
+        "extract": false,
+        "dest": "model/saved_model.pb"
+      },
+      "path": "data/weights/image-classifier/model/saved_model.pb"
+    },
+    {
+      "file": {
+        "name": "keras_metadata.pb",
+        "url": "https://raw.githubusercontent.com/Iagea/DECIMER-Image-Classifier/d21f4cb005f20571bb5e75b08ca375f56655884b/decimer_image_classifier/model/keras_metadata.pb",
+        "size": 769952,
+        "checksum": "sha256:4c6f6149a612a52736ecc808434645242f746c57f7b38bb9eea2851112ee3cc6",
+        "extract": false,
+        "dest": "model/keras_metadata.pb"
+      },
+      "path": "data/weights/image-classifier/model/keras_metadata.pb"
+    },
+    {
+      "file": {
+        "name": "variables.index",
+        "url": "https://raw.githubusercontent.com/Iagea/DECIMER-Image-Classifier/d21f4cb005f20571bb5e75b08ca375f56655884b/decimer_image_classifier/model/variables/variables.index",
+        "size": 19547,
+        "checksum": "sha256:bc74ce41019f517f4f766868d6b037566dbdf9da307af2414eb28ec7263680d6",
+        "extract": false,
+        "dest": "model/variables/variables.index"
+      },
+      "path": "data/weights/image-classifier/model/variables/variables.index"
+    },
+    {
+      "file": {
+        "name": "variables.data-00000-of-00001",
+        "url": "https://raw.githubusercontent.com/Iagea/DECIMER-Image-Classifier/d21f4cb005f20571bb5e75b08ca375f56655884b/decimer_image_classifier/model/variables/variables.data-00000-of-00001",
+        "size": 19694056,
+        "checksum": "sha256:d4153f669cb35242739d0b901f5b9083d31acd5fcdb8d2c46d2a3589f9d1ed5a",
+        "extract": false,
+        "dest": "model/variables/variables.data-00000-of-00001"
+      },
+      "path": "data/weights/image-classifier/model/variables/variables.data-00000-of-00001"
+    }
+  ]
+}
