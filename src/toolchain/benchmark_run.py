@@ -76,6 +76,24 @@ def _cached_call(cache: PredictionCache | None, model_key: str | None, variant_k
     return pred, dt, False
 
 
+def _canonical_smiles(smiles: str | None) -> str | None:
+    """Return RDKit canonical SMILES, or None if unavailable/invalid."""
+    if smiles is None:
+        return None
+    s = str(smiles).strip()
+    if not s:
+        return None
+    try:
+        from rdkit import Chem, RDLogger
+        RDLogger.DisableLog("rdApp.*")
+        m = Chem.MolFromSmiles(s)
+        if m is None:
+            return None
+        return Chem.MolToSmiles(m, canonical=True)
+    except Exception:
+        return None
+
+
 def benchmark_classifier(labels_path: Path | None = None, *, rows: list[dict[str, Any]] | None = None,
                          predict_fn, limit: int | None = None, cache: PredictionCache | None = None,
                          model_key: str | None = None, variant_key: str | None = None) -> dict[str, Any]:
@@ -137,6 +155,7 @@ def benchmark_ocsr(labels_path: Path | None = None, *, rows: list[dict[str, Any]
     exact = tfm = valid = incomplete_n = 0
     latencies = []
     cache_hits = tf_cache_hits = 0
+    canonical_match_n = canonical_comparable_n = 0
     for row in rows:
         img = _resolve_image(row, labels_path)
         iid = _image_id(row)
@@ -150,8 +169,15 @@ def benchmark_ocsr(labels_path: Path | None = None, *, rows: list[dict[str, Any]
         is_incomplete = bool(pred.get("incomplete")) if isinstance(pred, dict) else False
         is_valid = bool(got) and not is_incomplete
         exact += int(is_exact); incomplete_n += int(is_incomplete); valid += int(is_valid)
+        ce, cg = _canonical_smiles(expected), _canonical_smiles(got)
+        can_match = None
+        if ce is not None and cg is not None:
+            canonical_comparable_n += 1
+            can_match = (ce == cg)
+            canonical_match_n += int(can_match)
         rec = {"id": iid, "expected": expected, "got": got,
-               "exact_match": is_exact, "valid": is_valid, "incomplete": is_incomplete,
+               "exact_match": is_exact, "canonical_expected": ce, "canonical_got": cg, "canonical_match": can_match,
+               "valid": is_valid, "incomplete": is_incomplete,
                "latency_ms": round(dt, 2), "cache_hit": hit}
         if tf_predict_fn is not None:
             tfp, _, tfhit = _cached_call(cache, model_key, tf_variant_key, iid, tf_predict_fn, img, time_it=False)
@@ -159,6 +185,8 @@ def benchmark_ocsr(labels_path: Path | None = None, *, rows: list[dict[str, Any]
             tf_sm = (tfp.get("smiles") if isinstance(tfp, dict) else str(tfp) or "").strip()
             rec["tf_smiles"] = tf_sm
             rec["tf_match"] = got == tf_sm
+            rec["tf_canonical_smiles"] = _canonical_smiles(tf_sm)
+            rec["tf_canonical_match"] = (cg == rec["tf_canonical_smiles"]) if (cg is not None and rec["tf_canonical_smiles"] is not None) else None
             rec["tf_cache_hit"] = tfhit
             tfm += int(rec["tf_match"])
         out_rows.append(rec)
@@ -166,6 +194,9 @@ def benchmark_ocsr(labels_path: Path | None = None, *, rows: list[dict[str, Any]
     res: dict[str, Any] = {
         "task": "ocsr", "count": len(rows),
         "exact_match": exact, "exact_match_rate": exact / n,
+        "canonical_match": canonical_match_n, "canonical_comparable": canonical_comparable_n,
+        "canonical_match_rate": (canonical_match_n / canonical_comparable_n if canonical_comparable_n else None),
+        "canonical_note": "RDKit canonical SMILES equality; counted only when both expected and predicted parse. exact_match is raw string equality.",
         "valid": valid, "valid_rate": valid / n,
         "incomplete": incomplete_n, "incomplete_rate": incomplete_n / n,
         "latency_ms": {"p50": float(np.percentile(latencies, 50)) if latencies else None,

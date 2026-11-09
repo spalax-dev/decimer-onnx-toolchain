@@ -224,7 +224,9 @@ def benchmark_cmd(
         cm = report.get("binary_confusion_matrix", {})
         typer.echo(f"count={report.get('total_rows')} binary_acc={cm.get('accuracy')} confusion={cm.get('matrix_rows_expected_cols_predicted')} tf_parity={report.get('tf_parity')} cache_hits={report.get('cache_hits')} reactions={report.get('reactions_separate_metric',{}).get('count')}")
     else:
-        typer.echo(f"count={report.get('count')} exact={report.get('exact_match')} exact_rate={report.get('exact_match_rate'):.3f} tf_match={report.get('tf_match')} cache_hits={report.get('cache_hits')}")
+        can = report.get("canonical_match"); ccomp = report.get("canonical_comparable"); canr = report.get("canonical_match_rate")
+        can_s = f" canonical={can}/{ccomp} ({canr:.3f})" if ccomp else ""
+        typer.echo(f"count={report.get('count')} exact={report.get('exact_match')} exact_rate={report.get('exact_match_rate'):.3f}{can_s} tf_match={report.get('tf_match')} cache_hits={report.get('cache_hits')}")
         if report.get("latency_ms") and report["latency_ms"].get("p50") is not None:
             typer.echo(f"latency_ms p50={report['latency_ms']['p50']:.1f} p95={report['latency_ms']['p95']:.1f} n_measured={report['latency_ms'].get('n_measured')}")
 
