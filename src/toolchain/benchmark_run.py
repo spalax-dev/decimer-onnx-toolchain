@@ -105,6 +105,7 @@ def benchmark_classifier(labels_path: Path | None = None, *, rows: list[dict[str
     reactions_report: list[dict[str, Any]] = []
     details = []
     cache_hits = 0
+    latencies: list[float] = []
     for row in rows:
         cat = row.get("category")
         mapping = CLASSIFIER_CATEGORY_MAP.get(cat) or row
@@ -112,6 +113,8 @@ def benchmark_classifier(labels_path: Path | None = None, *, rows: list[dict[str
         iid = _image_id(row)
         pred, dt, hit = _cached_call(cache, model_key, variant_key, iid, predict_fn, img)
         cache_hits += int(hit)
+        if not hit:
+            latencies.append(dt)
         pred_label = pred["label"] if isinstance(pred, dict) else str(pred)
         rec = {"id": iid, "image": row.get("image"), "category": cat, "predicted": pred_label, "latency_ms": round(dt, 2), "cache_hit": hit}
         if cat == "reactions" or not mapping.get("included_in_binary", row.get("included_in_binary", False)):
@@ -135,7 +138,12 @@ def benchmark_classifier(labels_path: Path | None = None, *, rows: list[dict[str
             "predicted_no_structure": sum(1 for r in reactions_report if r["predicted"] == "no-structure"),
             "items": reactions_report,
         },
-        "total_rows": len(rows), "cache_hits": cache_hits, "details": details,
+        "total_rows": len(rows), "cache_hits": cache_hits,
+        "latency_ms": {"p50": float(np.percentile(latencies, 50)) if latencies else None,
+                       "p95": float(np.percentile(latencies, 95)) if latencies else None,
+                       "mean": float(np.mean(latencies)) if latencies else None,
+                       "n_measured": len(latencies)},
+        "details": details,
     }
     if model_key or variant_key:
         res["model_key"] = model_key; res["variant_key"] = variant_key
