@@ -296,5 +296,6 @@ def make_tf_classifier_predict_fn(model_dir: Path, threshold: float = CLASSIFIER
         logit = list(out.values())[0] if isinstance(out, dict) else out
         score = float(tf.nn.sigmoid(logit).numpy().reshape(-1)[0])
         label = "structure" if score <= threshold else "no-structure"
-        return {"label": label, "score": score, "logit": float(np.asarray(logit).numpy().reshape(-1)[0])}
+        logit_val = logit.numpy() if hasattr(logit, "numpy") else np.asarray(logit)
+        return {"label": label, "score": score, "logit": float(np.asarray(logit_val).reshape(-1)[0])}
     return _fn
