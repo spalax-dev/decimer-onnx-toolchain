@@ -2,7 +2,7 @@
 
 > Documento generado automáticamente a partir de reportes JSON/manifiestos en `data/`. No incluye decisiones ni juicios sobre los resultados; reporta mediciones, definiciones y criterios de aceptación definidos para la evaluación.
 
-**Generado (UTC):** `2026-11-09T02:41:53.702953+00:00`  
+**Generado (UTC):** `2026-11-09T02:59:27.992392+00:00`  
 **Generador:** `decimer_onnx_export.report.generate_report` / `decimer-export report`  
 **Rama/commits relevantes:** `main` (workspace fetch/export/runtime/cuantización/benchmark).
 
@@ -47,7 +47,6 @@ Criterios definidos como referencia de medición (sin aplicar veredictos en este
 
 | Suite / uso | Modelo objetivo | Fuente | Identificador / pin | Licencia / procedencia (según manifiesto/fuente) | Artefactos locales |
 |---|---|---|---|---|---|
-| DECIMER smoke (4 imágenes) | `ocsr-printed` | `Kohulan/DECIMER-Image_Transformer` | commit `9d0686127d21b572d5e78783874462b542836c6c` | MIT (repo) | `data/benchmark/decimer-smoke/labels.jsonl`; `data/manifests/benchmark-decimer-smoke.fetch.json` |
 | Golden impreso CLEF | `ocsr-printed` | `Keylab/OCSR-Benchmarks` (HF, rows API) | dataset commit observado `2fdcdc59`; config `CLEF`, split `test`, 992 | HF agregado **mixed-see-sources**; verificar términos originales CLEF 2012 | `data/benchmark/hf-clef/labels.jsonl`; `data/manifests/benchmark-hf-clef.import.json` |
 | Golden impreso JPO | `ocsr-printed` | `Keylab/OCSR-Benchmarks` (HF, rows API) | config `JPO`, split `test`, 449 | HF agregado **mixed-see-sources**; verificar términos originales JPO/ChemInfty/OSRA | `data/benchmark/hf-jpo/labels.jsonl`; `data/manifests/benchmark-hf-jpo.import.json` |
 | Hand-drawn HDM | `ocsr-handdrawn` | Zenodo DECIMER Hand-drawn molecule images | record `7617107`, DOI 10.5281/zenodo.7617107, 5088 | CC-BY-4.0 | `data/benchmark/handdrawn-hdm/labels.jsonl`; `data/manifests/benchmark-handdrawn-hdm.fetch.json` |
@@ -58,7 +57,7 @@ Criterios definidos como referencia de medición (sin aplicar veredictos en este
 
 ## 4. Características de la máquina (recolección automática)
 
-Recolectado automáticamente el `2026-11-09T02:41:53.629884+00:00` mediante `platform`, `lscpu` y `free`.
+Recolectado automáticamente el `2026-11-09T02:59:27.906629+00:00` mediante `platform`, `lscpu` y `free`.
 
 | Campo | Valor |
 |---|---|
@@ -74,7 +73,7 @@ Recolectado automáticamente el `2026-11-09T02:41:53.629884+00:00` mediante `pla
 | Cachés L1d/L1i/L2/L3 | `128 KiB (4 instances)` / `128 KiB (4 instances)` / `1 MiB (4 instances)` / `6 MiB (1 instance)` |
 | Flags CPU relevantes | `fma sse4_2 avx avx2` |
 | RAM total | 15.42 GiB (16555552768 bytes) |
-| RAM disponible (al recolectar) | 6.87 GiB |
+| RAM disponible (al recolectar) | 6.89 GiB |
 
 ### Versiones de paquetes (entorno de ejecución)
 
@@ -95,28 +94,21 @@ Recolectado automáticamente el `2026-11-09T02:41:53.629884+00:00` mediante `pla
 
 Columnas: `exact` = exact_match vs etiqueta; `tf_match` = paridad ONNX==TF baseline (ver glosario). `—` = no medido/no disponible en ese reporte.
 
-### 5.1 `ocsr-printed` — smoke DECIMER (4 imágenes)
-
-| Variante | n | exact vs label | tf_match (ONNX==TF) | valid | incomplete | p50 ms | p95 ms | Reporte |
-|---|---:|---:|---:|---:|---:|---:|---:|---|
-| FP32 | 4 | 2 (0.5000) | 4/4 (1.0000) | 4 (1.0000) | 0 | 849.09 | 1464.36 | `data/benchmark/decimer-smoke/report.fp32.json` |
-| E3 static-enc + dyn-dec | 4 | 2 (0.5000) | 4/4 (1.0000) | 4 (1.0000) | 0 | 772.99 | 1168.81 | `data/benchmark/decimer-smoke/report.e3.json` |
-
-### 5.2 `ocsr-printed` — golden CLEF (Keylab/OCSR-Benchmarks, n=992)
+### 5.1 `ocsr-printed` — golden CLEF (Keylab/OCSR-Benchmarks, n=992)
 
 | Variante | n | exact vs label | tf_match (ONNX==TF) | valid | incomplete | p50 ms | p95 ms | Reporte |
 |---|---:|---:|---:|---:|---:|---:|---:|---|
 | E1 dynamic INT8 (+TF) | 992 | 7 (0.0071) | 838/992 (0.8448) | 991 (0.9990) | 1 | 5871.20 | 10230.40 | `data/benchmark/hf-clef/report.e1.tf.json` |
 | E3 static-enc + dyn-dec (tf_match por join a TF de E1) | 992 | 6 (0.0060) | 444/992 (0.4476) [join] | 990 (0.9980) | 2 | 2861.30 | 4919.40 | `data/benchmark/hf-clef/report.e3.tfjoined.json` |
 
-### 5.3 `ocsr-printed` — golden JPO (Keylab/OCSR-Benchmarks, n=449)
+### 5.2 `ocsr-printed` — golden JPO (Keylab/OCSR-Benchmarks, n=449)
 
 | Variante | n | exact vs label | tf_match (ONNX==TF) | valid | incomplete | p50 ms | p95 ms | Reporte |
 |---|---:|---:|---:|---:|---:|---:|---:|---|
 | E1 dynamic INT8 (+TF) | 449 | 9 (0.0200) | 264/449 (0.5880) | 412 (0.9176) | 37 | 6149.83 | 17156.27 | `data/benchmark/hf-jpo/report.e1.tf.json` |
 | E3 static-enc + dyn-dec (tf_match por join a TF de E1) | 449 | 3 (0.0067) | 123/449 (0.2739) [join] | 393 (0.8753) | 56 | 2767.13 | 26985.81 | `data/benchmark/hf-jpo/report.e3.tfjoined.json` |
 
-### 5.4 `ocsr-handdrawn` — HDM Zenodo 7617107 (muestra `--limit 500`)
+### 5.3 `ocsr-handdrawn` — HDM Zenodo 7617107 (muestra `--limit 500`)
 
 | Variante | n | exact vs label | tf_match (ONNX==TF) | valid | incomplete | p50 ms | p95 ms | Reporte |
 |---|---:|---:|---:|---:|---:|---:|---:|---|
@@ -124,13 +116,13 @@ Columnas: `exact` = exact_match vs etiqueta; `tf_match` = paridad ONNX==TF basel
 | E1 dynamic INT8 (+TF) | 500 | 195 (0.3900) | 448/500 (0.8960) | 499 (0.9980) | 1 | 6239.98 | 9709.75 | `data/benchmark/handdrawn-hdm/report.e1.tf.limit500.json` |
 | E3 static-enc + dyn-dec (+TF, calib 32 HDM) | 500 | 0 (0.0000) | 0/500 (0.0000) | 297 (0.5940) | 203 | 25397.42 | 31685.82 | `data/benchmark/handdrawn-hdm/report.e3.tf.limit500.json` |
 
-### 5.5 `ocsr-handdrawn` — HDM completo (5088)
+### 5.4 `ocsr-handdrawn` — HDM completo (5088)
 
 | Variante | n | Estado | Reporte esperado |
 |---|---:|---|---|
 | E1 dynamic INT8 (+TF) | 5088 | Pendiente / no disponible al generar | `data/benchmark/handdrawn-hdm/report.e1.tf.full5088.json` |
 
-### 5.6 `image-classifier`
+### 5.5 `image-classifier`
 
 | Suite | Estado | Nota |
 |---|---|---|

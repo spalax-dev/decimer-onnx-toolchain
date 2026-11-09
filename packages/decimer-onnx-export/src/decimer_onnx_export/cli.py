@@ -184,14 +184,14 @@ def validate_cmd(
 
 @app.command("report")
 def report_cmd(
-    out: Path = typer.Option(None, help="Primary output (default: docs/benchmark-report.md and informe.md)"),
+    out: Path = typer.Option(None, help="Output path (default: docs/benchmark-report.md)"),
 ) -> None:
     """Generate benchmark report (glossary, acceptance criteria, machine info, results) from data/."""
     from decimer_onnx_export.report import generate_report
 
     targets = [out] if out else None
     generate_report(targets=targets)
-    for p in ([out] if out else [Path("docs/benchmark-report.md"), Path("informe.md")]):
+    for p in ([out] if out else [Path("docs/benchmark-report.md")]):
         typer.echo(f"wrote {p}")
 
 

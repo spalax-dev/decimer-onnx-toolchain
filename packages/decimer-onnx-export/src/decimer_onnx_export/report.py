@@ -1,6 +1,6 @@
 """Generate a neutral benchmark report (glossary, acceptance criteria, machine info, results).
 
-Reads benchmark JSON reports/manifests under data/ and writes docs/benchmark-report.md (and informe.md).
+Reads benchmark JSON reports/manifests under data/ and writes docs/benchmark-report.md.
 No judgments or decisions are emitted about results.
 """
 from __future__ import annotations
@@ -155,7 +155,6 @@ PROVENANCE = r"""## 3. Fuentes de datos y procedencia (hechos)
 
 | Suite / uso | Modelo objetivo | Fuente | Identificador / pin | Licencia / procedencia (según manifiesto/fuente) | Artefactos locales |
 |---|---|---|---|---|---|
-| DECIMER smoke (4 imágenes) | `ocsr-printed` | `Kohulan/DECIMER-Image_Transformer` | commit `9d0686127d21b572d5e78783874462b542836c6c` | MIT (repo) | `data/benchmark/decimer-smoke/labels.jsonl`; `data/manifests/benchmark-decimer-smoke.fetch.json` |
 | Golden impreso CLEF | `ocsr-printed` | `Keylab/OCSR-Benchmarks` (HF, rows API) | dataset commit observado `2fdcdc59`; config `CLEF`, split `test`, 992 | HF agregado **mixed-see-sources**; verificar términos originales CLEF 2012 | `data/benchmark/hf-clef/labels.jsonl`; `data/manifests/benchmark-hf-clef.import.json` |
 | Golden impreso JPO | `ocsr-printed` | `Keylab/OCSR-Benchmarks` (HF, rows API) | config `JPO`, split `test`, 449 | HF agregado **mixed-see-sources**; verificar términos originales JPO/ChemInfty/OSRA | `data/benchmark/hf-jpo/labels.jsonl`; `data/manifests/benchmark-hf-jpo.import.json` |
 | Hand-drawn HDM | `ocsr-handdrawn` | Zenodo DECIMER Hand-drawn molecule images | record `7617107`, DOI 10.5281/zenodo.7617107, 5088 | CC-BY-4.0 | `data/benchmark/handdrawn-hdm/labels.jsonl`; `data/manifests/benchmark-handdrawn-hdm.fetch.json` |
@@ -216,19 +215,15 @@ def render_results() -> tuple[str, list[str]]:
         lines.extend(got)
         lines.append("")
 
-    table("5.1 `ocsr-printed` — smoke DECIMER (4 imágenes)", [
-        _row("FP32", b/"decimer-smoke/report.fp32.json"),
-        _row("E3 static-enc + dyn-dec", b/"decimer-smoke/report.e3.json"),
-    ])
-    table("5.2 `ocsr-printed` — golden CLEF (Keylab/OCSR-Benchmarks, n=992)", [
+    table("5.1 `ocsr-printed` — golden CLEF (Keylab/OCSR-Benchmarks, n=992)", [
         _row("E1 dynamic INT8 (+TF)", b/"hf-clef/report.e1.tf.json"),
         _row("E3 static-enc + dyn-dec (tf_match por join a TF de E1)", b/"hf-clef/report.e3.tfjoined.json", tf_join_note="[join]"),
     ])
-    table("5.3 `ocsr-printed` — golden JPO (Keylab/OCSR-Benchmarks, n=449)", [
+    table("5.2 `ocsr-printed` — golden JPO (Keylab/OCSR-Benchmarks, n=449)", [
         _row("E1 dynamic INT8 (+TF)", b/"hf-jpo/report.e1.tf.json"),
         _row("E3 static-enc + dyn-dec (tf_match por join a TF de E1)", b/"hf-jpo/report.e3.tfjoined.json", tf_join_note="[join]"),
     ])
-    table("5.4 `ocsr-handdrawn` — HDM Zenodo 7617107 (muestra `--limit 500`)", [
+    table("5.3 `ocsr-handdrawn` — HDM Zenodo 7617107 (muestra `--limit 500`)", [
         _row("FP32 (+TF)", b/"handdrawn-hdm/report.fp32.tf.limit500.json"),
         _row("E1 dynamic INT8 (+TF)", b/"handdrawn-hdm/report.e1.tf.limit500.json"),
         _row("E3 static-enc + dyn-dec (+TF, calib 32 HDM)", b/"handdrawn-hdm/report.e3.tf.limit500.json"),
@@ -236,19 +231,19 @@ def render_results() -> tuple[str, list[str]]:
     # full HDM
     full = b/"handdrawn-hdm/report.e1.tf.full5088.json"
     if full.exists():
-        table("5.5 `ocsr-handdrawn` — HDM completo (5088)", [
+        table("5.4 `ocsr-handdrawn` — HDM completo (5088)", [
             _row("E1 dynamic INT8 (+TF)", full),
         ])
     else:
         pending.append(f"`ocsr-handdrawn` HDM completo n=5088, E1+TF: `{full.relative_to(ROOT)}` (no encontrado al generar).")
-        lines.append("### 5.5 `ocsr-handdrawn` — HDM completo (5088)")
+        lines.append("### 5.4 `ocsr-handdrawn` — HDM completo (5088)")
         lines.append("")
         lines.append("| Variante | n | Estado | Reporte esperado |")
         lines.append("|---|---:|---|---|")
         lines.append(f"| E1 dynamic INT8 (+TF) | 5088 | Pendiente / no disponible al generar | `{full.relative_to(ROOT)}` |")
         lines.append("")
 
-    lines.append("### 5.6 `image-classifier`")
+    lines.append("### 5.5 `image-classifier`")
     lines.append("")
     lines.append("| Suite | Estado | Nota |")
     lines.append("|---|---|---|")
@@ -270,7 +265,7 @@ LIMITATIONS = r"""## 6. Limitaciones de medición (hechos metodológicos)
 
 def generate_report(targets: list[Path] | None = None, machine_info: dict[str, Any] | None = None) -> str:
     if targets is None:
-        targets = [ROOT / "docs/benchmark-report.md", ROOT / "informe.md"]
+        targets = [ROOT / "docs/benchmark-report.md"]
     info = machine_info or collect_machine_info()
     results, pending = render_results()
     now = datetime.now(timezone.utc).isoformat()

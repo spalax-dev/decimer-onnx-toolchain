@@ -19,7 +19,7 @@ See [`TODO.md`](TODO.md) for progress.
 
 ## Benchmark report
 
-- [`docs/benchmark-report.md`](docs/benchmark-report.md) / [`informe.md`](informe.md): glosario, criterios de aceptación definidos para la evaluación, características de la máquina (recolección automática), procedencia y resultados numéricos generados desde `data/benchmark/**/*.json` y manifiestos.
+- [`docs/benchmark-report.md`](docs/benchmark-report.md): glosario, criterios de aceptación definidos para la evaluación, características de la máquina (recolección automática), procedencia y resultados numéricos generados desde `data/benchmark/**/*.json` y manifiestos.
 - Regenerar: `uv run decimer-export report`
 
 ## Quick start (bootstrap)
