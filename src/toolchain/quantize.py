@@ -423,11 +423,26 @@ def quantize_e1s_selective(fp32_dir: Path, out_dir: Path) -> QuantizeResult:
 
 
 def quantize_e4_fp16(fp32_dir: Path, out_dir: Path) -> QuantizeResult:
-    """E4: FP16 conversion (safety net). Known CPU runtime issue in decoder attention (see E4 notes)."""
+    """E4: FP16 conversion (safety net). Known CPU runtime issue in OCSR decoder attention (see E4 notes)."""
     import onnx
     from onnxruntime.transformers.float16 import convert_float_to_float16
 
     out_dir.mkdir(parents=True, exist_ok=True)
+    clf_in = fp32_dir / "classifier.fp32.onnx"
+    if clf_in.exists():
+        res = QuantizeResult(variant="e4-fp16-classifier")
+        out = out_dir / "classifier.e4.fp16.onnx"
+        try:
+            model = onnx.load(str(clf_in))
+            model_fp16 = convert_float_to_float16(model, keep_io_types=True)
+            onnx.save(model_fp16, str(out))
+            res.encoder_path = str(out)
+        except Exception as e:  # noqa: BLE001
+            res.errors.append(f"classifier e4 failed: {e}")
+        _meta(res, clf_in, clf_in, {"mode": "classifier"})
+        (out_dir / "e4.fp16.meta.json").write_text(json.dumps(asdict(res), indent=2) + "\n", encoding="utf-8")
+        return res
+
     res = QuantizeResult(variant="e4-fp16")
     enc_in = fp32_dir / "encoder.fp32.onnx"
     dec_in = fp32_dir / "decoder_step.fp32.onnx"
