@@ -35,14 +35,13 @@ def resolve_frozen_rows(frozen: dict[str, Any], *, split: str = "eval") -> tuple
         lp = ROOT / src["labels"] if not Path(src["labels"]).is_absolute() else Path(src["labels"])
         subset = src.get("subset")
         for r in load_labels(lp):
-            key = f"{subset}::{r['id']}" if subset and subset != "hdm" or (subset == "hdm" and "::" not in str(r["id"])) else str(r["id"])
-            # for hdm we used hdm::id
+            rid = r.get("id") or r.get("image")
             if subset == "hdm":
                 key = f"hdm::{r['id']}"
             elif subset in ("clef", "jpo"):
                 key = f"{subset}::{r['id']}"
             else:
-                key = r.get("_frozen_key") or f"{subset or frozen.get('dossier','x')}::{r['id']}"
+                key = r.get("_frozen_key") or f"{subset or frozen.get('dossier','x')}::{rid}"
             r = dict(r)
             r["_frozen_key"] = key
             r["_labels_path"] = str(lp)

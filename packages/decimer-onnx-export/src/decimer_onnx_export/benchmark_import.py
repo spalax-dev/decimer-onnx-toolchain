@@ -161,17 +161,21 @@ def import_classifier_13378718(root: Path, data_dir: Path = DEFAULT_BENCH_DIR, *
         base = root / split
     if not base.exists():
         raise FileNotFoundError(f"classifier split not found: {base}")
+    # Zenodo 13378718 uses folder 'rest' for the 'other' (no-structure, non-molecule/reaction) class
+    folder_aliases = {"other": ["other", "rest"]}
     labels: list[dict[str, Any]] = []
     for cat, mapping in CLASSIFIER_CATEGORY_MAP.items():
-        cat_dir = base / cat
-        if not cat_dir.exists():
-            print(f"  warn: missing category dir {cat_dir}", file=sys.stderr)
+        folders = folder_aliases.get(cat, [cat])
+        cat_dir = next((base / f for f in folders if (base / f).exists()), None)
+        if cat_dir is None:
+            print(f"  warn: missing category dir for {cat} (tried {folders})", file=sys.stderr)
             continue
         for img in sorted(cat_dir.iterdir()):
             if img.suffix.lower() not in {".png", ".jpg", ".jpeg", ".bmp", ".webp", ".gif"}:
                 continue
             labels.append({
                 "image": str(img.resolve()), "category": cat,
+                "category_folder": cat_dir.name,
                 "binary_label": mapping["binary"],
                 "included_in_binary": mapping["included_in_binary"],
                 "model": "image-classifier", "source": "Zenodo:13378718",
@@ -185,7 +189,8 @@ def import_classifier_13378718(root: Path, data_dir: Path = DEFAULT_BENCH_DIR, *
         "upstream_license": "MIT (dataset record)",
         "source_root": str(root), "split": split,
         "category_map": CLASSIFIER_CATEGORY_MAP,
-        "mapping_rationale": "DECIMER classifier is binary (structure vs no-structure). one/several_molecule mapped to structure; other to no-structure; reactions excluded from binary confusion matrix and reported separately as ambiguous.",
+        "folder_aliases": {"other": ["other", "rest"]},
+        "mapping_rationale": "DECIMER classifier is binary (structure vs no-structure). one/several_molecule mapped to structure; other (Zenodo folder 'rest') to no-structure; reactions excluded from binary confusion matrix and reported separately as ambiguous.",
         "labels_path": str(labels_path), "labels_count": len(labels),
         "binary_count": sum(1 for r in labels if r["included_in_binary"]),
         "reactions_count": sum(1 for r in labels if r["category"] == "reactions"),
