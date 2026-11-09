@@ -26,7 +26,7 @@ Cada modelo se valida contra **su** suite, con **su** métrica, **su** criterio 
 | `hf-clef` | Impreso | 992 | Keylab/OCSR-Benchmarks, commit obs. `2fdcdc59`; HF **mixed-see-sources**; verificar términos originales CLEF 2012 | **IN** | `data/manifests/benchmark-hf-clef.import.json`, `data/benchmark/hf-clef/labels.jsonl` |
 | `hf-jpo` | Impreso | 449 | idem agregado; verificar términos originales JPO/ChemInfty/OSRA | **IN** | `data/manifests/benchmark-hf-jpo.import.json`, `data/benchmark/hf-jpo/labels.jsonl` |
 | `handdrawn-hdm` | Manuscrito | 5088 | Zenodo 7617107, CC-BY-4.0, md5 verificados | **IN** | `data/manifests/benchmark-handdrawn-hdm.fetch.json`, `data/benchmark/handdrawn-hdm/labels.jsonl` |
-| `classifier-13378718` | Clasificador | por split extraído | Zenodo 13378718, md5 zip `e7e47f2a16735238104e8dd7ec5e65af`; registro MIT, origen imágenes mixto (verificar) | **IN** (requiere extracción local + export ONNX) | importador `--source classifier-13378718` |
+| `classifier-13378718` | Clasificador | por split extraído | Zenodo 13378718, md5 zip `e7e47f2aa4af4b79874a19382cec06da` (Zenodo API); registro MIT, origen imágenes mixto (verificar) | **IN** (requiere extracción local + export ONNX) | importador `--source classifier-13378718` |
 | Zenodo **6670746** | — | 126.6 GB, archivo único | CC-BY-4.0; sin test separado expuesto | **OUT OF SCOPE (formalizado)** — no se descarga ni usa | — |
 | `decimer-smoke` | Impreso (sanity opcional) | 4 | DECIMER-Image_Transformer `@9d06861`, MIT, SHA-256 | **IN opcional**, fuera del informe principal | `data/manifests/benchmark-decimer-smoke.fetch.json` |
 
