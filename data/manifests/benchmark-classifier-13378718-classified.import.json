@@ -1,0 +1,38 @@
+{
+  "suite": "classifier-13378718-classified",
+  "title": "Classifier eval from Zenodo 13378718 (explicit 4->binary mapping)",
+  "record": "https://zenodo.org/records/13378718",
+  "upstream_license": "MIT (dataset record)",
+  "source_root": "data/benchmark/classifier-13378718/extracted/dataset_for_image_classifier",
+  "split": "classified",
+  "category_map": {
+    "one_molecule": {
+      "binary": "structure",
+      "included_in_binary": true
+    },
+    "several_molecules": {
+      "binary": "structure",
+      "included_in_binary": true
+    },
+    "other": {
+      "binary": "no-structure",
+      "included_in_binary": true
+    },
+    "reactions": {
+      "binary": null,
+      "included_in_binary": false,
+      "report_as": "ambiguous_excluded"
+    }
+  },
+  "folder_aliases": {
+    "other": [
+      "other",
+      "rest"
+    ]
+  },
+  "mapping_rationale": "DECIMER classifier is binary (structure vs no-structure). one/several_molecule mapped to structure; other (Zenodo folder 'rest') to no-structure; reactions excluded from binary confusion matrix and reported separately as ambiguous.",
+  "labels_path": "data/benchmark/classifier-13378718/classifier-13378718-classified.labels.jsonl",
+  "labels_count": 16000,
+  "binary_count": 12000,
+  "reactions_count": 4000
+}

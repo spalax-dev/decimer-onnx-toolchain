@@ -171,7 +171,7 @@ def import_classifier_13378718(root: Path, data_dir: Path = DEFAULT_BENCH_DIR, *
             print(f"  warn: missing category dir for {cat} (tried {folders})", file=sys.stderr)
             continue
         for img in sorted(cat_dir.iterdir()):
-            if img.suffix.lower() not in {".png", ".jpg", ".jpeg", ".bmp", ".webp", ".gif"}:
+            if img.suffix.lower() not in {".png", ".jpg", ".jpeg", ".bmp", ".webp", ".gif", ".tif", ".tiff"}:
                 continue
             labels.append({
                 "image": str(img.resolve()), "category": cat,
