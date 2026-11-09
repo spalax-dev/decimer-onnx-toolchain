@@ -2,7 +2,7 @@
 
 > Documento generado automáticamente a partir de reportes JSON/manifiestos en `data/`. No incluye decisiones ni juicios sobre los resultados; reporta mediciones, definiciones y criterios de aceptación definidos para la evaluación.
 
-**Generado (UTC):** `2026-11-09T22:48:06.316520+00:00`  
+**Generado (UTC):** `2026-11-09T22:52:33.175416+00:00`  
 **Generador:** `toolchain.report.generate_report` / `dtx report` (alias: `decimer-export report`)  
 **Rama/commits relevantes:** `main` (workspace fetch/export/runtime/cuantización/benchmark).
 
@@ -37,18 +37,17 @@ Las métricas se calculan con el mismo harness sobre el mismo conjunto de imáge
 
 ## 2. Criterios de aceptación (definidos para la evaluación)
 
-Criterios definidos como referencia de medición (sin aplicar veredictos en este documento):
-
 | Criterio | Definición / condición de aceptación |
 |---|---|
+| **Piso absoluto (obligatorio, todos)** | **Accuracy ≥ 70%** en la **métrica primaria** del dossier, sobre el **split `eval` congelado** (mismos IDs). **OCSR:** `canonical_match_rate` RDKit (sobre pares comparables). **Clasificador:** `binary accuracy` (no-reacción). Variantes < 70% **no se aceptan**. |
 | **Comparación pareada** | Todas las variantes se miden sobre el **mismo set/IDs congelados** (piloto ⊂ eval ⊂ pool). Δ vs FP32 en pp sobre mismos IDs. |
-| **Fidelidad (tasa / estricta)** | `tf_match_rate = tf_match/count` (ONNX==TF). Estricto: 100%. Umbral numérico (`≥ [TBD]%`) es parámetro externo si se define. |
-| **Δ vs FP32 (precisión/fidelidad)** | Diferencia absoluta en pp vs FP32, misma métrica e IDs. Umbral `≤ [TBD] pp` es parámetro externo si se define. |
-| **Exactitud (canónica / cadena)** | Canónica RDKit (`canonical_match`) integrada en benchmark OCSR (cuando ambos SMILES parsean). Preferida para tarea química. `exact_match` string (`predicho == esperado`, sin canonicalizar) se reporta como dato. |
+| **Fidelidad (tasa / estricta)** | `tf_match_rate`/`tf_canonical_match_rate` (ONNX≈TF). Estricto: 100%. Umbral numérico (`≥ [TBD]%`) es parámetro externo si se define. |
+| **Δ vs FP32 (precisión/fidelidad)** | Diferencia absoluta en pp vs FP32, misma métrica e IDs. Umbral `≤ [TBD] pp` `[TBD]`. |
+| **Exactitud OCSR (primaria/secundaria)** | **Primaria:** canónica RDKit (`canonical_match`). **Secundaria:** `exact_match` string (sin canonicalizar), dato informativo. |
 | **Validez / completitud** | `valid_rate`, `incomplete_rate`. Umbrales externos si se definen. |
-| **Latencia** | **p50/p95** ms, mismo hardware y execution provider (p. ej. ORT CPU). No solo media. Umbral p95 externo si se define. INT8 dinámico no implica menor latencia. |
+| **Latencia** | **p50/p95** ms, mismo hardware y execution provider (ORT CPU). No solo media. Umbral p95 `[TBD]`. INT8 dinámico no implica menor latencia. |
 | **Tamaño / throughput** | MB en disco (artefactos); throughput (img/s, batch) si aplica. |
-| **Clasificador** | Matriz 4×4 + binaria sobre 3 clases mapeadas; `reactions` separada/excluida del binario. |
+| **Clasificador** | Binaria sobre 3 clases mapeadas; `reactions` separada/excluida del binario. |
 | **Reproducibilidad** | Fuente/pin/manifiesto/checksums, IDs congelados (seed), hardware/provider/versiones. |
 
 ## 3. Fuentes de datos y procedencia (hechos)
@@ -65,7 +64,7 @@ Criterios definidos como referencia de medición (sin aplicar veredictos en este
 
 ## 4. Características de la máquina (recolección automática)
 
-Recolectado automáticamente el `2026-11-09T22:48:06.061459+00:00` mediante `platform`, `lscpu` y `free`.
+Recolectado automáticamente el `2026-11-09T22:52:32.991522+00:00` mediante `platform`, `lscpu` y `free`.
 
 | Campo | Valor |
 |---|---|
@@ -81,7 +80,7 @@ Recolectado automáticamente el `2026-11-09T22:48:06.061459+00:00` mediante `pla
 | Cachés L1d/L1i/L2/L3 | `128 KiB (4 instances)` / `128 KiB (4 instances)` / `1 MiB (4 instances)` / `6 MiB (1 instance)` |
 | Flags CPU relevantes | `fma sse4_2 avx avx2` |
 | RAM total | 15.42 GiB (16555552768 bytes) |
-| RAM disponible (al recolectar) | 7.17 GiB |
+| RAM disponible (al recolectar) | 6.70 GiB |
 
 ### Versiones de paquetes (entorno de ejecución)
 
@@ -107,31 +106,31 @@ Protocolo: variantes comparadas sobre **mismos IDs** cuando aplica (pareado, pil
 
 | Variante | n | **canonical RDKit (primaria, comp.)** | exact string | tf_match string (+ tf_canonical) | Δcanonical pp | Δtf pp | Δexact pp | valid | incomplete | p50 ms | p95 ms | tamaño MB | Reporte |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|
-| FP32 (+TF) | 1000 | **614/872 (0.7041)** | 12 (0.0120) | 820/1000 (0.8200) / can 766/878 (0.872) | (ref) | (ref) | (ref) | 969 (0.9690) | 31 | 2316.82 | 5457.46 | — | `data/benchmark/eval-1000/printed.fp32.eval1000.json` |
-| E1 dynamic INT8 all (+TF) | 1000 | **597/881 (0.6776)** | 12 (0.0120) | 757/1000 (0.7570) / can 721/881 (0.818) | -2.65 pp | -6.30 pp | +0.00 pp | 976 (0.9760) | 24 | 3815.98 | 7302.61 | — | `data/benchmark/eval-1000/printed.int8-dyn-all.eval1000.json` |
+| FP32 (+TF) | 1000 | **614/872 (0.7041)** ✅≥70% | 12 (0.0120) | 820/1000 (0.8200) / can 766/878 (0.872) | (ref) | (ref) | (ref) | 969 (0.9690) | 31 | 2316.82 | 5457.46 | — | `data/benchmark/eval-1000/printed.fp32.eval1000.json` |
+| E1 dynamic INT8 all (+TF) | 1000 | **597/881 (0.6776)** ❌<70% | 12 (0.0120) | 757/1000 (0.7570) / can 721/881 (0.818) | -2.65 pp | -6.30 pp | +0.00 pp | 976 (0.9760) | 24 | 3815.98 | 7302.61 | — | `data/benchmark/eval-1000/printed.int8-dyn-all.eval1000.json` |
 
 ### 5.P `ocsr-printed` — piloto congelado (split `pilot`, TF+cache) (frozen n=1400, eval=1000, pilot=300, seed=20260308, source=`data/manifests/frozen/printed.frozen.json`)
 
 | Variante | n | **canonical RDKit (primaria, comp.)** | exact string | tf_match string (+ tf_canonical) | Δcanonical pp | Δtf pp | Δexact pp | valid | incomplete | p50 ms | p95 ms | tamaño MB | Reporte |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|
-| FP32 (+TF) | 300 | **187/263 (0.7110)** | 1 (0.0033) | 248/300 (0.8267) / can 230/263 (0.875) | (ref) | (ref) | (ref) | 290 (0.9667) | 10 | — (cache, sin latencia fresca) | — | 301.2 | `data/benchmark/pilot/printed.fp32.pilot300.json` |
-| E1 dynamic INT8 all (+TF) | 300 | **182/266 (0.6842)** | 1 (0.0033) | 230/300 (0.7667) / can 219/262 (0.836) | -2.68 pp | -6.00 pp | +0.00 pp | 292 (0.9733) | 8 | — (cache, sin latencia fresca) | — | 81.3 | `data/benchmark/pilot/printed.int8-dyn-all.pilot300.json` |
-| E1s selective dyn (decoder sin atención) (+TF) | 300 | **182/267 (0.6816)** | 1 (0.0033) | 231/300 (0.7700) / can 219/263 (0.833) | -2.94 pp | -5.67 pp | +0.00 pp | 293 (0.9767) | 7 | 3622.71 | 6244.48 | — | `data/benchmark/pilot/printed.e1s-sel-noattn.pilot300.json` |
+| FP32 (+TF) | 300 | **187/263 (0.7110)** ✅≥70% | 1 (0.0033) | 248/300 (0.8267) / can 230/263 (0.875) | (ref) | (ref) | (ref) | 290 (0.9667) | 10 | — (cache, sin latencia fresca) | — | 301.2 | `data/benchmark/pilot/printed.fp32.pilot300.json` |
+| E1 dynamic INT8 all (+TF) | 300 | **182/266 (0.6842)** ❌<70% | 1 (0.0033) | 230/300 (0.7667) / can 219/262 (0.836) | -2.68 pp | -6.00 pp | +0.00 pp | 292 (0.9733) | 8 | — (cache, sin latencia fresca) | — | 81.3 | `data/benchmark/pilot/printed.int8-dyn-all.pilot300.json` |
+| E1s selective dyn (decoder sin atención) (+TF) | 300 | **182/267 (0.6816)** ❌<70% | 1 (0.0033) | 231/300 (0.7700) / can 219/263 (0.833) | -2.94 pp | -5.67 pp | +0.00 pp | 293 (0.9767) | 7 | 3622.71 | 6244.48 | — | `data/benchmark/pilot/printed.e1s-sel-noattn.pilot300.json` |
 
 ### 5.E `ocsr-handdrawn` — **eval-1000 congelado** (split `eval`, TF+cache) (frozen n=1400, eval=1000, pilot=300, seed=20260308, source=`data/manifests/frozen/handdrawn.frozen.json`)
 
 | Variante | n | **canonical RDKit (primaria, comp.)** | exact string | tf_match string (+ tf_canonical) | Δcanonical pp | Δtf pp | Δexact pp | valid | incomplete | p50 ms | p95 ms | tamaño MB | Reporte |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|
-| FP32 (+TF) | 1000 | **711/974 (0.7300)** | 381 (0.3810) | 912/1000 (0.9120) / can 900/969 (0.929) | (ref) | (ref) | (ref) | 999 (0.9990) | 1 | 1114.95 | 2155.76 | — | `data/benchmark/eval-1000/handdrawn.fp32.eval1000.json` |
-| E1 dynamic INT8 all (+TF) | 1000 | **692/968 (0.7149)** | 368 (0.3680) | 858/1000 (0.8580) / can 859/958 (0.897) | -1.51 pp | -5.40 pp | -1.30 pp | 999 (0.9990) | 1 | 2859.57 | 3951.42 | — | `data/benchmark/eval-1000/handdrawn.int8-dyn-all.eval1000.json` |
+| FP32 (+TF) | 1000 | **711/974 (0.7300)** ✅≥70% | 381 (0.3810) | 912/1000 (0.9120) / can 900/969 (0.929) | (ref) | (ref) | (ref) | 999 (0.9990) | 1 | 1114.95 | 2155.76 | — | `data/benchmark/eval-1000/handdrawn.fp32.eval1000.json` |
+| E1 dynamic INT8 all (+TF) | 1000 | **692/968 (0.7149)** ✅≥70% | 368 (0.3680) | 858/1000 (0.8580) / can 859/958 (0.897) | -1.51 pp | -5.40 pp | -1.30 pp | 999 (0.9990) | 1 | 2859.57 | 3951.42 | — | `data/benchmark/eval-1000/handdrawn.int8-dyn-all.eval1000.json` |
 
 ### 5.P `ocsr-handdrawn` — piloto congelado (split `pilot`, TF+cache) (frozen n=1400, eval=1000, pilot=300, seed=20260308, source=`data/manifests/frozen/handdrawn.frozen.json`)
 
 | Variante | n | **canonical RDKit (primaria, comp.)** | exact string | tf_match string (+ tf_canonical) | Δcanonical pp | Δtf pp | Δexact pp | valid | incomplete | p50 ms | p95 ms | tamaño MB | Reporte |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|
-| FP32 (+TF) | 300 | **210/292 (0.7192)** | 121 (0.4033) | 279/300 (0.9300) / can 273/291 (0.938) | (ref) | (ref) | (ref) | 299 (0.9967) | 1 | — (cache, sin latencia fresca) | — | 301.2 | `data/benchmark/pilot/handdrawn.fp32.pilot300.json` |
-| E1 dynamic INT8 all (+TF) | 300 | **204/293 (0.6962)** | 116 (0.3867) | 266/300 (0.8867) / can 263/290 (0.907) | -2.29 pp | -4.33 pp | -1.67 pp | 299 (0.9967) | 1 | — (cache, sin latencia fresca) | — | 81.3 | `data/benchmark/pilot/handdrawn.int8-dyn-all.pilot300.json` |
-| E1s selective dyn (decoder sin atención) (+TF) | 300 | **207/292 (0.7089)** | 118 (0.3933) | 263/300 (0.8767) / can 260/289 (0.900) | -1.03 pp | -5.33 pp | -1.00 pp | 299 (0.9967) | 1 | 2860.85 | 3963.42 | — | `data/benchmark/pilot/handdrawn.e1s-sel-noattn.pilot300.json` |
+| FP32 (+TF) | 300 | **210/292 (0.7192)** ✅≥70% | 121 (0.4033) | 279/300 (0.9300) / can 273/291 (0.938) | (ref) | (ref) | (ref) | 299 (0.9967) | 1 | — (cache, sin latencia fresca) | — | 301.2 | `data/benchmark/pilot/handdrawn.fp32.pilot300.json` |
+| E1 dynamic INT8 all (+TF) | 300 | **204/293 (0.6962)** ❌<70% | 116 (0.3867) | 266/300 (0.8867) / can 263/290 (0.907) | -2.29 pp | -4.33 pp | -1.67 pp | 299 (0.9967) | 1 | — (cache, sin latencia fresca) | — | 81.3 | `data/benchmark/pilot/handdrawn.int8-dyn-all.pilot300.json` |
+| E1s selective dyn (decoder sin atención) (+TF) | 300 | **207/292 (0.7089)** ✅≥70% | 118 (0.3933) | 263/300 (0.8767) / can 260/289 (0.900) | -1.03 pp | -5.33 pp | -1.00 pp | 299 (0.9967) | 1 | 2860.85 | 3963.42 | — | `data/benchmark/pilot/handdrawn.e1s-sel-noattn.pilot300.json` |
 
 ### 5.1 `ocsr-printed` — golden CLEF (Keylab/OCSR-Benchmarks, n=992, evidencia histórica)
 
@@ -167,11 +166,11 @@ Frozen: n=4000, eval=1000, pilot=300, seed=20260308, clases {'one_molecule': 100
 
 | Variante (split) | total filas | Binaria acc (no-reaction) | Matriz `[[TN,FP],[FN,TP]]` | Δacc vs FP32 | Paridad TF (incl. reactions) | reactions (separada) | p50 ms | p95 ms | Reporte |
 |---|---:|---:|---|---:|---:|---|---:|---:|---|
-| FP32 (ref) | 1000 | 0.7666 (n=754) | `[[318, 175], [1, 260]]` | (ref) | 1000/1000 (1.0000) | 246 → struct 173 / no-struct 73 | 46.16 | 205.17 | `data/benchmark/eval-1000/classifier.fp32.eval1000.json` |
-| E1 dynamic INT8 all | 1000 | 0.4085 (n=754) | `[[47, 446], [0, 261]]` | -35.81 pp | 559/1000 (0.5590) | 246 → struct 4 / no-struct 242 | 161.42 | 307.14 | `data/benchmark/eval-1000/classifier.int8-dyn-all.eval1000.json` |
-| E1s selective dyn (no Conv) | 1000 | 0.7666 (n=754) | `[[318, 175], [1, 260]]` | +0.00 pp | 1000/1000 (1.0000) | 246 → struct 173 / no-struct 73 | 36.51 | 167.87 | `data/benchmark/eval-1000/classifier.e1s-sel.eval1000.json` |
-| E4 FP16 (seleccionada, compresión ≥50%, acc ≥70%) | 1000 | 0.7679 (n=754) | `[[319, 174], [1, 260]]` | +0.13 pp | 998/1000 (0.9980) | 246 → struct 174 / no-struct 72 | 49.20 | 206.48 | `data/benchmark/eval-1000/classifier.e4-fp16.eval1000.json` |
-| E2 static QDQ (holdout calib) | 1000 | 0.5345 (n=754) | `[[142, 351], [0, 261]]` | -23.21 pp | 667/1000 (0.6670) | 246 → struct 19 / no-struct 227 | 63.35 | 232.49 | `data/benchmark/eval-1000/classifier.e2-static-holdout.eval1000.json` |
+| FP32 (ref) | 1000 | 0.7666 (n=754) ✅≥70% | `[[318, 175], [1, 260]]` | (ref) | 1000/1000 (1.0000) | 246 → struct 173 / no-struct 73 | 46.16 | 205.17 | `data/benchmark/eval-1000/classifier.fp32.eval1000.json` |
+| E1 dynamic INT8 all | 1000 | 0.4085 (n=754) ❌<70% | `[[47, 446], [0, 261]]` | -35.81 pp | 559/1000 (0.5590) | 246 → struct 4 / no-struct 242 | 161.42 | 307.14 | `data/benchmark/eval-1000/classifier.int8-dyn-all.eval1000.json` |
+| E1s selective dyn (no Conv) | 1000 | 0.7666 (n=754) ✅≥70% | `[[318, 175], [1, 260]]` | +0.00 pp | 1000/1000 (1.0000) | 246 → struct 173 / no-struct 73 | 36.51 | 167.87 | `data/benchmark/eval-1000/classifier.e1s-sel.eval1000.json` |
+| E4 FP16 (seleccionada, compresión ≥50%, acc ≥70%) | 1000 | 0.7679 (n=754) ✅≥70% | `[[319, 174], [1, 260]]` | +0.13 pp | 998/1000 (0.9980) | 246 → struct 174 / no-struct 72 | 49.20 | 206.48 | `data/benchmark/eval-1000/classifier.e4-fp16.eval1000.json` |
+| E2 static QDQ (holdout calib) | 1000 | 0.5345 (n=754) ❌<70% | `[[142, 351], [0, 261]]` | -23.21 pp | 667/1000 (0.6670) | 246 → struct 19 / no-struct 227 | 63.35 | 232.49 | `data/benchmark/eval-1000/classifier.e2-static-holdout.eval1000.json` |
 
 > **Decisión (clasificador, por ahora):** `E4 FP16` cumple el objetivo (acc ≈ FP32, ≥70%; **-49% tamaño**, 15.35→7.78 MB; paridad TF 0.998; latencia CPU similar). INT8 en Conv (E1-all/E2 static holdout) regresa bajo 70%; E1s preserva accuracy pero no comprime.
 

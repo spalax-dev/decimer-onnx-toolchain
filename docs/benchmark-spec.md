@@ -42,7 +42,7 @@ Cada modelo se valida contra **su** suite, con **su** métrica, **su** criterio 
 
 ### 4.1 Protocolo de medición pareado (por variante)
 Cada variante se mide sobre el **mismo set congelado / mismos IDs** (piloto ⊂ eval ⊂ pool; nunca mezclar sets entre variantes). Por cada corrida registrar:
-- **Precisión/tarea:** métrica definida por dossier (OCSR: idealmente exactitud SMILES **canónica con RDKit** `[pendiente integrar]` + `exact_match` cadena como dato; fidelidad `tf_match` ONNX↔TF). Reportar **Δ absoluto en pp contra FP32** (misma métrica, mismos IDs) además del valor absoluto.
+- **Precisión/tarea (primaria):** métrica definida por dossier. **OCSR:** exactitud SMILES **canónica RDKit** (`canonical_match`, **primaria**, integrada) + `exact_match` cadena (secundaria); fidelidad `tf_match`/`tf_canonical_match` ONNX↔TF. **Clasificador:** binary accuracy (primaria). **Piso absoluto: ≥70%** en métrica primaria (eval congelado). Reportar **Δ absoluto en pp contra FP32** (misma métrica, mismos IDs).
 - **Latencia:** **p50 y p95** en el **mismo hardware** y **mismo execution provider** (p. ej. ORT `CPUExecutionProvider`), registrados. No reportar solo media; la cola (p95) es relevante.
 - **Tamaño en disco:** MB de los artefactos del modelo (encoder+decoder u equivalente), por variante.
 - **Throughput:** si se procesan lotes, reportar lotes/s o imágenes/s con tamaño de lote `[si aplica]`.
@@ -52,9 +52,10 @@ Cada variante se mide sobre el **mismo set congelado / mismos IDs** (piloto ⊂ 
 **Advertencia de medición:** la cuantización dinámica (INT8) **no siempre es más rápida** (el overhead de cuantizar activaciones en runtime puede anular/peorar la ganancia). La latencia se mide, no se asume.
 
 ### 4.2 Etiquetas / métricas por bloque
-- **OCSR (impreso/manuscrito):** `tf_match` (fidelidad ONNX↔TF, protocolo registrado), exactitud canónica RDKit `[TBD integrar]` + `exact_match` cadena, `valid`/`incomplete`, latencia p50/p95, tamaño, throughput si aplica.
-- **Clasificador:** **matriz 4×4** (`one_molecule`, `several_molecules`, `other`, `reactions`) + binario colapsado visible (`one/several_molecule→structure`, `other→no-structure`) con **`reactions` excluida del binario** y reportada aparte (`ambiguous_excluded`). Fidelidad ONNX↔baseline si aplica.
-- **Criterios numéricos:** placeholders `[TBD]` por dossier (pueden diferir). Criterios típicos a fijar: `Δ vs FP32 ≤ [TBD] pp` (precisión/fidelidad), p95 `≤ [TBD] ms`.
+- **OCSR (impreso/manuscrito):** **`canonical_match` RDKit (primaria, calidad química)** sobre pares comparables + `exact_match` cadena (secundaria), `tf_match`/`tf_canonical_match` (fidelidad ONNX↔TF), `valid`/`incomplete`, latencia p50/p95, tamaño, throughput si aplica.
+- **Clasificador:** **accuracy binaria (primaria)** sobre 3 clases mapeadas (`one/several_molecule→structure`, `other/rest→no-structure`), **matriz** `[[TN,FP],[FN,TP]]`, con **`reactions` excluida del binario** y reportada aparte (`ambiguous_excluded`). Fidelidad ONNX↔baseline/paridad TF.
+- **Piso absoluto (obligatorio, todos los modelos/variantes aceptables):** **accuracy ≥ 70%** en la métrica primaria del dossier, sobre el **split `eval` congelado** (mismos IDs). OCSR = `canonical_match_rate` (RDKit, comparables). Clasificador = binary accuracy (no-reacción). Variantes < 70% **no se aceptan**.
+- **Criterios numéricos adicionales:** `[TBD]` por dossier: `Δ vs FP32 ≤ [TBD] pp` (canónica/fidelidad), p95 `≤ [TBD] ms`, objetivo tamaño/compresión.
 
 ### 4.2 Preprocesado (registrado por modelo)
 Registrar entrada, resize/normalización/canales, ruta TF baseline vs runtime ONNX usada en `tf_match`, versión. Control **FP32+TF** antes de concluir sobre cuantización (separa export/preprocess vs cuantización).

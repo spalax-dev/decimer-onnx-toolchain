@@ -172,7 +172,8 @@ def _row(label: str, report_path: Path, *, tf_join_note: str = "", fp32_path: Pa
     else:
         dtf = dex = dcan = "—"
     rep = str(report_path.relative_to(ROOT)) if report_path.is_relative_to(ROOT) else str(report_path)
-    can_cell = f"**{cm}/{ccomp} ({cmr:.4f})**" if (cm is not None and ccomp) else "—"
+    mark = " ✅≥70%" if cmr is not None and cmr >= 0.70 else (" ❌<70%" if cmr is not None else "")
+    can_cell = f"**{cm}/{ccomp} ({cmr:.4f})**{mark}" if (cm is not None and ccomp) else "—"
     return (
         f"| {label} | {n} | {can_cell} | {ex} ({exr:.4f}) | {tf_cell} | {dcan} | {dtf} | {dex} | {valid} ({vr:.4f}) | {inc} | "
         f"{p50}{note} | {p95} | {size} | `{rep}` |"
@@ -208,18 +209,17 @@ Las métricas se calculan con el mismo harness sobre el mismo conjunto de imáge
 
 CRITERIA = r"""## 2. Criterios de aceptación (definidos para la evaluación)
 
-Criterios definidos como referencia de medición (sin aplicar veredictos en este documento):
-
 | Criterio | Definición / condición de aceptación |
 |---|---|
+| **Piso absoluto (obligatorio, todos)** | **Accuracy ≥ 70%** en la **métrica primaria** del dossier, sobre el **split `eval` congelado** (mismos IDs). **OCSR:** `canonical_match_rate` RDKit (sobre pares comparables). **Clasificador:** `binary accuracy` (no-reacción). Variantes < 70% **no se aceptan**. |
 | **Comparación pareada** | Todas las variantes se miden sobre el **mismo set/IDs congelados** (piloto ⊂ eval ⊂ pool). Δ vs FP32 en pp sobre mismos IDs. |
-| **Fidelidad (tasa / estricta)** | `tf_match_rate = tf_match/count` (ONNX==TF). Estricto: 100%. Umbral numérico (`≥ [TBD]%`) es parámetro externo si se define. |
-| **Δ vs FP32 (precisión/fidelidad)** | Diferencia absoluta en pp vs FP32, misma métrica e IDs. Umbral `≤ [TBD] pp` es parámetro externo si se define. |
-| **Exactitud (canónica / cadena)** | Canónica RDKit (`canonical_match`) integrada en benchmark OCSR (cuando ambos SMILES parsean). Preferida para tarea química. `exact_match` string (`predicho == esperado`, sin canonicalizar) se reporta como dato. |
+| **Fidelidad (tasa / estricta)** | `tf_match_rate`/`tf_canonical_match_rate` (ONNX≈TF). Estricto: 100%. Umbral numérico (`≥ [TBD]%`) es parámetro externo si se define. |
+| **Δ vs FP32 (precisión/fidelidad)** | Diferencia absoluta en pp vs FP32, misma métrica e IDs. Umbral `≤ [TBD] pp` `[TBD]`. |
+| **Exactitud OCSR (primaria/secundaria)** | **Primaria:** canónica RDKit (`canonical_match`). **Secundaria:** `exact_match` string (sin canonicalizar), dato informativo. |
 | **Validez / completitud** | `valid_rate`, `incomplete_rate`. Umbrales externos si se definen. |
-| **Latencia** | **p50/p95** ms, mismo hardware y execution provider (p. ej. ORT CPU). No solo media. Umbral p95 externo si se define. INT8 dinámico no implica menor latencia. |
+| **Latencia** | **p50/p95** ms, mismo hardware y execution provider (ORT CPU). No solo media. Umbral p95 `[TBD]`. INT8 dinámico no implica menor latencia. |
 | **Tamaño / throughput** | MB en disco (artefactos); throughput (img/s, batch) si aplica. |
-| **Clasificador** | Matriz 4×4 + binaria sobre 3 clases mapeadas; `reactions` separada/excluida del binario. |
+| **Clasificador** | Binaria sobre 3 clases mapeadas; `reactions` separada/excluida del binario. |
 | **Reproducibilidad** | Fuente/pin/manifiesto/checksums, IDs congelados (seed), hardware/provider/versiones. |"""
 
 PROVENANCE = r"""## 3. Fuentes de datos y procedencia (hechos)
@@ -298,8 +298,9 @@ def _pilot_ocsr_row(label: str, report_path: Path, *, fp32_path: Path | None = N
     tf_cell = _fmt_rate(tfm, n) if tfm is not None else "—"
     if tcm is not None and tcc:
         tf_cell = f"{tf_cell} / can {tcm}/{tcc} ({tcr:.3f})"
-    can_cell = f"**{cm}/{ccomp} ({cmr:.4f})**" if (cm is not None and ccomp) else "—"
-    # Primary = canonical RDKit
+    mark = " ✅≥70%" if cmr is not None and cmr >= 0.70 else (" ❌<70%" if cmr is not None else "")
+    can_cell = f"**{cm}/{ccomp} ({cmr:.4f})**{mark}" if (cm is not None and ccomp) else "—"
+    # Primary = canonical RDKit (floor >=70%)
     return (
         f"| {label} | {n} | {can_cell} | {ex} ({exr:.4f}) | {tf_cell} | {dcan} | {dtf} | {dex} | {valid} ({vr:.4f}) | {inc} | "
         f"{p50}{note} | {p95} | {size} | `{rep}` |"
@@ -316,7 +317,8 @@ def _classifier_row(report_path: Path, *, fp32_path: Path | None = None) -> str 
     acc = cm.get("accuracy")
     total = cm.get("total")
     mat = cm.get("matrix_rows_expected_cols_predicted")
-    acc_s = f"{acc:.4f} (n={total})" if acc is not None else "—"
+    amark = " ✅≥70%" if acc is not None and acc >= 0.70 else (" ❌<70%" if acc is not None else "")
+    acc_s = f"{acc:.4f} (n={total}){amark}" if acc is not None else "—"
     mat_s = f"`{mat}`" if mat else "—"
     tf_s = _fmt_rate(tfp.get("agree"), tfp.get("total")) if tfp else "—"
     rx_s = f"{rx.get('count','—')} → struct {rx.get('predicted_structure','—')} / no-struct {rx.get('predicted_no_structure','—')}" if rx else "—"
