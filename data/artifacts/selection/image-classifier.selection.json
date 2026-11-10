@@ -3,18 +3,32 @@
   "default_variant": "e4-fp16",
   "selected_variant": "e4-fp16",
   "artifacts": {
-    "model": "data/artifacts/quant/e4/image-classifier/classifier.e4.fp16.onnx"
+    "model": "data/artifacts/quant/e4/image-classifier/classifier.e4.fp16.onnx",
+    "size_mb": 7.78
   },
+  "rationale": "E4 FP16 is the only evaluated variant that satisfies the >=70% binary-accuracy floor while also delivering the compression goal with high TF fidelity. INT8 Conv variants fall far below the floor; the selective variant preserves accuracy but does not compress.",
   "evidence": {
     "frozen_eval_1000": {
       "manifest": "data/manifests/frozen/classifier.frozen.json",
-      "binary_accuracy": 0.7678571428571429,
-      "tf_parity": 0.998,
-      "size_mb": 7.78,
-      "size_reduction_vs_fp32": "~49%",
-      "report": "data/benchmark/eval-1000/classifier.e4-fp16.eval1000.json"
-    },
-    "notes": "Meets >=70% floor with compression and high TF parity. E1-all 0.4085 and E2 static 0.5345 <70%; E1s preserves accuracy but no meaningful compression."
+      "selected_e4_fp16": {
+        "binary_accuracy": 0.7678571428571429,
+        "tf_parity": 0.998,
+        "size_mb": 7.78,
+        "size_reduction_vs_fp32": "~49% (vs 15.35 MB FP32)",
+        "report": "data/benchmark/eval-1000/classifier.e4-fp16.eval1000.json"
+      },
+      "comparisons": {
+        "fp32": { "binary_accuracy": 0.76657824933687, "size_mb": 15.35, "note": "reference" },
+        "e1_dynamic_int8_all": { "binary_accuracy": 0.40848806366047746, "note": "fails floor (<70%)" },
+        "e2_static_qdq_holdout": { "binary_accuracy": 0.5344827586206896, "note": "fails floor (<70%)" },
+        "e1s_selective_no_conv": { "binary_accuracy": 0.76657824933687, "note": "preserves accuracy but no meaningful compression (~16 MB)" }
+      }
+    }
+  },
+  "rejected_or_not_selected": {
+    "E1_dynamic_int8_all": "0.4085 binary accuracy (<70%), rejected",
+    "E2_static_qdq_holdout": "0.5345 binary accuracy (<70%), rejected",
+    "E1s_selective_no_conv": "Accuracy preserved (0.7666) but no meaningful compression, not selected"
   },
   "hf_bundle": "chemistry-draw-ocsr/image-classifier-fp16/"
 }

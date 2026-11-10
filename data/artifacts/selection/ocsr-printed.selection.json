@@ -5,8 +5,10 @@
   "artifacts": {
     "encoder": "data/artifacts/fp32/ocsr-printed/encoder.fp32.onnx",
     "decoder": "data/artifacts/fp32/ocsr-printed/decoder_step.fp32.onnx",
-    "vocab": "data/artifacts/tokenizer_SMILES.vocab.json"
+    "vocab": "data/artifacts/tokenizer_SMILES.vocab.json",
+    "size_mb_enc_dec": 301.2
   },
+  "rationale": "FP32 is the only variant demonstrated to meet the >=70% canonical-match floor robustly for printed OCSR. Compressed/mixed variants were either below the floor on eval or only borderline on eval/pilot and failed to hold >=70% on the held-out remainder, so they are not reliable for selection. FP32 is chosen for correctness/robustness over compression.",
   "evidence": {
     "frozen_eval_1000": {
       "manifest": "data/manifests/frozen/printed.frozen.json",
@@ -16,13 +18,19 @@
       "valid_rate": 0.969,
       "report": "data/benchmark/eval-1000/printed.fp32.eval1000.json"
     },
-    "robustness": "Compressed/mixed variants (E1/E3, FP32enc+E1/e1s dec, selective encoder block mixes, reduce_range) were evaluated on eval/pilot/remainder; none met >=70% canonical robustly on held-out (e.g. fp32enc+e1sdec 0.7000 eval / 0.6870 remainder; selC 0.6944 remainder; selMid 0.6880 remainder). FP32 selected as the compliant variant."
+    "robustness_checks": [
+      "FP32enc+e1sdec: 0.7000 eval (borderline) -> 0.6870 remainder (<70%)",
+      "selCenc+e1sdec: 0.703 pilot -> 0.6944 remainder (<70%)",
+      "selFenc+e1sdec: 0.705 pilot -> 0.6925 remainder (<70%)",
+      "selMidenc+e1sdec: 0.701 pilot -> 0.6880 remainder (<70%)",
+      "selAenc+e1sdec: 0.702 pilot -> 0.6749 remainder (<70%)"
+    ]
   },
   "rejected_or_not_selected": {
     "E1_dynamic_int8": "0.6776 canonical on eval (<70%)",
     "E3_static_enc_dyn_dec": "0.485 canonical on eval (<70%)",
-    "E4_fp16_decoder_cpu": "ORT CPU runtime issue in decoder attention",
-    "mixed_selective_variants": "Borderline or <70% and not robust on remainder/held-out"
+    "E4_fp16": "Not viable on CPU ORT for this OCSR export (decoder attention runtime issue)",
+    "mixed_selective_variants": "Borderline or <70% and not robust on held-out remainder (see robustness_checks)"
   },
   "hf_bundle": "chemistry-draw-ocsr/ocsr-printed-fp32/"
 }

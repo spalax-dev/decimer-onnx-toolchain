@@ -5,16 +5,38 @@
   "artifacts": {
     "encoder": "data/artifacts/fp32/ocsr-handdrawn/encoder.fp32.onnx",
     "decoder": "data/artifacts/fp32/ocsr-handdrawn/decoder_step.fp32.onnx",
-    "vocab": "data/artifacts/tokenizer_handdrawn.vocab.json"
+    "vocab": "data/artifacts/tokenizer_handdrawn.vocab.json",
+    "size_mb_enc_dec": 301.2
   },
+  "rationale": "Both FP32 and E1 dynamic INT8 pass the >=70% canonical floor on eval, but E1 trades away accuracy, TF-fidelity, and latency for smaller size. FP32 is selected as the default to prioritize quality/fidelity and responsiveness for chemistry_draw; E1 remains a recorded non-selected alternative if size is prioritized.",
   "evidence": {
     "frozen_eval_1000": {
       "manifest": "data/manifests/frozen/handdrawn.frozen.json",
-      "canonical_match_rate": 0.73,
-      "canonical_match": "576/789 comparable",
-      "report": "data/benchmark/eval-1000/handdrawn.fp32.eval1000.json"
-    },
-    "notes": "Meets >=70% floor with strong quality/fidelity. E1 dynamic INT8 met accuracy on eval (0.7149) but with latency/fidelity tradeoffs; FP32 selected for quality."
+      "fp32": {
+        "canonical_match_rate": 0.7299794661190965,
+        "canonical_match": "711/974 comparable",
+        "tf_match_rate": 0.912,
+        "latency_p50_ms": 1114.95,
+        "latency_p95_ms": 2155.76,
+        "report": "data/benchmark/eval-1000/handdrawn.fp32.eval1000.json"
+      },
+      "e1_dynamic_int8_all": {
+        "canonical_match_rate": 0.7148760330578512,
+        "canonical_match": "692/968 comparable",
+        "delta_canonical_pp_vs_fp32": -1.51,
+        "tf_match_rate": 0.858,
+        "delta_tf_match_pp_vs_fp32": -5.4,
+        "latency_p50_ms": 2859.57,
+        "latency_p95_ms": 3951.42,
+        "size_mb_enc_dec": 81.3,
+        "report": "data/benchmark/eval-1000/handdrawn.int8-dyn-all.eval1000.json",
+        "note": "Passes floor but worse quality/fidelity and ~2.6x slower p50 (dynamic INT8 not guaranteed faster on CPU)"
+      }
+    }
+  },
+  "rejected_or_not_selected": {
+    "E1_dynamic_int8_all": "Meets >=70% but lower canonical (-1.51pp), lower TF fidelity (-5.4pp), and ~2.6x slower than FP32; not selected as default",
+    "E3_hybrid": "0.0 canonical on eval (severe degradation)"
   },
   "hf_bundle": "chemistry-draw-ocsr/ocsr-handdrawn-fp32/"
 }
