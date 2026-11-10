@@ -75,6 +75,25 @@ Registrar entrada, resize/normalización/canales, ruta TF baseline vs runtime ON
 
 Artefactos seleccionados consolidados en `chemistry-draw-ocsr/` (ignorado en este repo) para publicación en HF/`chemistry_draw`.
 
-## 7. Estado actual (contexto)
-- Conjuntos congelados (seed 20260308) y benchmarks ejecutados para los tres dossiers (eval/pilot y remainder donde aplica). RDKit canónico integrado; `dtx report` auto-descubre y registra todos los runs.
-- Pendiente (mejoras de tooling): McNemar/IC bootstrap automatizados, cierre de umbrales numéricos finos de p95 si se desea como gate duro, empaquetado canónico del toolchain (`selection.json` unificado/`default`, NOTICE/manifest de bundle), y tareas de ingeniería M1/M6 (check/CI, probe, hardening).
+## 7. Estado actual y conformidad con el protocolo (realidad)
+
+### Ejecutado conforme al protocolo (núcleo)
+- **Conjuntos congelados y pareo:** manifiestos frozen (seed `20260308`) y splits `eval`/`pilot`/`remainder` por dossier (`data/manifests/frozen/*.frozen.json`); comparaciones sobre **mismos IDs** dentro del mismo split (`--frozen-manifest ... --split ...`).
+- **Métricas:** OCSR con **`canonical_match` RDKit** (primaria, comparables), `exact_match` (secundaria) y fidelidad `tf_match`/`tf_canonical_match` vs TF; clasificador con **accuracy binaria** (no-reacción), matriz, paridad TF y `reactions` separada.
+- **Selección y registro:** piso **≥70%** (métrica primaria, eval congelado) con criterio de robustez (validación en `remainder` cuando aplica). **Todos** los resultados (incluidos no seleccionados) en `data/benchmark/**/*.json` y en `docs/benchmark-report.md` auto-generado (`dtx report`); Imago excluido del reporte y documentado en `docs/experiments/`.
+- **Latencia/caché:** `p50/p95`, `n_measured` y `cache_hits` reportados; caché por `(model_key, variant_key, image_id)`. Referencias FP32+TF medidas y Δpp vs FP32 registrados.
+
+### Desviaciones / matices respecto al ideal
+- **Latencia y contención de CPU:** algunas corridas (pilotos/remainders) se ejecutaron con otros jobs en paralelo, lo que elevó `p50/p95` y las hace **no comparables** como latencia; la **accuracy no se ve afectada**. Las mediciones en solitario (p. ej. evals/remainders sin contención) son las representativas para comparar latencia.
+- **Estadística pareada formal no automatizada:** no se calculan automáticamente **McNemar ni IC bootstrap** sobre discordancias; se reportan tasas, Δpp y `n` pareado. (Mejora de tooling pendiente.)
+- **Evidencia histórica:** coexisten corridas históricas previas al protocolo frozen (p. ej. CLEF/JPO 1441, muestras HDM ad hoc) etiquetadas como tal; las decisiones consolidadas se basan en splits frozen.
+- **Criterios finos:** umbrales adicionales (Δpp/p95 como gate numérico duro único) se resolvieron por evidencia/robustez y registro de métricas, no como un único umbral pre-fijado global más allá del piso ≥70%.
+
+### Incidentes de ejecución (mitigados)
+- **Reintentos por carga ONNX transitoria:** fallos `NoSuchFile` al iniciar algunas corridas (p. ej. variantes `sel*`) pese a existir los artefactos; se reintentó y las ejecuciones completadas quedaron registradas.
+- **Viabilidad/runtime:** E4 FP16 OCSR no viable en ORT CPU (error de broadcast en atención del decoder) → descartada. E3 (QDQ estático enc.) produjo degradación severa en OCSR → rechazada.
+- **Imago:** crashes nativos intermitentes mitigados con runner por subproceso por imagen (`scripts/benchmark_imago_resilient.py`); resultados solo en `docs/experiments/` (fuera del reporte).
+- **Avisos de cuantización:** warnings de pre-procesamiento de ONNX Runtime durante cuantización dinámica; no impidieron generar/evaluar artefactos.
+
+### Pendiente (mejoras de tooling/ingeniería)
+- McNemar/IC bootstrap automatizados; gates finos de p95 si se fijan; empaquetado canónico del toolchain (`selection.json` unificado/`default`, NOTICE/manifest de bundle); tareas M1/M6 (check/CI, probe, hardening).

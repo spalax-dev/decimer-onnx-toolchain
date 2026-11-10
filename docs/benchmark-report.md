@@ -2,7 +2,7 @@
 
 > Documento generado automáticamente a partir de reportes JSON/manifiestos en `data/`. No incluye decisiones ni juicios sobre los resultados; reporta mediciones, definiciones y criterios de aceptación definidos para la evaluación.
 
-**Generado (UTC):** `2026-11-10T22:31:35.086762+00:00`  
+**Generado (UTC):** `2026-11-10T22:48:19.232474+00:00`  
 **Generador:** `toolchain.report.generate_report` / `dtx report` (alias: `decimer-export report`)  
 **Rama/commits relevantes:** `main` (workspace fetch/export/runtime/cuantización/benchmark).
 
@@ -64,7 +64,7 @@ Las métricas se calculan con el mismo harness sobre el mismo conjunto de imáge
 
 ## 4. Características de la máquina (recolección automática)
 
-Recolectado automáticamente el `2026-11-10T22:31:34.661491+00:00` mediante `platform`, `lscpu` y `free`.
+Recolectado automáticamente el `2026-11-10T22:48:18.793340+00:00` mediante `platform`, `lscpu` y `free`.
 
 | Campo | Valor |
 |---|---|
@@ -80,7 +80,7 @@ Recolectado automáticamente el `2026-11-10T22:31:34.661491+00:00` mediante `pla
 | Cachés L1d/L1i/L2/L3 | `128 KiB (4 instances)` / `128 KiB (4 instances)` / `1 MiB (4 instances)` / `6 MiB (1 instance)` |
 | Flags CPU relevantes | `fma sse4_2 avx avx2` |
 | RAM total | 15.42 GiB (16555548672 bytes) |
-| RAM disponible (al recolectar) | 6.56 GiB |
+| RAM disponible (al recolectar) | 6.40 GiB |
 
 ### Versiones de paquetes (entorno de ejecución)
 
@@ -100,7 +100,9 @@ Recolectado automáticamente el `2026-11-10T22:31:34.661491+00:00` mediante `pla
 
 ## 5. Resultados
 
-Protocolo: variantes comparadas sobre **mismos IDs** cuando aplica (pareado, piloto ⊂ eval ⊂ pool congelado). Latencia **p50/p95** (mismo hardware/provider), no solo media; INT8 dinámico puede no ser más rápido. **Δ vs FP32** = diferencia en pp sobre IDs comunes (misma métrica). `—` = no medido/no disponible. Ver glosario (§1) para significado de columnas.
+Protocolo: variantes comparadas sobre **mismos IDs** cuando aplica (pareado, piloto ⊂ eval ⊂ pool congelado). Latencia **p50/p95** (mismo hardware/provider), no solo media; INT8 dinámico puede no ser más rápido. **Δ vs FP32** = diferencia en pp sobre IDs comunes (misma métrica). `—` = no medido/no disponible.
+
+> **Nota de ejecución (realidad):** algunas corridas (pilotos/remainders) se ejecutaron con contención de CPU, por lo que sus `p50/p95` pueden no ser comparables (la accuracy no se ve afectada); preferir mediciones en solitario para comparar latencia. McNemar/IC bootstrap no están automatizados en este reporte (se reportan tasas/Δpp/`n`). Hubo reintentos por fallos transitorios de carga ONNX y limitaciones de runtime/cuantización documentadas en resultados/selecciones. Ver glosario (§1) y `docs/benchmark-spec.md` (§7) para detalle.
 
 ### 5.E `ocsr-printed` — **split `eval` (gate, n=1000)** (frozen n=1400, eval=1000, pilot=300, seed=20260308, source=`data/manifests/frozen/printed.frozen.json`)
 
