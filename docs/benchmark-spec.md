@@ -1,6 +1,6 @@
-# Especificación de benchmark — DECIMER → ONNX (tres dossiers)
+# Especificación de benchmark — DECIMER → ONNX (tres modelos / tres dossiers)
 
-> Documento de diseño/protocolo. **No es un benchmark único: son tres dossiers independientes**, uno por modelo, cada uno con su suite, métricas, criterios de aceptación y decisión de variante ONNX. No hay ranking entre modelos. Lo compartido es solo infraestructura: harness, formato `labels.jsonl`, export ONNX, plantilla de criterios, generador de reportes.
+> Documento de diseño/protocolo. Se trabaja con **tres modelos distintos** (distintas fuentes/pesos, tareas y dominios), cada uno con su **dossier independiente** de evaluación y selección: `ocsr-printed`, `ocsr-handdrawn` e `image-classifier`. **No es un benchmark único** ni hay ranking entre modelos; cada dossier tiene su suite, métricas, criterios de aceptación y decisión de variante ONNX. Lo compartido es solo infraestructura: harness, formato `labels.jsonl`, export/benchmark/reporting.
 
 **Estado:** formalizado (2026-11-08, reframing por modelo/fin).  
 **Fuentes operativas:** `docs/benchmark-report.md` (resultados neutrales auto-generados), `data/manifests/*.json`, `data/artifacts/selection/*` (decisiones por dossier/modelo, separadas del informe).
@@ -98,4 +98,4 @@ Artefactos seleccionados consolidados en `chemistry-draw-ocsr/` (ignorado en est
 - **Avisos de cuantización:** warnings de pre-procesamiento de ONNX Runtime durante cuantización dinámica; no impidieron generar/evaluar artefactos.
 
 ### Pendiente (mejoras de tooling/ingeniería)
-- McNemar/IC bootstrap aut
+- McNemar/IC bootstrap automatizados; gates finos de p95 si se fijan; empaquetado canónico del toolchain (`selection.json` unificado/`default`, NOTICE/manifest de bundle); tareas M1/M6 (check/CI, probe, hardening).

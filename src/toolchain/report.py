@@ -548,6 +548,8 @@ def render_results() -> tuple[str, list[str]]:
     lines = [
         "## 5. Resultados",
         "",
+        "Este reporte cubre **tres modelos distintos** evaluados en dossiers independientes: `ocsr-printed`, `ocsr-handdrawn` e `image-classifier` (no hay ranking entre modelos).",
+        "",
         "Protocolo: variantes comparadas sobre **mismos IDs** cuando aplica (pareado, piloto ⊂ eval ⊂ pool congelado). Latencia **p50/p95** (mismo hardware/provider), no solo media; INT8 dinámico puede no ser más rápido. **Δ vs FP32** = diferencia en pp sobre IDs comunes (misma métrica). `—` = no medido/no disponible.",
         "",
         "> **Nota de ejecución (realidad):** algunas corridas (pilotos/remainders) se ejecutaron con contención de CPU, por lo que sus `p50/p95` pueden no ser comparables (la accuracy no se ve afectada); preferir mediciones en solitario para comparar latencia. McNemar/IC bootstrap no están automatizados en este reporte (se reportan tasas/Δpp/`n`). Hubo reintentos por fallos transitorios de carga ONNX y limitaciones de runtime/cuantización documentadas en resultados/selecciones. Ver glosario (§1) y `docs/benchmark-spec.md` (§7) para detalle.",

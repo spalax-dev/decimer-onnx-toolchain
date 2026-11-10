@@ -2,7 +2,7 @@
 
 > Documento generado automáticamente a partir de reportes JSON/manifiestos en `data/`. No incluye decisiones ni juicios sobre los resultados; reporta mediciones, definiciones y criterios de aceptación definidos para la evaluación.
 
-**Generado (UTC):** `2026-11-10T22:48:19.232474+00:00`  
+**Generado (UTC):** `2026-11-10T23:18:55.484530+00:00`  
 **Generador:** `toolchain.report.generate_report` / `dtx report` (alias: `decimer-export report`)  
 **Rama/commits relevantes:** `main` (workspace fetch/export/runtime/cuantización/benchmark).
 
@@ -64,7 +64,7 @@ Las métricas se calculan con el mismo harness sobre el mismo conjunto de imáge
 
 ## 4. Características de la máquina (recolección automática)
 
-Recolectado automáticamente el `2026-11-10T22:48:18.793340+00:00` mediante `platform`, `lscpu` y `free`.
+Recolectado automáticamente el `2026-11-10T23:18:55.078075+00:00` mediante `platform`, `lscpu` y `free`.
 
 | Campo | Valor |
 |---|---|
@@ -80,7 +80,7 @@ Recolectado automáticamente el `2026-11-10T22:48:18.793340+00:00` mediante `pla
 | Cachés L1d/L1i/L2/L3 | `128 KiB (4 instances)` / `128 KiB (4 instances)` / `1 MiB (4 instances)` / `6 MiB (1 instance)` |
 | Flags CPU relevantes | `fma sse4_2 avx avx2` |
 | RAM total | 15.42 GiB (16555548672 bytes) |
-| RAM disponible (al recolectar) | 6.40 GiB |
+| RAM disponible (al recolectar) | 6.07 GiB |
 
 ### Versiones de paquetes (entorno de ejecución)
 
@@ -99,6 +99,8 @@ Recolectado automáticamente el `2026-11-10T22:48:18.793340+00:00` mediante `pla
 | `typer` | `0.28.0` |
 
 ## 5. Resultados
+
+Este reporte cubre **tres modelos distintos** evaluados en dossiers independientes: `ocsr-printed`, `ocsr-handdrawn` e `image-classifier` (no hay ranking entre modelos).
 
 Protocolo: variantes comparadas sobre **mismos IDs** cuando aplica (pareado, piloto ⊂ eval ⊂ pool congelado). Latencia **p50/p95** (mismo hardware/provider), no solo media; INT8 dinámico puede no ser más rápido. **Δ vs FP32** = diferencia en pp sobre IDs comunes (misma métrica). `—` = no medido/no disponible.
 

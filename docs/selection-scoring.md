@@ -1,6 +1,6 @@
 # Matriz de calificación y puntaje por variante (decisión de artefactos)
 
-> Documento de **síntesis argumentada** de la selección. Complementa (no reemplaza) la evidencia cruda en `docs/benchmark-report.md` y los registros en `data/artifacts/selection/*.selection.json`. Las ponderaciones reflejan las prioridades del proyecto; los puntajes por criterio se derivan de resultados medidos con reglas explícitas.
+> Documento de **síntesis argumentada** de la selección para los **tres modelos distintos** del proyecto (`ocsr-printed`, `ocsr-handdrawn`, `image-classifier`), evaluados en dossiers independientes. Complementa (no reemplaza) la evidencia cruda en `docs/benchmark-report.md` y los registros en `data/artifacts/selection/*.selection.json`. Las ponderaciones reflejan las prioridades del proyecto; los puntajes por criterio se derivan de resultados medidos con reglas explícitas.
 
 ## 1. Metodología
 

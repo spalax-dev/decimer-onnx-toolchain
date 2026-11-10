@@ -1,8 +1,13 @@
 # decimer-onnx-toolchain
 
-Reproducible pipeline to convert [DECIMER](https://github.com/Kohulan/DECIMER-Image_Transformer) (optical chemical structure recognition) into **optimized ONNX** artifacts for fast, self-contained inference (no TensorFlow at runtime).
+Reproducible pipeline to convert [DECIMER](https://github.com/Kohulan/DECIMER-Image_Transformer) models into **optimized ONNX** artifacts for fast, self-contained inference (no TensorFlow at runtime).
 
-> Status: bootstrap. Model fetch covers **printed OCSR (DECIMER v2)**, **hand-drawn specialist OCSR**, and the **DECIMER Image Classifier**. The download/fetch stage is implemented; export/quantize/runtime stages are scaffolded.
+This toolchain works with **three distinct models** (different sources/weights and separate evaluation dossiers):
+1. **`ocsr-printed`** — DECIMER v2 printed OCSR (Zenodo 8300489)
+2. **`ocsr-handdrawn`** — DECIMER v2 hand-drawn specialist OCSR (Zenodo 10781330)
+3. **`image-classifier`** — DECIMER Image Classifier (Iagea/DECIMER-Image-Classifier)
+
+> Status: bootstrap → consolidated. Fetch/export/quantization/benchmark/selection completed per dossier; selected artifacts staged in `chemistry-draw-ocsr/` (ignored, for HF/chemistry_draw). Some engineering/packaging items remain (see `TODO.md`).
 
 ## Pipeline
 
