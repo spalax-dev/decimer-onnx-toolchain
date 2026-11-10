@@ -1,0 +1,16 @@
+{
+  "variant": "e2-static-int8-qdq-classifier",
+  "encoder_path": "data/artifacts/quant/e2/image-classifier/classifier.e2.static.onnx",
+  "decoder_path": null,
+  "metadata": {
+    "variant": "e2-static-int8-qdq-classifier",
+    "encoder_bytes": 5046822,
+    "decoder_bytes": null,
+    "fp32_encoder_bytes": 16098741,
+    "fp32_decoder_bytes": 16098741,
+    "calibration_images": 128,
+    "mode": "classifier",
+    "calibration": "holdout_frozen_non_eval"
+  },
+  "errors": []
+}

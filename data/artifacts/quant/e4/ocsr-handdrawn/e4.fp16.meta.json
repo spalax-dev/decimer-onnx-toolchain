@@ -1,0 +1,13 @@
+{
+  "variant": "e4-fp16",
+  "encoder_path": "data/artifacts/quant/e4/ocsr-handdrawn/encoder.e4.fp16.onnx",
+  "decoder_path": "data/artifacts/quant/e4/ocsr-handdrawn/decoder_step.e4.fp16.onnx",
+  "metadata": {
+    "variant": "e4-fp16",
+    "encoder_bytes": 104829814,
+    "decoder_bytes": 54555776,
+    "fp32_encoder_bytes": 208801677,
+    "fp32_decoder_bytes": 107017280
+  },
+  "errors": []
+}
