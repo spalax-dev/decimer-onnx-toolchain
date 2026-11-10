@@ -73,6 +73,8 @@ Registrar entrada, resize/normalización/canales, ruta TF baseline vs runtime ON
 | Manuscrito `ocsr-handdrawn` | **FP32** | 0.7300 canónico (576/789, n=1000) ≥70% | Cumple piso con mejor calidad/fidelidad; E1 cumplió accuracy en eval pero con tradeoff de latencia/fidelidad. |
 | Clasificador `image-classifier` | **E4 FP16** | 0.7679 acc binaria (n=1000, no-reaction) ≥70% | Paridad TF 0.998, 7.78 MB (-49%). INT8 Conv (E1-all/E2) <70%; E1s sin compresión relevante. |
 
+**Matriz de calificación ponderada (1–100):** ver [`docs/selection-scoring.md`](selection-scoring.md) para criterios, pesos por dossier, puntajes por variante y argumento de selección.
+
 Artefactos seleccionados consolidados en `chemistry-draw-ocsr/` (ignorado en este repo) para publicación en HF/`chemistry_draw`.
 
 ## 7. Estado actual y conformidad con el protocolo (realidad)
@@ -96,4 +98,4 @@ Artefactos seleccionados consolidados en `chemistry-draw-ocsr/` (ignorado en est
 - **Avisos de cuantización:** warnings de pre-procesamiento de ONNX Runtime durante cuantización dinámica; no impidieron generar/evaluar artefactos.
 
 ### Pendiente (mejoras de tooling/ingeniería)
-- McNemar/IC bootstrap automatizados; gates finos de p95 si se fijan; empaquetado canónico del toolchain (`selection.json` unificado/`default`, NOTICE/manifest de bundle); tareas M1/M6 (check/CI, probe, hardening).
+- McNemar/IC bootstrap aut
