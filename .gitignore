@@ -32,3 +32,6 @@ docs/plan.md
 !/data/curated/*.tar.zst
 !/data/curated/*.tar.xz
 !/data/curated/README*
+
+# HF release staging (ignored)
+chemistry-draw-ocsr/
