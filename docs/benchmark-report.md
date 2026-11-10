@@ -2,7 +2,7 @@
 
 > Documento generado automáticamente a partir de reportes JSON/manifiestos en `data/`. No incluye decisiones ni juicios sobre los resultados; reporta mediciones, definiciones y criterios de aceptación definidos para la evaluación.
 
-**Generado (UTC):** `2026-11-10T20:32:35.449380+00:00`  
+**Generado (UTC):** `2026-11-10T21:26:58.653705+00:00`  
 **Generador:** `toolchain.report.generate_report` / `dtx report` (alias: `decimer-export report`)  
 **Rama/commits relevantes:** `main` (workspace fetch/export/runtime/cuantización/benchmark).
 
@@ -64,7 +64,7 @@ Las métricas se calculan con el mismo harness sobre el mismo conjunto de imáge
 
 ## 4. Características de la máquina (recolección automática)
 
-Recolectado automáticamente el `2026-11-10T20:32:35.057243+00:00` mediante `platform`, `lscpu` y `free`.
+Recolectado automáticamente el `2026-11-10T21:26:58.080795+00:00` mediante `platform`, `lscpu` y `free`.
 
 | Campo | Valor |
 |---|---|
@@ -80,7 +80,7 @@ Recolectado automáticamente el `2026-11-10T20:32:35.057243+00:00` mediante `pla
 | Cachés L1d/L1i/L2/L3 | `128 KiB (4 instances)` / `128 KiB (4 instances)` / `1 MiB (4 instances)` / `6 MiB (1 instance)` |
 | Flags CPU relevantes | `fma sse4_2 avx avx2` |
 | RAM total | 15.42 GiB (16555548672 bytes) |
-| RAM disponible (al recolectar) | 6.46 GiB |
+| RAM disponible (al recolectar) | 7.75 GiB |
 
 ### Versiones de paquetes (entorno de ejecución)
 
@@ -130,6 +130,8 @@ Protocolo: variantes comparadas sobre **mismos IDs** cuando aplica (pareado, pil
 | selDenc-e1sdec | 300 | **185/263 (0.7034)** ✅≥70% | 1 (0.0033) | 239/300 (0.7967) / can 227/262 (0.866) | -0.76 pp | -3.00 pp | +0.00 pp | 293 (0.9767) | 7 | 7030.32 | 32944.69 | — | `data/benchmark/pilot/printed.selDenc-e1sdec.pilot300.json` |
 | selEenc-e1sdec | 300 | **185/262 (0.7061)** ✅≥70% | 1 (0.0033) | 241/300 (0.8033) / can 229/262 (0.874) | -0.49 pp | -2.33 pp | +0.00 pp | 291 (0.9700) | 9 | 4032.80 | 22111.39 | — | `data/benchmark/pilot/printed.selEenc-e1sdec.pilot300.json` |
 | selFenc-e1sdec | 300 | **186/264 (0.7045)** ✅≥70% | 1 (0.0033) | 243/300 (0.8100) / can 230/263 (0.875) | -0.65 pp | -1.67 pp | +0.00 pp | 291 (0.9700) | 9 | 4142.59 | 13840.12 | — | `data/benchmark/pilot/printed.selFenc-e1sdec.pilot300.json` |
+| selGenc-e1sdec | 300 | **184/264 (0.6970)** ❌<70% | 1 (0.0033) | 244/300 (0.8133) / can 230/263 (0.875) | -1.41 pp | -1.33 pp | +0.00 pp | 291 (0.9700) | 9 | 3557.65 | 15299.97 | — | `data/benchmark/pilot/printed.selGenc-e1sdec.pilot300.json` |
+| selMidenc-e1sdec | 300 | **185/264 (0.7008)** ✅≥70% | 1 (0.0033) | 241/300 (0.8033) / can 228/263 (0.867) | -1.03 pp | -2.33 pp | +0.00 pp | 293 (0.9767) | 7 | 2324.51 | 5022.42 | — | `data/benchmark/pilot/printed.selMidenc-e1sdec.pilot300.json` |
 
 ### 5.E `ocsr-handdrawn` — **split `eval` (gate, n=1000)** (frozen n=1400, eval=1000, pilot=300, seed=20260308, source=`data/manifests/frozen/handdrawn.frozen.json`)
 
