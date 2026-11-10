@@ -1,67 +1,28 @@
 {
   "model": "ocsr-printed",
-  "default_variant": "e1-dynamic-int8",
-  "promoted_variant": null,
-  "evidence": {
-    "fixtures_4": {
-      "e1_tf_match": "4/4",
-      "e3_tf_match": "4/4",
-      "note": "in-sample calibration for E3; exact parity on DECIMER smoke/fixtures"
-    },
-    "golden_hf_clef_jpo": {
-      "source": "Keylab/OCSR-Benchmarks (HF rows API import), configs CLEF(992)+JPO(449), aggregate license mixed-see-sources (per-subset provenance in manifests)",
-      "metric": "tf_match = ONNX vs TF baseline (export/quantization fidelity). exact_match vs label confounded by aromatic/Kekule canonicalization without RDKit and model domain.",
-      "E1_dynamic_int8": {
-        "CLEF": {
-          "tf_match": "838/992 (84.48%)",
-          "exact_label": "7/992",
-          "valid": "99.90%",
-          "incomplete": "1"
-        },
-        "JPO": {
-          "tf_match": "264/449 (58.80%)",
-          "exact_label": "9/449",
-          "valid": "91.76%",
-          "incomplete": "37"
-        }
-      },
-      "E3_hybrid_staticenc_dyndec": {
-        "CLEF": {
-          "tf_match": "444/992 (44.76%) joined to TF",
-          "exact_label": "6/992",
-          "valid": "99.80%",
-          "incomplete": "2"
-        },
-        "JPO": {
-          "tf_match": "123/449 (27.39%) joined to TF",
-          "exact_label": "3/449",
-          "valid": "87.53%",
-          "incomplete": "56"
-        }
-      },
-      "conclusion": "E3 static-encoder QDQ (calibrated on 2 in-sample fixtures) causes severe TF-fidelity regression on real golden distributions. E1 (dynamic INT8, calibration-free) is the recommended default. E3 rejected for promotion pending distribution-matched calibration and re-benchmark."
-    }
-  },
-  "rejected": {
-    "E2_static_qdq_encoder_decoder": "failed parity on fixtures",
-    "E4_fp16_decoder_cpu": "ORT CPU broadcast/runtime issue in attention"
-  },
+  "default_variant": "fp32",
+  "selected_variant": "fp32",
   "artifacts": {
-    "e1": {
-      "encoder": "data/artifacts/quant/e1/ocsr-printed/encoder.e1.dynamic.onnx",
-      "decoder": "data/artifacts/quant/e1/ocsr-printed/decoder_step.e1.dynamic.onnx"
-    },
-    "e3": {
-      "encoder": "data/artifacts/quant/e3/ocsr-printed/encoder.e3.static.onnx",
-      "decoder": "data/artifacts/quant/e3/ocsr-printed/decoder_step.e3.dynamic.onnx",
-      "status": "not recommended (golden fidelity regression)"
-    }
+    "encoder": "data/artifacts/fp32/ocsr-printed/encoder.fp32.onnx",
+    "decoder": "data/artifacts/fp32/ocsr-printed/decoder_step.fp32.onnx",
+    "vocab": "data/artifacts/tokenizer_SMILES.vocab.json"
   },
-  "reports": [
-    "data/benchmark/hf-clef/report.e1.tf.json",
-    "data/benchmark/hf-jpo/report.e1.tf.json",
-    "data/benchmark/hf-clef/report.e3.tfjoined.json",
-    "data/benchmark/hf-jpo/report.e3.tfjoined.json",
-    "data/artifacts/selection/ocsr-printed.hf-golden.json"
-  ]
+  "evidence": {
+    "frozen_eval_1000": {
+      "manifest": "data/manifests/frozen/printed.frozen.json",
+      "canonical_match_rate": 0.7041284403669725,
+      "canonical_match": "614/872 comparable",
+      "exact_match_rate": 0.012,
+      "valid_rate": 0.969,
+      "report": "data/benchmark/eval-1000/printed.fp32.eval1000.json"
+    },
+    "robustness": "Compressed/mixed variants (E1/E3, FP32enc+E1/e1s dec, selective encoder block mixes, reduce_range) were evaluated on eval/pilot/remainder; none met >=70% canonical robustly on held-out (e.g. fp32enc+e1sdec 0.7000 eval / 0.6870 remainder; selC 0.6944 remainder; selMid 0.6880 remainder). FP32 selected as the compliant variant."
+  },
+  "rejected_or_not_selected": {
+    "E1_dynamic_int8": "0.6776 canonical on eval (<70%)",
+    "E3_static_enc_dyn_dec": "0.485 canonical on eval (<70%)",
+    "E4_fp16_decoder_cpu": "ORT CPU runtime issue in decoder attention",
+    "mixed_selective_variants": "Borderline or <70% and not robust on remainder/held-out"
+  },
+  "hf_bundle": "chemistry-draw-ocsr/ocsr-printed-fp32/"
 }

@@ -1,0 +1,20 @@
+{
+  "model": "ocsr-handdrawn",
+  "default_variant": "fp32",
+  "selected_variant": "fp32",
+  "artifacts": {
+    "encoder": "data/artifacts/fp32/ocsr-handdrawn/encoder.fp32.onnx",
+    "decoder": "data/artifacts/fp32/ocsr-handdrawn/decoder_step.fp32.onnx",
+    "vocab": "data/artifacts/tokenizer_handdrawn.vocab.json"
+  },
+  "evidence": {
+    "frozen_eval_1000": {
+      "manifest": "data/manifests/frozen/handdrawn.frozen.json",
+      "canonical_match_rate": 0.73,
+      "canonical_match": "576/789 comparable",
+      "report": "data/benchmark/eval-1000/handdrawn.fp32.eval1000.json"
+    },
+    "notes": "Meets >=70% floor with strong quality/fidelity. E1 dynamic INT8 met accuracy on eval (0.7149) but with latency/fidelity tradeoffs; FP32 selected for quality."
+  },
+  "hf_bundle": "chemistry-draw-ocsr/ocsr-handdrawn-fp32/"
+}

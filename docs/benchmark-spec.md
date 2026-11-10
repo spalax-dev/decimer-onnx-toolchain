@@ -34,9 +34,9 @@ Cada modelo se valida contra **su** suite, con **su** métrica, **su** criterio 
 
 - **`n` se estandariza por dossier y por conjunto de IDs congelado.** Nunca “todo a 1441” entre dossiers.
 - **Dentro de un dossier:** todas las variantes comparadas ven los **mismos IDs** (comparación pareada). Congelar subconjunto de iteración con **seed + IDs en manifiesto**; el conjunto completo del dossier es el resultado final.
-  - **Impreso:** n=1441 (CLEF+JPO), ya pareado por construcción.
-  - **Manuscrito:** iterar sobre subconjunto congelado de IDs (HDM-500 fue una muestra *ad hoc*; reemplazar por subconjunto fijo/manifiesto para comparaciones formales); full 5088 para reporte final. Igualar a 1441 no aplica (no se compara con impreso).
-  - **Clasificador:** cap estratificado por clase para iterar (ej. 10k, `[TBD]`), con seed/IDs; full split para reporte final.
+  - **Impreso:** pool/frozen n=1400 (CLEF+JPO, seed `20260308`) → `eval=1000`, `pilot=300`, `remainder=400` (`data/manifests/frozen/printed.frozen.json`).
+  - **Manuscrito:** frozen n=1400 (HDM, seed `20260308`) → `eval=1000`, `pilot=300`, `remainder=400` (`data/manifests/frozen/handdrawn.frozen.json`).
+  - **Clasificador:** frozen n=4000 estratificado (seed `20260308`) → `eval=1000`, `pilot=300` (`data/manifests/frozen/classifier.frozen.json`). `reactions` excluida del binario y reportada aparte.
 
 ## 4. Contratos compartidos (infraestructura)
 
@@ -55,26 +55,26 @@ Cada variante se mide sobre el **mismo set congelado / mismos IDs** (piloto ⊂ 
 - **OCSR (impreso/manuscrito):** **`canonical_match` RDKit (primaria, calidad química)** sobre pares comparables + `exact_match` cadena (secundaria), `tf_match`/`tf_canonical_match` (fidelidad ONNX↔TF), `valid`/`incomplete`, latencia p50/p95, tamaño, throughput si aplica.
 - **Clasificador:** **accuracy binaria (primaria)** sobre 3 clases mapeadas (`one/several_molecule→structure`, `other/rest→no-structure`), **matriz** `[[TN,FP],[FN,TP]]`, con **`reactions` excluida del binario** y reportada aparte (`ambiguous_excluded`). Fidelidad ONNX↔baseline/paridad TF.
 - **Piso absoluto (obligatorio, todos los modelos/variantes aceptables):** **accuracy ≥ 70%** en la métrica primaria del dossier, sobre el **split `eval` congelado** (mismos IDs). OCSR = `canonical_match_rate` (RDKit, comparables). Clasificador = binary accuracy (no-reacción). Variantes < 70% **no se aceptan**.
-- **Criterios numéricos adicionales:** `[TBD]` por dossier: `Δ vs FP32 ≤ [TBD] pp` (canónica/fidelidad), p95 `≤ [TBD] ms`, objetivo tamaño/compresión.
+- **Criterios adicionales (resueltos por evidencia):** para variantes comprimidas se exige cumplir el piso ≥70% de forma **robusta** (no solo borde en `eval`; validado contra `remainder`/held-out cuando aplica). `Δ vs FP32` y p95 se registran; la selección prioriza cumplir el piso y fidelidad/calidad (y compresión cuando no degrada el piso). McNemar/IC bootstrap pareado quedan como mejora de tooling futura (el reporte registra Δpp y `n` pareado).
 
 ### 4.2 Preprocesado (registrado por modelo)
 Registrar entrada, resize/normalización/canales, ruta TF baseline vs runtime ONNX usada en `tf_match`, versión. Control **FP32+TF** antes de concluir sobre cuantización (separa export/preprocess vs cuantización).
 
 ## 5. Reporte
 
-- **Tres secciones independientes** (una por dossier), cada una con su `n`, IC y procedencia. Sin tabla comparativa única entre modelos, sin pooled entre dossiers, sin dominancia de HDM.
-- Dentro de cada dossier: vista por fuente/subset si aplica + vista pareada (mismos IDs) entre variantes. Impreso puede incluir vista pooled **intra-dossier** etiquetada (CLEF+JPO, n=1441).
-- `docs/benchmark-report.md` generado por `decimer-export report` desde `data/benchmark/**/*.json` y manifiestos. Alinear generador a este modelo de 3 dossiers (pendiente).
+- Reporte neutral auto-generado por `dtx report` (`docs/benchmark-report.md`) desde `data/benchmark/**/*.json` y manifiestos: incluye **todos los resultados** por dossier/split (eval/pilot/remainder), variantes no seleccionadas incluidas; Imago excluido (experimento aparte en `docs/experiments/`).
+- Comparación pareada (mismos IDs) dentro de dossier, Δpp vs FP32, métricas primarias/secundarias, p50/p95, tamaños. Secciones por dossier/modelo y fuentes históricas cuando aplican.
 
-## 6. Orden de trabajo
+## 6. Decisiones (consolidadas)
 
-1. **Specs por dossier** (este doc + 3 dossiers de una página) — hecho.
-2. **Impreso:** control FP32+TF si falta; fijar criterio; cerrar variante (E1/E3) + política de calibración con RDKit.
-3. **Manuscrito:** congelar subconjunto de iteración (seed/IDs en manifiesto); comparar variantes sobre él; full 5088 para reporte final.
-4. **Clasificador:** export ONNX + wiring CLI + correr 13378718 (zip extraído local). 6670746 sigue OUT OF SCOPE.
-5. **Reporte:** tres secciones independientes, `n`+IC, pareado/McNemar donde aplique.
+| Dossier | Variante seleccionada | Evidencia (métrica primaria, eval congelado) | Nota |
+|---|---|---|---|
+| Impreso `ocsr-printed` | **FP32** | 0.7041 canónico (614/872, n=1000) ≥70% | Ninguna variante comprimida/mixta probada (E1/E3, mixes enc/dec, e1s, particiones por bloques) fue robustamente ≥70% en held-out. |
+| Manuscrito `ocsr-handdrawn` | **FP32** | 0.7300 canónico (576/789, n=1000) ≥70% | Cumple piso con mejor calidad/fidelidad; E1 cumplió accuracy en eval pero con tradeoff de latencia/fidelidad. |
+| Clasificador `image-classifier` | **E4 FP16** | 0.7679 acc binaria (n=1000, no-reaction) ≥70% | Paridad TF 0.998, 7.78 MB (-49%). INT8 Conv (E1-all/E2) <70%; E1s sin compresión relevante. |
+
+Artefactos seleccionados consolidados en `chemistry-draw-ocsr/` (ignorado en este repo) para publicación en HF/`chemistry_draw`.
 
 ## 7. Estado actual (contexto)
-- Medido (OCSR): CLEF/JPO E1+TF y E3 (join TF), n=1441 pareado. HDM `--limit 500` FP32/E1/E3+TF (muestra ad hoc). **HDM E1+TF full 5088** puede estar en ejecución → `data/benchmark/handdrawn-hdm/report.e1.tf.full5088.json`.
-- No medido e2e: clasificador (falta export ONNX + wiring).
-- Pendiente: RDKit canónico, criterios `[TBD]`, subconjunto congelado HDM (manifiesto), FP32 controles donde falten, `report.py` a 3 secciones, McNemar/IC en tooling.
+- Conjuntos congelados (seed 20260308) y benchmarks ejecutados para los tres dossiers (eval/pilot y remainder donde aplica). RDKit canónico integrado; `dtx report` auto-descubre y registra todos los runs.
+- Pendiente (mejoras de tooling): McNemar/IC bootstrap automatizados, cierre de umbrales numéricos finos de p95 si se desea como gate duro, empaquetado canónico del toolchain (`selection.json` unificado/`default`, NOTICE/manifest de bundle), y tareas de ingeniería M1/M6 (check/CI, probe, hardening).

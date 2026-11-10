@@ -112,34 +112,85 @@ def _delta_pp(var_path: Path, fp32_path: Path, field: str) -> str:
 
 
 def _artifact_size_mb(report_path: Path) -> str:
-    # heuristic based on known artifact layout
-    name = str(report_path)
-    mapping = [
-        ("ocsr-printed", "fp32", "data/artifacts/fp32/ocsr-printed/encoder.fp32.onnx", "data/artifacts/fp32/ocsr-printed/decoder_step.fp32.onnx"),
-        ("hf-clef", "fp32", "data/artifacts/fp32/ocsr-printed/encoder.fp32.onnx", "data/artifacts/fp32/ocsr-printed/decoder_step.fp32.onnx"),
-        ("hf-jpo", "fp32", "data/artifacts/fp32/ocsr-printed/encoder.fp32.onnx", "data/artifacts/fp32/ocsr-printed/decoder_step.fp32.onnx"),
-        ("printed", "e1", "data/artifacts/quant/e1/ocsr-printed/encoder.e1.dynamic.onnx", "data/artifacts/quant/e1/ocsr-printed/decoder_step.e1.dynamic.onnx"),
-        ("hf-clef", "e1", "data/artifacts/quant/e1/ocsr-printed/encoder.e1.dynamic.onnx", "data/artifacts/quant/e1/ocsr-printed/decoder_step.e1.dynamic.onnx"),
-        ("hf-jpo", "e1", "data/artifacts/quant/e1/ocsr-printed/encoder.e1.dynamic.onnx", "data/artifacts/quant/e1/ocsr-printed/decoder_step.e1.dynamic.onnx"),
-        ("hf-clef", "e3", "data/artifacts/quant/e3/ocsr-printed/encoder.e3.static.onnx", "data/artifacts/quant/e3/ocsr-printed/decoder_step.e3.dynamic.onnx"),
-        ("hf-jpo", "e3", "data/artifacts/quant/e3/ocsr-printed/encoder.e3.static.onnx", "data/artifacts/quant/e3/ocsr-printed/decoder_step.e3.dynamic.onnx"),
-        ("handdrawn-hdm", "fp32", "data/artifacts/fp32/ocsr-handdrawn/encoder.fp32.onnx", "data/artifacts/fp32/ocsr-handdrawn/decoder_step.fp32.onnx"),
-        ("handdrawn-hdm", "e1", "data/artifacts/quant/e1/ocsr-handdrawn/encoder.e1.dynamic.onnx", "data/artifacts/quant/e1/ocsr-handdrawn/decoder_step.e1.dynamic.onnx"),
-        ("handdrawn-hdm", "e3", "data/artifacts/quant/e3/ocsr-handdrawn/encoder.e3.static.onnx", "data/artifacts/quant/e3/ocsr-handdrawn/decoder_step.e3.dynamic.onnx"),
-    ]
-    # pilots/frozen
-    mapping += [
-        ("pilot/printed", "fp32", "data/artifacts/fp32/ocsr-printed/encoder.fp32.onnx", "data/artifacts/fp32/ocsr-printed/decoder_step.fp32.onnx"),
-        ("pilot/printed", "int8-dyn-all", "data/artifacts/quant/e1/ocsr-printed/encoder.e1.dynamic.onnx", "data/artifacts/quant/e1/ocsr-printed/decoder_step.e1.dynamic.onnx"),
-        ("pilot/handdrawn", "fp32", "data/artifacts/fp32/ocsr-handdrawn/encoder.fp32.onnx", "data/artifacts/fp32/ocsr-handdrawn/decoder_step.fp32.onnx"),
-        ("pilot/handdrawn", "int8-dyn-all", "data/artifacts/quant/e1/ocsr-handdrawn/encoder.e1.dynamic.onnx", "data/artifacts/quant/e1/ocsr-handdrawn/decoder_step.e1.dynamic.onnx"),
-    ]
-    for ctx, var, enc, dec in mapping:
-        if ctx in name and (f"/{var}." in name or f".{var}." in name or f"report.{var}" in name):
-            total = 0; ok = False
-            for p in [ROOT/enc, ROOT/dec]:
-                if p.exists(): total += p.stat().st_size; ok = True
-            if ok: return f"{total/1024/1024:.1f}"
+    """Best-effort artifact size (MB) inferred from report name/variant and known layout.
+    Returns '—' when artifacts are not resolvable locally (e.g. not built/present)."""
+    name = report_path.name.lower()
+    full = str(report_path).lower()
+    d = _load_json(report_path) or {}
+    model = str(d.get("model_key") or d.get("model") or "").lower()
+    vk = str(d.get("variant_key") or "").lower()
+
+    def sz(*parts: str | None) -> str | None:
+        paths = [ROOT / p for p in parts if p]
+        found = [p for p in paths if p.exists()]
+        if not found:
+            return None
+        return f"{sum(p.stat().st_size for p in found)/1024/1024:.1f}"
+
+    # classifier (single graph)
+    if "classifier" in name or "image-classifier" in model:
+        if "e4-fp16" in name or "fp16" in vk:
+            return sz("data/artifacts/quant/e4/image-classifier/classifier.e4.fp16.onnx") or "—"
+        if "e2-static" in name or ("e2" in vk and "static" in vk):
+            return sz("data/artifacts/quant/e2/image-classifier/classifier.e2.static.onnx") or "—"
+        if "e1s-sel" in name or "e1s" in vk:
+            return sz("data/artifacts/quant/e1s/image-classifier/classifier.e1s.dynamic.onnx") or "—"
+        if "int8-dyn-all" in name or vk == "int8-dyn-all":
+            return sz("data/artifacts/quant/e1/image-classifier/classifier.e1.dynamic.onnx") or "—"
+        if "fp32" in name or vk == "fp32":
+            return sz("data/artifacts/fp32/image-classifier/classifier.fp32.onnx") or "—"
+
+    # OCSR dossier/model
+    if "handdrawn" in name or "handdrawn" in model:
+        dossier = "ocsr-handdrawn"
+    else:
+        dossier = "ocsr-printed"
+
+    fp32_enc = f"data/artifacts/fp32/{dossier}/encoder.fp32.onnx"
+    fp32_dec = f"data/artifacts/fp32/{dossier}/decoder_step.fp32.onnx"
+    e1_enc = f"data/artifacts/quant/e1/{dossier}/encoder.e1.dynamic.onnx"
+    e1_dec = f"data/artifacts/quant/e1/{dossier}/decoder_step.e1.dynamic.onnx"
+    e1s_dec = f"data/artifacts/quant/e1s/{dossier}/decoder_step.e1s.dynamic.onnx"
+    e1s_enc = f"data/artifacts/quant/e1s/{dossier}/encoder.e1s.dynamic.onnx"
+    e3_enc = f"data/artifacts/quant/e3/{dossier}/encoder.e3.static.onnx"
+    e3_dec = f"data/artifacts/quant/e3/{dossier}/decoder_step.e3.dynamic.onnx"
+
+    # mixed/selective enc + dec
+    for tag, encp in [("selmid", "data/artifacts/quant/exp/encoder.selMid.dynamic.onnx"),
+                      ("selg", "data/artifacts/quant/exp/encoder.selG.dynamic.onnx"),
+                      ("self", "data/artifacts/quant/exp/encoder.selF.dynamic.onnx"),
+                      ("sele", "data/artifacts/quant/exp/encoder.selE.dynamic.onnx"),
+                      ("seld", "data/artifacts/quant/exp/encoder.selD.dynamic.onnx"),
+                      ("selc", "data/artifacts/quant/exp/encoder.selC.dynamic.onnx"),
+                      ("selb", "data/artifacts/quant/exp/encoder.selB.dynamic.onnx"),
+                      ("sela", "data/artifacts/quant/exp/encoder.selA.dynamic.onnx")]:
+        if f"{tag}enc-e1sdec" in name or vk == f"{tag}enc-e1sdec":
+            return sz(encp, e1s_dec) or "—"
+    if "fp32enc-e1sdec-rr" in name or vk == "fp32enc-e1sdec-rr":
+        return sz(fp32_enc, "data/artifacts/quant/exp/decoder_step.e1s.rr.dynamic.onnx") or "—"
+    if "fp32enc-e1sdec" in name or vk == "fp32enc-e1sdec":
+        return sz(fp32_enc, e1s_dec) or "—"
+    if "fp32enc-e1dec-rr" in name or vk == "fp32enc-e1dec-rr":
+        return sz(fp32_enc, "data/artifacts/quant/exp/decoder_step.e1.rr.dynamic.onnx") or "—"
+    if "fp32enc-e1dec" in name or vk == "fp32enc-e1dec":
+        return sz(fp32_enc, e1_dec) or "—"
+    if "e1enc-fp32dec" in name or vk == "e1enc-fp32dec":
+        return sz(e1_enc, fp32_dec) or "—"
+
+    # standard variants
+    if "e1s-sel-noattn" in name or ("e1s" in vk and "e1s-sel" not in name):
+        return sz(e1s_enc, e1s_dec) or "—"
+    if "int8-dyn-all" in name or vk == "int8-dyn-all" or (".e1." in name) or vk == "e1":
+        # note: .e1. in historical report names
+        if "e1s" in name:  # handled above
+            pass
+        else:
+            return sz(e1_enc, e1_dec) or "—"
+    if ".e3." in name or "e3" in vk:
+        return sz(e3_enc, e3_dec) or "—"
+    if ".fp32." in name or vk == "fp32":
+        return sz(fp32_enc, fp32_dec) or "—"
+
     return "—"
 
 

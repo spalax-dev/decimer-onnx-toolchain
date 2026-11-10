@@ -2,7 +2,7 @@
 
 > Documento generado automáticamente a partir de reportes JSON/manifiestos en `data/`. No incluye decisiones ni juicios sobre los resultados; reporta mediciones, definiciones y criterios de aceptación definidos para la evaluación.
 
-**Generado (UTC):** `2026-11-10T21:49:53.448274+00:00`  
+**Generado (UTC):** `2026-11-10T22:31:35.086762+00:00`  
 **Generador:** `toolchain.report.generate_report` / `dtx report` (alias: `decimer-export report`)  
 **Rama/commits relevantes:** `main` (workspace fetch/export/runtime/cuantización/benchmark).
 
@@ -64,7 +64,7 @@ Las métricas se calculan con el mismo harness sobre el mismo conjunto de imáge
 
 ## 4. Características de la máquina (recolección automática)
 
-Recolectado automáticamente el `2026-11-10T21:49:53.071694+00:00` mediante `platform`, `lscpu` y `free`.
+Recolectado automáticamente el `2026-11-10T22:31:34.661491+00:00` mediante `platform`, `lscpu` y `free`.
 
 | Campo | Valor |
 |---|---|
@@ -80,7 +80,7 @@ Recolectado automáticamente el `2026-11-10T21:49:53.071694+00:00` mediante `pla
 | Cachés L1d/L1i/L2/L3 | `128 KiB (4 instances)` / `128 KiB (4 instances)` / `1 MiB (4 instances)` / `6 MiB (1 instance)` |
 | Flags CPU relevantes | `fma sse4_2 avx avx2` |
 | RAM total | 15.42 GiB (16555548672 bytes) |
-| RAM disponible (al recolectar) | 7.87 GiB |
+| RAM disponible (al recolectar) | 6.56 GiB |
 
 ### Versiones de paquetes (entorno de ejecución)
 
@@ -106,46 +106,46 @@ Protocolo: variantes comparadas sobre **mismos IDs** cuando aplica (pareado, pil
 
 | Variante | n | **canonical RDKit (primaria, comp.)** | exact string | tf_match string (+ tf_canonical) | Δcanonical pp | Δtf pp | Δexact pp | valid | incomplete | p50 ms | p95 ms | tamaño MB | Reporte |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|
-| E3 hybrid (static-enc QDQ + dyn-dec) | 1000 | **432/890 (0.4854)** ❌<70% | 8 (0.0080) | 389/1000 (0.3890) / can 429/873 (0.491) | -21.87 pp | -43.10 pp | -0.40 pp | 964 (0.9640) | 36 | 3060.41 | 10825.61 | — | `data/benchmark/eval-1000/printed.e3.eval1000.json` |
-| FP32 (ref) | 1000 | **614/872 (0.7041)** ✅≥70% | 12 (0.0120) | 820/1000 (0.8200) / can 766/878 (0.872) | (ref) | (ref) | (ref) | 969 (0.9690) | 31 | 2316.82 | 5457.46 | — | `data/benchmark/eval-1000/printed.fp32.eval1000.json` |
-| FP32enc + E1dec (dyn) | 1000 | **612/878 (0.6970)** ❌<70% | 12 (0.0120) | 800/1000 (0.8000) / can 757/883 (0.857) | -0.71 pp | -2.00 pp | +0.00 pp | 974 (0.9740) | 26 | 2596.01 | 7434.31 | — | `data/benchmark/eval-1000/printed.fp32enc-e1dec.eval1000.json` |
-| FP32enc + e1sdec (no-attn, dec mixto) | 1000 | **611/873 (0.6999)** ❌<70% | 12 (0.0120) | 812/1000 (0.8120) / can 762/878 (0.868) | -0.42 pp | -0.80 pp | +0.00 pp | 971 (0.9710) | 29 | 2812.58 | 12724.75 | — | `data/benchmark/eval-1000/printed.fp32enc-e1sdec.eval1000.json` |
-| E1 dynamic INT8 all | 1000 | **597/881 (0.6776)** ❌<70% | 12 (0.0120) | 757/1000 (0.7570) / can 721/881 (0.818) | -2.65 pp | -6.30 pp | +0.00 pp | 976 (0.9760) | 24 | 3815.98 | 7302.61 | — | `data/benchmark/eval-1000/printed.int8-dyn-all.eval1000.json` |
+| E3 hybrid (static-enc QDQ + dyn-dec) | 1000 | **432/890 (0.4854)** ❌<70% | 8 (0.0080) | 389/1000 (0.3890) / can 429/873 (0.491) | -21.87 pp | -43.10 pp | -0.40 pp | 964 (0.9640) | 36 | 3060.41 | 10825.61 | 84.4 | `data/benchmark/eval-1000/printed.e3.eval1000.json` |
+| FP32 (ref) | 1000 | **614/872 (0.7041)** ✅≥70% | 12 (0.0120) | 820/1000 (0.8200) / can 766/878 (0.872) | (ref) | (ref) | (ref) | 969 (0.9690) | 31 | 2316.82 | 5457.46 | 301.2 | `data/benchmark/eval-1000/printed.fp32.eval1000.json` |
+| FP32enc + E1dec (dyn) | 1000 | **612/878 (0.6970)** ❌<70% | 12 (0.0120) | 800/1000 (0.8000) / can 757/883 (0.857) | -0.71 pp | -2.00 pp | +0.00 pp | 974 (0.9740) | 26 | 2596.01 | 7434.31 | 228.4 | `data/benchmark/eval-1000/printed.fp32enc-e1dec.eval1000.json` |
+| FP32enc + e1sdec (no-attn, dec mixto) | 1000 | **611/873 (0.6999)** ❌<70% | 12 (0.0120) | 812/1000 (0.8120) / can 762/878 (0.868) | -0.42 pp | -0.80 pp | +0.00 pp | 971 (0.9710) | 29 | 2812.58 | 12724.75 | 264.2 | `data/benchmark/eval-1000/printed.fp32enc-e1sdec.eval1000.json` |
+| E1 dynamic INT8 all | 1000 | **597/881 (0.6776)** ❌<70% | 12 (0.0120) | 757/1000 (0.7570) / can 721/881 (0.818) | -2.65 pp | -6.30 pp | +0.00 pp | 976 (0.9760) | 24 | 3815.98 | 7302.61 | 81.3 | `data/benchmark/eval-1000/printed.int8-dyn-all.eval1000.json` |
 
 ### 5.P `ocsr-printed` — **split `pilot` (señal/selección, n=300)** (frozen n=1400, eval=1000, pilot=300, seed=20260308, source=`data/manifests/frozen/printed.frozen.json`)
 
 | Variante | n | **canonical RDKit (primaria, comp.)** | exact string | tf_match string (+ tf_canonical) | Δcanonical pp | Δtf pp | Δexact pp | valid | incomplete | p50 ms | p95 ms | tamaño MB | Reporte |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|
-| E1enc (dyn) + FP32dec | 300 | **182/267 (0.6816)** ❌<70% | 1 (0.0033) | 238/300 (0.7933) / can 224/264 (0.848) | -2.94 pp | -3.33 pp | +0.00 pp | 294 (0.9800) | 6 | 7891.59 | 16833.27 | — | `data/benchmark/pilot/printed.e1enc-fp32dec.pilot300.json` |
-| E1s selective dyn (decoder sin atención) | 300 | **182/267 (0.6816)** ❌<70% | 1 (0.0033) | 231/300 (0.7700) / can 219/263 (0.833) | -2.94 pp | -5.67 pp | +0.00 pp | 293 (0.9767) | 7 | 3622.71 | 6244.48 | — | `data/benchmark/pilot/printed.e1s-sel-noattn.pilot300.json` |
+| E1enc (dyn) + FP32dec | 300 | **182/267 (0.6816)** ❌<70% | 1 (0.0033) | 238/300 (0.7933) / can 224/264 (0.848) | -2.94 pp | -3.33 pp | +0.00 pp | 294 (0.9800) | 6 | 7891.59 | 16833.27 | 154.1 | `data/benchmark/pilot/printed.e1enc-fp32dec.pilot300.json` |
+| E1s selective dyn (decoder sin atención) | 300 | **182/267 (0.6816)** ❌<70% | 1 (0.0033) | 231/300 (0.7700) / can 219/263 (0.833) | -2.94 pp | -5.67 pp | +0.00 pp | 293 (0.9767) | 7 | 3622.71 | 6244.48 | 117.1 | `data/benchmark/pilot/printed.e1s-sel-noattn.pilot300.json` |
 | FP32 (ref) | 300 | **187/263 (0.7110)** ✅≥70% | 1 (0.0033) | 248/300 (0.8267) / can 230/263 (0.875) | (ref) | (ref) | (ref) | 290 (0.9667) | 10 | — (cache, sin latencia fresca) | — | 301.2 | `data/benchmark/pilot/printed.fp32.pilot300.json` |
-| FP32enc + E1dec + reduce_range | 300 | **186/264 (0.7045)** ✅≥70% | 1 (0.0033) | 243/300 (0.8100) / can 230/264 (0.871) | -0.65 pp | -1.67 pp | +0.00 pp | 291 (0.9700) | 9 | 5320.71 | 14961.17 | — | `data/benchmark/pilot/printed.fp32enc-e1dec-rr.pilot300.json` |
-| FP32enc + E1dec (dyn) | 300 | **187/264 (0.7083)** ✅≥70% | 1 (0.0033) | 242/300 (0.8067) / can 230/264 (0.871) | -0.27 pp | -2.00 pp | +0.00 pp | 292 (0.9733) | 8 | 3858.88 | 11189.69 | — | `data/benchmark/pilot/printed.fp32enc-e1dec.pilot300.json` |
-| FP32enc + e1sdec (no-attn) + reduce_range | 300 | **186/263 (0.7072)** ✅≥70% | 1 (0.0033) | 245/300 (0.8167) / can 229/263 (0.871) | -0.38 pp | -1.00 pp | +0.00 pp | 291 (0.9700) | 9 | 5510.78 | 16259.84 | — | `data/benchmark/pilot/printed.fp32enc-e1sdec-rr.pilot300.json` |
-| FP32enc + e1sdec (no-attn, dec mixto) | 300 | **185/262 (0.7061)** ✅≥70% | 1 (0.0033) | 249/300 (0.8300) / can 232/262 (0.885) | -0.49 pp | +0.33 pp | +0.00 pp | 290 (0.9667) | 10 | 3058.73 | 7290.85 | — | `data/benchmark/pilot/printed.fp32enc-e1sdec.pilot300.json` |
+| FP32enc + E1dec + reduce_range | 300 | **186/264 (0.7045)** ✅≥70% | 1 (0.0033) | 243/300 (0.8100) / can 230/264 (0.871) | -0.65 pp | -1.67 pp | +0.00 pp | 291 (0.9700) | 9 | 5320.71 | 14961.17 | 228.4 | `data/benchmark/pilot/printed.fp32enc-e1dec-rr.pilot300.json` |
+| FP32enc + E1dec (dyn) | 300 | **187/264 (0.7083)** ✅≥70% | 1 (0.0033) | 242/300 (0.8067) / can 230/264 (0.871) | -0.27 pp | -2.00 pp | +0.00 pp | 292 (0.9733) | 8 | 3858.88 | 11189.69 | 228.4 | `data/benchmark/pilot/printed.fp32enc-e1dec.pilot300.json` |
+| FP32enc + e1sdec (no-attn) + reduce_range | 300 | **186/263 (0.7072)** ✅≥70% | 1 (0.0033) | 245/300 (0.8167) / can 229/263 (0.871) | -0.38 pp | -1.00 pp | +0.00 pp | 291 (0.9700) | 9 | 5510.78 | 16259.84 | 264.2 | `data/benchmark/pilot/printed.fp32enc-e1sdec-rr.pilot300.json` |
+| FP32enc + e1sdec (no-attn, dec mixto) | 300 | **185/262 (0.7061)** ✅≥70% | 1 (0.0033) | 249/300 (0.8300) / can 232/262 (0.885) | -0.49 pp | +0.33 pp | +0.00 pp | 290 (0.9667) | 10 | 3058.73 | 7290.85 | 264.2 | `data/benchmark/pilot/printed.fp32enc-e1sdec.pilot300.json` |
 | E1 dynamic INT8 all | 300 | **182/266 (0.6842)** ❌<70% | 1 (0.0033) | 230/300 (0.7667) / can 219/262 (0.836) | -2.68 pp | -6.00 pp | +0.00 pp | 292 (0.9733) | 8 | — (cache, sin latencia fresca) | — | 81.3 | `data/benchmark/pilot/printed.int8-dyn-all.pilot300.json` |
-| selAenc (stem+0..5+50..56 FP32) + e1sdec | 300 | **186/265 (0.7019)** ✅≥70% | 1 (0.0033) | 237/300 (0.7900) / can 226/264 (0.856) | -0.91 pp | -3.67 pp | +0.00 pp | 294 (0.9800) | 6 | 6587.35 | 10923.83 | — | `data/benchmark/pilot/printed.selAenc-e1sdec.pilot300.json` |
-| selBenc (bloques 40..56 FP32) + e1sdec | 300 | **182/267 (0.6816)** ❌<70% | 1 (0.0033) | 228/300 (0.7600) / can 217/264 (0.822) | -2.94 pp | -6.67 pp | +0.00 pp | 294 (0.9800) | 6 | 7187.43 | 17653.01 | — | `data/benchmark/pilot/printed.selBenc-e1sdec.pilot300.json` |
-| selCenc (stem+0..15 FP32) + e1sdec | 300 | **185/263 (0.7034)** ✅≥70% | 1 (0.0033) | 239/300 (0.7967) / can 227/262 (0.866) | -0.76 pp | -3.00 pp | +0.00 pp | 292 (0.9733) | 8 | 3080.11 | 5490.57 | — | `data/benchmark/pilot/printed.selCenc-e1sdec.pilot300.json` |
-| selDenc-e1sdec | 300 | **185/263 (0.7034)** ✅≥70% | 1 (0.0033) | 239/300 (0.7967) / can 227/262 (0.866) | -0.76 pp | -3.00 pp | +0.00 pp | 293 (0.9767) | 7 | 7030.32 | 32944.69 | — | `data/benchmark/pilot/printed.selDenc-e1sdec.pilot300.json` |
-| selEenc-e1sdec | 300 | **185/262 (0.7061)** ✅≥70% | 1 (0.0033) | 241/300 (0.8033) / can 229/262 (0.874) | -0.49 pp | -2.33 pp | +0.00 pp | 291 (0.9700) | 9 | 4032.80 | 22111.39 | — | `data/benchmark/pilot/printed.selEenc-e1sdec.pilot300.json` |
-| selFenc-e1sdec | 300 | **186/264 (0.7045)** ✅≥70% | 1 (0.0033) | 243/300 (0.8100) / can 230/263 (0.875) | -0.65 pp | -1.67 pp | +0.00 pp | 291 (0.9700) | 9 | 4142.59 | 13840.12 | — | `data/benchmark/pilot/printed.selFenc-e1sdec.pilot300.json` |
-| selGenc-e1sdec | 300 | **184/264 (0.6970)** ❌<70% | 1 (0.0033) | 244/300 (0.8133) / can 230/263 (0.875) | -1.41 pp | -1.33 pp | +0.00 pp | 291 (0.9700) | 9 | 3557.65 | 15299.97 | — | `data/benchmark/pilot/printed.selGenc-e1sdec.pilot300.json` |
-| selMidenc-e1sdec | 300 | **185/264 (0.7008)** ✅≥70% | 1 (0.0033) | 241/300 (0.8033) / can 228/263 (0.867) | -1.03 pp | -2.33 pp | +0.00 pp | 293 (0.9767) | 7 | 2324.51 | 5022.42 | — | `data/benchmark/pilot/printed.selMidenc-e1sdec.pilot300.json` |
+| selAenc (stem+0..5+50..56 FP32) + e1sdec | 300 | **186/265 (0.7019)** ✅≥70% | 1 (0.0033) | 237/300 (0.7900) / can 226/264 (0.856) | -0.91 pp | -3.67 pp | +0.00 pp | 294 (0.9800) | 6 | 6587.35 | 10923.83 | 175.9 | `data/benchmark/pilot/printed.selAenc-e1sdec.pilot300.json` |
+| selBenc (bloques 40..56 FP32) + e1sdec | 300 | **182/267 (0.6816)** ❌<70% | 1 (0.0033) | 228/300 (0.7600) / can 217/264 (0.822) | -2.94 pp | -6.67 pp | +0.00 pp | 294 (0.9800) | 6 | 7187.43 | 17653.01 | 215.2 | `data/benchmark/pilot/printed.selBenc-e1sdec.pilot300.json` |
+| selCenc (stem+0..15 FP32) + e1sdec | 300 | **185/263 (0.7034)** ✅≥70% | 1 (0.0033) | 239/300 (0.7967) / can 227/262 (0.866) | -0.76 pp | -3.00 pp | +0.00 pp | 292 (0.9733) | 8 | 3080.11 | 5490.57 | 123.0 | `data/benchmark/pilot/printed.selCenc-e1sdec.pilot300.json` |
+| selDenc-e1sdec | 300 | **185/263 (0.7034)** ✅≥70% | 1 (0.0033) | 239/300 (0.7967) / can 227/262 (0.866) | -0.76 pp | -3.00 pp | +0.00 pp | 293 (0.9767) | 7 | 7030.32 | 32944.69 | 181.3 | `data/benchmark/pilot/printed.selDenc-e1sdec.pilot300.json` |
+| selEenc-e1sdec | 300 | **185/262 (0.7061)** ✅≥70% | 1 (0.0033) | 241/300 (0.8033) / can 229/262 (0.874) | -0.49 pp | -2.33 pp | +0.00 pp | 291 (0.9700) | 9 | 4032.80 | 22111.39 | 201.3 | `data/benchmark/pilot/printed.selEenc-e1sdec.pilot300.json` |
+| selFenc-e1sdec | 300 | **186/264 (0.7045)** ✅≥70% | 1 (0.0033) | 243/300 (0.8100) / can 230/263 (0.875) | -0.65 pp | -1.67 pp | +0.00 pp | 291 (0.9700) | 9 | 4142.59 | 13840.12 | 127.1 | `data/benchmark/pilot/printed.selFenc-e1sdec.pilot300.json` |
+| selGenc-e1sdec | 300 | **184/264 (0.6970)** ❌<70% | 1 (0.0033) | 244/300 (0.8133) / can 230/263 (0.875) | -1.41 pp | -1.33 pp | +0.00 pp | 291 (0.9700) | 9 | 3557.65 | 15299.97 | 133.8 | `data/benchmark/pilot/printed.selGenc-e1sdec.pilot300.json` |
+| selMidenc-e1sdec | 300 | **185/264 (0.7008)** ✅≥70% | 1 (0.0033) | 241/300 (0.8033) / can 228/263 (0.867) | -1.03 pp | -2.33 pp | +0.00 pp | 293 (0.9767) | 7 | 2324.51 | 5022.42 | 240.1 | `data/benchmark/pilot/printed.selMidenc-e1sdec.pilot300.json` |
 
 ### 5.E `ocsr-handdrawn` — **split `eval` (gate, n=1000)** (frozen n=1400, eval=1000, pilot=300, seed=20260308, source=`data/manifests/frozen/handdrawn.frozen.json`)
 
 | Variante | n | **canonical RDKit (primaria, comp.)** | exact string | tf_match string (+ tf_canonical) | Δcanonical pp | Δtf pp | Δexact pp | valid | incomplete | p50 ms | p95 ms | tamaño MB | Reporte |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|
-| E3 hybrid (static-enc QDQ + dyn-dec) | 1000 | **0/550 (0.0000)** ❌<70% | 0 (0.0000) | 0/1000 (0.0000) / can 0/536 (0.000) | -73.00 pp | -91.20 pp | -38.10 pp | 551 (0.5510) | 449 | 17705.23 | 27366.41 | — | `data/benchmark/eval-1000/handdrawn.e3.eval1000.json` |
-| FP32 (ref) | 1000 | **711/974 (0.7300)** ✅≥70% | 381 (0.3810) | 912/1000 (0.9120) / can 900/969 (0.929) | (ref) | (ref) | (ref) | 999 (0.9990) | 1 | 1114.95 | 2155.76 | — | `data/benchmark/eval-1000/handdrawn.fp32.eval1000.json` |
-| E1 dynamic INT8 all | 1000 | **692/968 (0.7149)** ✅≥70% | 368 (0.3680) | 858/1000 (0.8580) / can 859/958 (0.897) | -1.51 pp | -5.40 pp | -1.30 pp | 999 (0.9990) | 1 | 2859.57 | 3951.42 | — | `data/benchmark/eval-1000/handdrawn.int8-dyn-all.eval1000.json` |
+| E3 hybrid (static-enc QDQ + dyn-dec) | 1000 | **0/550 (0.0000)** ❌<70% | 0 (0.0000) | 0/1000 (0.0000) / can 0/536 (0.000) | -73.00 pp | -91.20 pp | -38.10 pp | 551 (0.5510) | 449 | 17705.23 | 27366.41 | 84.4 | `data/benchmark/eval-1000/handdrawn.e3.eval1000.json` |
+| FP32 (ref) | 1000 | **711/974 (0.7300)** ✅≥70% | 381 (0.3810) | 912/1000 (0.9120) / can 900/969 (0.929) | (ref) | (ref) | (ref) | 999 (0.9990) | 1 | 1114.95 | 2155.76 | 301.2 | `data/benchmark/eval-1000/handdrawn.fp32.eval1000.json` |
+| E1 dynamic INT8 all | 1000 | **692/968 (0.7149)** ✅≥70% | 368 (0.3680) | 858/1000 (0.8580) / can 859/958 (0.897) | -1.51 pp | -5.40 pp | -1.30 pp | 999 (0.9990) | 1 | 2859.57 | 3951.42 | 81.3 | `data/benchmark/eval-1000/handdrawn.int8-dyn-all.eval1000.json` |
 
 ### 5.P `ocsr-handdrawn` — **split `pilot` (señal/selección, n=300)** (frozen n=1400, eval=1000, pilot=300, seed=20260308, source=`data/manifests/frozen/handdrawn.frozen.json`)
 
 | Variante | n | **canonical RDKit (primaria, comp.)** | exact string | tf_match string (+ tf_canonical) | Δcanonical pp | Δtf pp | Δexact pp | valid | incomplete | p50 ms | p95 ms | tamaño MB | Reporte |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|
-| E1s selective dyn (decoder sin atención) | 300 | **207/292 (0.7089)** ✅≥70% | 118 (0.3933) | 263/300 (0.8767) / can 260/289 (0.900) | -1.03 pp | -5.33 pp | -1.00 pp | 299 (0.9967) | 1 | 2860.85 | 3963.42 | — | `data/benchmark/pilot/handdrawn.e1s-sel-noattn.pilot300.json` |
+| E1s selective dyn (decoder sin atención) | 300 | **207/292 (0.7089)** ✅≥70% | 118 (0.3933) | 263/300 (0.8767) / can 260/289 (0.900) | -1.03 pp | -5.33 pp | -1.00 pp | 299 (0.9967) | 1 | 2860.85 | 3963.42 | 117.1 | `data/benchmark/pilot/handdrawn.e1s-sel-noattn.pilot300.json` |
 | FP32 (ref) | 300 | **210/292 (0.7192)** ✅≥70% | 121 (0.4033) | 279/300 (0.9300) / can 273/291 (0.938) | (ref) | (ref) | (ref) | 299 (0.9967) | 1 | — (cache, sin latencia fresca) | — | 301.2 | `data/benchmark/pilot/handdrawn.fp32.pilot300.json` |
 | E1 dynamic INT8 all | 300 | **204/293 (0.6962)** ❌<70% | 116 (0.3867) | 266/300 (0.8867) / can 263/290 (0.907) | -2.29 pp | -4.33 pp | -1.67 pp | 299 (0.9967) | 1 | — (cache, sin latencia fresca) | — | 81.3 | `data/benchmark/pilot/handdrawn.int8-dyn-all.pilot300.json` |
 
