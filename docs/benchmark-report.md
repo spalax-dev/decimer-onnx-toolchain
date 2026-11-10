@@ -2,7 +2,7 @@
 
 > Documento generado automáticamente a partir de reportes JSON/manifiestos en `data/`. No incluye decisiones ni juicios sobre los resultados; reporta mediciones, definiciones y criterios de aceptación definidos para la evaluación.
 
-**Generado (UTC):** `2026-11-10T20:00:14.530880+00:00`  
+**Generado (UTC):** `2026-11-10T20:32:35.449380+00:00`  
 **Generador:** `toolchain.report.generate_report` / `dtx report` (alias: `decimer-export report`)  
 **Rama/commits relevantes:** `main` (workspace fetch/export/runtime/cuantización/benchmark).
 
@@ -64,7 +64,7 @@ Las métricas se calculan con el mismo harness sobre el mismo conjunto de imáge
 
 ## 4. Características de la máquina (recolección automática)
 
-Recolectado automáticamente el `2026-11-10T20:00:13.948937+00:00` mediante `platform`, `lscpu` y `free`.
+Recolectado automáticamente el `2026-11-10T20:32:35.057243+00:00` mediante `platform`, `lscpu` y `free`.
 
 | Campo | Valor |
 |---|---|
@@ -80,7 +80,7 @@ Recolectado automáticamente el `2026-11-10T20:00:13.948937+00:00` mediante `pla
 | Cachés L1d/L1i/L2/L3 | `128 KiB (4 instances)` / `128 KiB (4 instances)` / `1 MiB (4 instances)` / `6 MiB (1 instance)` |
 | Flags CPU relevantes | `fma sse4_2 avx avx2` |
 | RAM total | 15.42 GiB (16555548672 bytes) |
-| RAM disponible (al recolectar) | 6.47 GiB |
+| RAM disponible (al recolectar) | 6.46 GiB |
 
 ### Versiones de paquetes (entorno de ejecución)
 
