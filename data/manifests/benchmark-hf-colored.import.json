@@ -1,0 +1,15 @@
+{
+  "suite": "hf-colored",
+  "title": "HF import hheiden/Colored_Background_OCSR_benchmark COLORED",
+  "hf_dataset": "hheiden/Colored_Background_OCSR_benchmark",
+  "hf_dataset_commit_observed": "cf73bddf3f7124620d0c23c850e243d9b591599d",
+  "config": "default",
+  "split": "train",
+  "model": "ocsr",
+  "provenance": "Alpha-Extractor (alphaMa/SIMM) OCSR benchmark test subset: 200 deliberately challenging images (colored backgrounds, low quality, hand-drawn), HF version prepared by Hunter Heidenreich.",
+  "license_note": "MIT per HF dataset card; derived from alphaExtractor test data \u2014 verify original alphaExtractor terms before redistribution.",
+  "aggregate_license": "MIT",
+  "labels_path": "data/benchmark/hf-colored/labels.jsonl",
+  "labels_count": 200,
+  "expected_rows": 200
+}

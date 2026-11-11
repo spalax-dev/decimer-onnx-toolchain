@@ -2,7 +2,7 @@
 
 > Document auto-generated from JSON reports/manifests in `data/`. It does not include decisions or judgments about results; it reports measurements, definitions, and acceptance criteria defined for evaluation.
 
-**Generated (UTC):** `2026-11-11T03:01:34.035375+00:00`  
+**Generated (UTC):** `2026-11-11T20:16:07.373633+00:00`  
 **Generator:** `toolchain.report.generate_report` / `dtx report` (alias: `decimer-export report`)  
 **Relevant branch/commits:** `main` (workspace fetch/export/runtime/quantization/benchmark).
 
@@ -39,7 +39,7 @@ Metrics are computed with the same harness over the same frozen image/ID set whe
 
 | Criterion | Definition / acceptance condition |
 |---|---|
-| **Absolute floor (mandatory, all)** | **Accuracy ≥ 70%** on the dossier **primary metric**, on the **frozen `eval` split** (same IDs). **OCSR:** RDKit `canonical_match_rate` (over comparable pairs). **Classifier:** `binary accuracy` (non-reaction). Variants < 70% **are not accepted**. |
+| **Absolute floor (mandatory, all primary dossiers)** | **Accuracy ≥ 70%** on the dossier **primary metric**, on the **frozen `eval` split** (same IDs). **OCSR:** RDKit `canonical_match_rate` (over comparable pairs). **Classifier:** `binary accuracy` (non-reaction). Variants < 70% **are not accepted**. **Scope:** printed, hand-drawn (in-domain) and classifier dossiers. **Stress dossiers are exempt** (see `floor_applies=false` in their frozen manifest): the colored-background stress set (§5.C) is deliberately hard and is reported for robustness only — it does not gate selection. |
 | **Paired comparison** | All variants are measured on the **same frozen set/IDs** (pilot ⊂ eval ⊂ pool). Δ vs FP32 in pp over same IDs. |
 | **Fidelity (rate / strict)** | `tf_match_rate`/`tf_canonical_match_rate` (ONNX≈TF). Strict: 100%. Numeric threshold (`≥ [TBD]%`) is an external parameter if defined. |
 | **Δ vs FP32 (accuracy/fidelity)** | Absolute difference in pp vs FP32, same metric and IDs. Threshold `≤ [TBD] pp` `[TBD]`. |
@@ -57,6 +57,7 @@ Metrics are computed with the same harness over the same frozen image/ID set whe
 | Printed golden CLEF | `ocsr-printed` | `Keylab/OCSR-Benchmarks` (HF, rows API) | observed dataset commit `2fdcdc59`; config `CLEF`, split `test`, 992 | HF aggregate **mixed-see-sources**; verify original CLEF 2012 terms | `data/benchmark/hf-clef/labels.jsonl`; `data/manifests/benchmark-hf-clef.import.json` |
 | Printed golden JPO | `ocsr-printed` | `Keylab/OCSR-Benchmarks` (HF, rows API) | config `JPO`, split `test`, 449 | HF aggregate **mixed-see-sources**; verify original JPO/ChemInfty/OSRA terms | `data/benchmark/hf-jpo/labels.jsonl`; `data/manifests/benchmark-hf-jpo.import.json` |
 | Hand-drawn HDM | `ocsr-handdrawn` | Zenodo DECIMER Hand-drawn molecule images | record `7617107`, DOI 10.5281/zenodo.7617107, 5088 | CC-BY-4.0 | `data/benchmark/handdrawn-hdm/labels.jsonl`; `data/manifests/benchmark-handdrawn-hdm.fetch.json` |
+| Colored-background stress (αExtractor) | `ocsr-printed` + `ocsr-handdrawn` | `hheiden/Colored_Background_OCSR_benchmark` (HF, rows API) | observed dataset commit `cf73bddf`; config `default`, split `train`, 200 | **MIT** (HF dataset card); derived from αExtractor test data — verify original αExtractor terms | `data/benchmark/hf-colored/labels.jsonl`; `data/manifests/benchmark-hf-colored.import.json` |
 | Classifier (prepared) | `image-classifier` | Zenodo 13378718 | record `13378718`, zip md5 `e7e47f2aa4af4b79874a19382cec06da` (Zenodo API) | Record indicates MIT; mixed image origins | `decimer-export import-benchmark --source classifier-13378718` (requires local extraction) |
 | Classifier 6670746 | `image-classifier` | Zenodo 6670746 | single file 126.6 GB, md5 `9e847917a75ac77d7fbe1f50b2818a5b` | CC-BY-4.0 | Not downloaded. |
 
@@ -64,7 +65,7 @@ Metrics are computed with the same harness over the same frozen image/ID set whe
 
 ## 4. Machine characteristics (automatic collection)
 
-Automatically collected at `2026-11-11T03:01:33.541248+00:00` using `platform`, `lscpu`, and `free`.
+Automatically collected at `2026-11-11T20:16:06.906428+00:00` using `platform`, `lscpu`, and `free`.
 
 | Field | Value |
 |---|---|
@@ -80,7 +81,7 @@ Automatically collected at `2026-11-11T03:01:33.541248+00:00` using `platform`, 
 | Caches L1d/L1i/L2/L3 | `128 KiB (4 instances)` / `128 KiB (4 instances)` / `1 MiB (4 instances)` / `6 MiB (1 instance)` |
 | Relevant CPU flags | `fma sse4_2 avx avx2` |
 | Total RAM | 15.42 GiB (16555548672 bytes) |
-| Available RAM (at collection) | 8.05 GiB |
+| Available RAM (at collection) | 7.30 GiB |
 
 ### Package versions (execution environment)
 
@@ -100,7 +101,7 @@ Automatically collected at `2026-11-11T03:01:33.541248+00:00` using `platform`, 
 
 ## 5. Results
 
-This report covers **three distinct models** evaluated in independent dossiers: `ocsr-printed`, `ocsr-handdrawn`, and `image-classifier` (no ranking across models).
+This report covers **three distinct models** evaluated in independent dossiers: `ocsr-printed`, `ocsr-handdrawn`, and `image-classifier` (no ranking across models). In addition, a **colored-background stress dossier** (αExtractor, n=200) is reported for robustness **without the ≥70% floor** (§5.C).
 
 Protocol: variants compared on **same IDs** when applicable (paired, pilot ⊂ eval ⊂ frozen pool). Latency **p50/p95** (same hardware/provider), not mean only; dynamic INT8 may not be faster. **Δ vs FP32** = difference in pp over common IDs (same metric). `—` = not measured/not available.
 
@@ -157,6 +158,15 @@ Protocol: variants compared on **same IDs** when applicable (paired, pilot ⊂ e
 | FP32 (ref) | 300 | **198/278 (0.7122)** ✅≥70% | 1 (0.0033) | 252/300 (0.8400) / can 244/279 (0.875) | -0.69 pp | -9.00 pp (agg) | -40.00 pp (agg) | 299 (0.9967) | 1 | 2046.58 | 5223.96 | 301.2 | `ocsr-handdrawn@zenodo:10781330` | `91c70fee79b7d64c09d433ff82e2216d16070e4d098b83da2c13d34c52439fde` | `data/benchmark/pilot/handdrawn.fp32.cross-on-printed.pilot300.json` |
 | FP32 (ref) | 300 | **210/292 (0.7192)** ✅≥70% | 121 (0.4033) | 279/300 (0.9300) / can 273/291 (0.938) | (ref) | (ref) | (ref) | 299 (0.9967) | 1 | — (cache, sin latencia fresca) | — | 301.2 | `ocsr-handdrawn@zenodo:10781330` | `91c70fee79b7d64c09d433ff82e2216d16070e4d098b83da2c13d34c52439fde` | `data/benchmark/pilot/handdrawn.fp32.pilot300.json` |
 | E1 dynamic INT8 all | 300 | **204/293 (0.6962)** ❌<70% | 116 (0.3867) | 266/300 (0.8867) / can 263/290 (0.907) | -2.29 pp | -4.33 pp | -1.67 pp | 299 (0.9967) | 1 | — (cache, sin latencia fresca) | — | 81.3 | `ocsr-handdrawn@zenodo:10781330` | `91c70fee79b7d64c09d433ff82e2216d16070e4d098b83da2c13d34c52439fde` | `data/benchmark/pilot/handdrawn.int8-dyn-all.pilot300.json` |
+
+### 5.C Colored-background stress dossier (αExtractor) — **split `eval` (n=200, robustness, NO floor)** (frozen n=200, eval=200, pilot=50, seed=20260308, source=`data/manifests/frozen/colored.frozen.json`)
+
+Deliberately hard images (colored backgrounds, low quality, hand-drawn) curated as αExtractor test data; both selected OCSR FP32 models are evaluated (each with its own tokenizer vocab). **The ≥70% floor does not apply here** (`floor_applies=false` in the frozen manifest): this dossier reports robustness only and does not gate variant selection. Small sample (n=200): rates carry SE ≈ 3–4 pp. License/provenance: see §3.
+
+| Variant | n | **RDKit canonical (primary, comp.)** | exact string | tf_match string (+ tf_canonical) | Δcanonical pp | Δtf pp | Δexact pp | valid | incomplete | p50 ms | p95 ms | size MB | model_id | checkpoint sha256 | Report |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|---|---|
+| `printed` FP32 (ref) | 200 | **28/155 (0.1806)** (no floor) | 0 (0.0000) | — | (ref) | (ref) | (ref) | 177 (0.8850) | 23 | 2883.88 | 19790.58 | 301.2 | `ocsr-printed@zenodo:8300489` | `8ebc7db18fffac7e71a2cf8487708053620d124846bc9502eddac1283b431d2b` | `data/benchmark/eval-colored/printed.fp32.evalcolored.json` |
+| `handdrawn` FP32 (ref) | 200 | **44/172 (0.2558)** (no floor) | 0 (0.0000) | — | (ref) | (ref) | (ref) | 192 (0.9600) | 8 | 2851.13 | 18914.43 | 301.2 | `ocsr-handdrawn@zenodo:10781330` | `91c70fee79b7d64c09d433ff82e2216d16070e4d098b83da2c13d34c52439fde` | `data/benchmark/eval-colored/handdrawn.fp32.evalcolored.json` |
 
 ### 5.1 `ocsr-printed` — golden CLEF (Keylab/OCSR-Benchmarks, n=992, historical evidence)
 

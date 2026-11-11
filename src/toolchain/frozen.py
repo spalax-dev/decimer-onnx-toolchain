@@ -122,6 +122,37 @@ def freeze_classifier(labels_path: Path, out_path: Path, *, target_n: int = 1000
     return manifest
 
 
+def freeze_simple_ocsr(labels_path: Path, out_path: Path, *, dossier: str, subset: str,
+                       model: str | None = None, seed: int = SEED_DEFAULT, pilot_n: int = 50,
+                       floor_applies: bool = False) -> dict[str, Any]:
+    """Freeze a small OCSR dossier (stress/robustness sets smaller than the standard eval).
+
+    All items are frozen; eval = full set (n < 1000); pilot = first pilot_n after a
+    deterministic seed shuffle, so pilot ⊂ eval ⊂ frozen holds. The >=70% floor is
+    NOT applied unless floor_applies=True (stress sets are reported, not gated).
+    `model` stays None on purpose for dual-model dossiers: callers must pass
+    --model-key explicitly (avoids silent cross-model prediction-cache reuse).
+    """
+    rows = load_labels(labels_path)
+    keys = [f"{subset}::{r.get('id') or r.get('image')}" for r in rows]
+    rng = random.Random(seed)
+    rng.shuffle(keys)
+    n = len(keys)
+    pilot_n = min(pilot_n, n)
+    manifest = {
+        "dossier": dossier, "model": model, "seed": seed,
+        "method": f"shuffle(all {n} ids, seed {seed}); eval=frozen=full set (n below standard 1000); pilot=first {pilot_n}; floor_applies={str(floor_applies).lower()}",
+        "source_labels": str(labels_path),
+        "available_n": n, "frozen_n": n, "eval_n": n, "pilot_n": pilot_n, "remainder_n": 0,
+        "floor_applies": floor_applies,
+        "sources": [{"subset": subset, "labels": str(labels_path), "n": n}],
+        "splits": {"pilot": keys[:pilot_n], "eval": keys, "frozen": keys, "remainder": []},
+    }
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    return manifest
+
+
 class PredictionCache:
     """Cache predictions by (model, variant, image_id) in JSONL shards."""
     def __init__(self, cache_dir: Path | None = None):

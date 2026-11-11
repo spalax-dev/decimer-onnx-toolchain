@@ -298,7 +298,7 @@ CRITERIA = r"""## 2. Acceptance criteria (defined for evaluation)
 
 | Criterion | Definition / acceptance condition |
 |---|---|
-| **Absolute floor (mandatory, all)** | **Accuracy ≥ 70%** on the dossier **primary metric**, on the **frozen `eval` split** (same IDs). **OCSR:** RDKit `canonical_match_rate` (over comparable pairs). **Classifier:** `binary accuracy` (non-reaction). Variants < 70% **are not accepted**. |
+| **Absolute floor (mandatory, all primary dossiers)** | **Accuracy ≥ 70%** on the dossier **primary metric**, on the **frozen `eval` split** (same IDs). **OCSR:** RDKit `canonical_match_rate` (over comparable pairs). **Classifier:** `binary accuracy` (non-reaction). Variants < 70% **are not accepted**. **Scope:** printed, hand-drawn (in-domain) and classifier dossiers. **Stress dossiers are exempt** (see `floor_applies=false` in their frozen manifest): the colored-background stress set (§5.C) is deliberately hard and is reported for robustness only — it does not gate selection. |
 | **Paired comparison** | All variants are measured on the **same frozen set/IDs** (pilot ⊂ eval ⊂ pool). Δ vs FP32 in pp over same IDs. |
 | **Fidelity (rate / strict)** | `tf_match_rate`/`tf_canonical_match_rate` (ONNX≈TF). Strict: 100%. Numeric threshold (`≥ [TBD]%`) is an external parameter if defined. |
 | **Δ vs FP32 (accuracy/fidelity)** | Absolute difference in pp vs FP32, same metric and IDs. Threshold `≤ [TBD] pp` `[TBD]`. |
@@ -316,6 +316,7 @@ PROVENANCE = r"""## 3. Data sources and provenance (facts)
 | Printed golden CLEF | `ocsr-printed` | `Keylab/OCSR-Benchmarks` (HF, rows API) | observed dataset commit `2fdcdc59`; config `CLEF`, split `test`, 992 | HF aggregate **mixed-see-sources**; verify original CLEF 2012 terms | `data/benchmark/hf-clef/labels.jsonl`; `data/manifests/benchmark-hf-clef.import.json` |
 | Printed golden JPO | `ocsr-printed` | `Keylab/OCSR-Benchmarks` (HF, rows API) | config `JPO`, split `test`, 449 | HF aggregate **mixed-see-sources**; verify original JPO/ChemInfty/OSRA terms | `data/benchmark/hf-jpo/labels.jsonl`; `data/manifests/benchmark-hf-jpo.import.json` |
 | Hand-drawn HDM | `ocsr-handdrawn` | Zenodo DECIMER Hand-drawn molecule images | record `7617107`, DOI 10.5281/zenodo.7617107, 5088 | CC-BY-4.0 | `data/benchmark/handdrawn-hdm/labels.jsonl`; `data/manifests/benchmark-handdrawn-hdm.fetch.json` |
+| Colored-background stress (αExtractor) | `ocsr-printed` + `ocsr-handdrawn` | `hheiden/Colored_Background_OCSR_benchmark` (HF, rows API) | observed dataset commit `cf73bddf`; config `default`, split `train`, 200 | **MIT** (HF dataset card); derived from αExtractor test data — verify original αExtractor terms | `data/benchmark/hf-colored/labels.jsonl`; `data/manifests/benchmark-hf-colored.import.json` |
 | Classifier (prepared) | `image-classifier` | Zenodo 13378718 | record `13378718`, zip md5 `e7e47f2aa4af4b79874a19382cec06da` (Zenodo API) | Record indicates MIT; mixed image origins | `decimer-export import-benchmark --source classifier-13378718` (requires local extraction) |
 | Classifier 6670746 | `image-classifier` | Zenodo 6670746 | single file 126.6 GB, md5 `9e847917a75ac77d7fbe1f50b2818a5b` | CC-BY-4.0 | Not downloaded. |
 
@@ -358,7 +359,7 @@ def _tf_canonical_stats(r: dict[str, Any]) -> tuple[int | None, int | None, floa
     return m, len(comp), m / len(comp)
 
 
-def _pilot_ocsr_row(label: str, report_path: Path, *, fp32_path: Path | None = None) -> str | None:
+def _pilot_ocsr_row(label: str, report_path: Path, *, fp32_path: Path | None = None, floor: bool = True) -> str | None:
     r = _load_json(report_path)
     if not r:
         return None
@@ -385,7 +386,12 @@ def _pilot_ocsr_row(label: str, report_path: Path, *, fp32_path: Path | None = N
     tf_cell = _fmt_rate(tfm, n) if tfm is not None else "—"
     if tcm is not None and tcc:
         tf_cell = f"{tf_cell} / can {tcm}/{tcc} ({tcr:.3f})"
-    mark = " ✅≥70%" if cmr is not None and cmr >= 0.70 else (" ❌<70%" if cmr is not None else "")
+    if cmr is None:
+        mark = ""
+    elif floor:
+        mark = " ✅≥70%" if cmr >= 0.70 else " ❌<70%"
+    else:
+        mark = " (no floor)"
     can_cell = f"**{cm}/{ccomp} ({cmr:.4f})**{mark}" if (cm is not None and ccomp) else "—"
     name = report_path.name.lower()
     ident = _identity_for("handdrawn" if name.startswith("handdrawn") else ("classifier" if name.startswith("classifier") else "printed"))
@@ -584,13 +590,44 @@ Automatically collected at `{info.get('collected_at_utc','')}` using `platform`,
 """
 
 
+def _render_colored_stress(lines: list[str], pending: list[str]) -> None:
+    d = ROOT / "data/benchmark/eval-colored"
+    fman = ROOT / "data/manifests/frozen/colored.frozen.json"
+    files = sorted(d.glob("*.evalcolored.json")) if d.exists() else []
+    if not files:
+        pending.append(f"colored-background stress dossier: expected reports `{d.relative_to(ROOT)}/*.evalcolored.json` (not found at generation time).")
+        return
+    man = _load_json(fman) or {}
+    meta = ""
+    if man:
+        meta = f" (frozen n={man.get('frozen_n')}, eval={man.get('eval_n')}, pilot={man.get('pilot_n')}, seed={man.get('seed')}, source=`{fman.relative_to(ROOT)}`)"
+    lines.append(f"### 5.C Colored-background stress dossier (αExtractor) — **split `eval` (n=200, robustness, NO floor)**{meta}")
+    lines.append("")
+    lines.append("Deliberately hard images (colored backgrounds, low quality, hand-drawn) curated as αExtractor test data; both selected OCSR FP32 models are evaluated (each with its own tokenizer vocab). **The ≥70% floor does not apply here** (`floor_applies=false` in the frozen manifest): this dossier reports robustness only and does not gate variant selection. Small sample (n=200): rates carry SE ≈ 3–4 pp. License/provenance: see §3.")
+    lines.append("")
+    header = "| Variant | n | **RDKit canonical (primary, comp.)** | exact string | tf_match string (+ tf_canonical) | Δcanonical pp | Δtf pp | Δexact pp | valid | incomplete | p50 ms | p95 ms | size MB | model_id | checkpoint sha256 | Report |"
+    sep = "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|---|---|"
+    rows = []
+    for p in sorted(files, key=lambda x: 0 if x.name.startswith("printed") else 1):
+        data = _load_json(p)
+        prefix = "handdrawn" if p.name.startswith("handdrawn") else "printed"
+        lbl = f"`{prefix}` " + (_ocsr_variant_label(p, data) or "FP32")
+        rows.append(_pilot_ocsr_row(lbl, p, fp32_path=p, floor=False))
+    got = [r for r in rows if r]
+    if got:
+        lines.append(header)
+        lines.append(sep)
+        lines.extend(got)
+        lines.append("")
+
+
 def render_results() -> tuple[str, list[str]]:
     b = ROOT / "data" / "benchmark"
     pending: list[str] = []
     lines = [
         "## 5. Results",
         "",
-        "This report covers **three distinct models** evaluated in independent dossiers: `ocsr-printed`, `ocsr-handdrawn`, and `image-classifier` (no ranking across models).",
+        "This report covers **three distinct models** evaluated in independent dossiers: `ocsr-printed`, `ocsr-handdrawn`, and `image-classifier` (no ranking across models). In addition, a **colored-background stress dossier** (αExtractor, n=200) is reported for robustness **without the ≥70% floor** (§5.C).",
         "",
         "Protocol: variants compared on **same IDs** when applicable (paired, pilot ⊂ eval ⊂ frozen pool). Latency **p50/p95** (same hardware/provider), not mean only; dynamic INT8 may not be faster. **Δ vs FP32** = difference in pp over common IDs (same metric). `—` = not measured/not available.",
         "",
@@ -613,6 +650,9 @@ def render_results() -> tuple[str, list[str]]:
 
     # Pilotos congelados (tres dossiers)
     _render_ocsr(lines, pending)
+
+    # Dossier de estrés: fondos de color (reportado SIN piso)
+    _render_colored_stress(lines, pending)
 
     table("5.1 `ocsr-printed` — golden CLEF (Keylab/OCSR-Benchmarks, n=992, historical evidence)", [
         _row("E1 dynamic INT8 (+TF)", b/"hf-clef/report.e1.tf.json"),

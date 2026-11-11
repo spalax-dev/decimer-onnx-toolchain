@@ -18,6 +18,7 @@ Each model is validated against **its** suite, with **its** metric, **its** acce
 | [Printed](benchmark-dossier-printed.md) | `ocsr-printed` | CLEF + JPO (n=1441) | Does the ONNX variant reproduce TF and predict correct SMILES on printed structures? | Variant (E1/E3/FP32) + calibration policy |
 | [Hand-drawn](benchmark-dossier-handdrawn.md) | `ocsr-handdrawn` | HDM (n=5088) | Does the ONNX variant reproduce TF and predict correct SMILES on hand-drawn structures? | Variant + calibration policy (model trained for hand-drawn; non-exclusive specialization per cross-eval) |
 | [Classifier](benchmark-dossier-classifier.md) | `image-classifier` | Zenodo 13378718 (split defined at import) | Does it classify structure/no-structure correctly under the defined mapping? | ONNX export + wiring + variant |
+| Colored-background stress (no dossier doc; report §5.C) | `ocsr-printed` + `ocsr-handdrawn` | αExtractor subset (n=200) | How robust are the selected OCSR models on deliberately hard images (colored backgrounds, low quality, hand-drawn)? **Robustness reporting only — no selection decision.** | None: **`floor_applies=false`** (≥70% floor exempt by design) |
 
 **Not applicable:** a 2×2 cross-domain matrix as a requirement (there is no router sending the same image to both OCSR models). Cross-domain cells remain, if anything, an **optional robustness check**, not part of the dossier. There is **no** single comparative or pooled table across dossiers/domains.
 
@@ -29,6 +30,7 @@ Each model is validated against **its** suite, with **its** metric, **its** acce
 | `hf-jpo` | Printed | 449 | same aggregate; verify original JPO/ChemInfty/OSRA terms | **IN** | `data/manifests/benchmark-hf-jpo.import.json`, `data/benchmark/hf-jpo/labels.jsonl` |
 | `handdrawn-hdm` | Hand-drawn | 5088 | Zenodo 7617107, CC-BY-4.0, verified checksums | **IN** | `data/manifests/benchmark-handdrawn-hdm.fetch.json`, `data/benchmark/handdrawn-hdm/labels.jsonl` |
 | `classifier-13378718` | Classifier | per extracted split | Zenodo 13378718, zip md5 `e7e47f2aa4af4b79874a19382cec06da` (Zenodo API); record indicates MIT, mixed image origins (verify) | **IN** (requires local extraction + ONNX export) | importer `--source classifier-13378718` |
+| `hf-colored` | Colored stress (both OCSR models) | 200 | `hheiden/Colored_Background_OCSR_benchmark` (HF, rows API), observed commit `cf73bddf`; **MIT** per HF dataset card; derived from αExtractor test data — verify original αExtractor terms | **IN** (stress/robustness, floor-exempt) | `data/manifests/benchmark-hf-colored.import.json`, `data/benchmark/hf-colored/labels.jsonl` |
 | Zenodo **6670746** | — | 126.6 GB, single file | CC-BY-4.0; no exposed separate test set | **OUT OF SCOPE (formalized)** — not downloaded or used | — |
 | `decimer-smoke` | Printed (optional sanity) | 4 | DECIMER-Image_Transformer `@9d06861`, MIT, SHA-256 | **IN optional**, outside main report | `data/manifests/benchmark-decimer-smoke.fetch.json` |
 
@@ -39,12 +41,13 @@ Each model is validated against **its** suite, with **its** metric, **its** acce
   - **Printed:** frozen pool n=1400 (CLEF+JPO, seed `20260308`) → `eval=1000`, `pilot=300`, `remainder=400` (`data/manifests/frozen/printed.frozen.json`).
   - **Hand-drawn:** frozen n=1400 (HDM, seed `20260308`) → `eval=1000`, `pilot=300`, `remainder=400` (`data/manifests/frozen/handdrawn.frozen.json`).
   - **Classifier:** frozen n=4000 stratified (seed `20260308`) → `eval=1000`, `pilot=300` (`data/manifests/frozen/classifier.frozen.json`). `reactions` excluded from binary and reported separately.
+  - **Colored stress:** frozen n=200 (all items, seed `20260308`) → `eval=frozen=200`, `pilot=50` (`data/manifests/frozen/colored.frozen.json`, `floor_applies=false`). Smaller than the standard eval by design (whole source set); reported in §5.C without the ≥70% floor.
 
 ## 4. Shared contracts (infrastructure)
 
 ### 4.1 Paired measurement protocol (per variant)
 Each variant is measured on the **same frozen set / same IDs** (pilot ⊂ eval ⊂ pool; never mix sets across variants). For each run record:
-- **Task accuracy (primary):** metric defined by the dossier. **OCSR:** **RDKit canonical SMILES accuracy** (`canonical_match`, **primary**, integrated) + `exact_match` string (secondary); fidelity `tf_match`/`tf_canonical_match` ONNX↔TF. **Classifier:** binary accuracy (primary). **Absolute floor: ≥70%** on the primary metric (frozen eval). Report **absolute Δ in pp vs FP32** (same metric, same IDs).
+- **Task accuracy (primary):** metric defined by the dossier. **OCSR:** **RDKit canonical SMILES accuracy** (`canonical_match`, **primary**, integrated) + `exact_match` string (secondary); fidelity `tf_match`/`tf_canonical_match` ONNX↔TF. **Classifier:** binary accuracy (primary). **Absolute floor: ≥70%** on the primary metric (frozen eval; **stress dossiers exempt per `floor_applies=false`**). Report **absolute Δ in pp vs FP32** (same metric, same IDs).
 - **Latency:** **p50 and p95** on the **same hardware** and **same execution provider** (e.g. ORT `CPUExecutionProvider`), recorded. Do not report only the mean; the tail (p95) matters.
 - **Disk size:** MB of model artifacts (encoder+decoder or equivalent), per variant.
 - **Throughput:** if batches are processed, report batches/s or images/s with batch size `[if applicable]`.
@@ -56,7 +59,7 @@ Each variant is measured on the **same frozen set / same IDs** (pilot ⊂ eval �
 ### 4.2 Labels / metrics by block
 - **OCSR (printed/hand-drawn):** **RDKit `canonical_match` (primary, chemical quality)** on comparable pairs + `exact_match` string (secondary), `tf_match`/`tf_canonical_match` (ONNX↔TF fidelity), `valid`/`incomplete`, latency p50/p95, size, throughput if applicable.
 - **Classifier:** **binary accuracy (primary)** over 3 mapped classes (`one/several_molecule→structure`, `other/rest→no-structure`), **confusion matrix** `[[TN,FP],[FN,TP]]`, with **`reactions` excluded from binary** and reported separately (`ambiguous_excluded`). ONNX↔baseline/TF parity fidelity.
-- **Absolute floor (mandatory, all acceptable models/variants):** **accuracy ≥ 70%** on the dossier primary metric, on the **frozen `eval` split** (same IDs). OCSR = `canonical_match_rate` (RDKit, comparable pairs). Classifier = binary accuracy (non-reaction). Variants < 70% **are not accepted**.
+- **Absolute floor (mandatory, all standard dossiers — printed, hand-drawn, classifier):** **accuracy ≥ 70%** on the dossier primary metric, on the **frozen `eval` split** (same IDs). OCSR = `canonical_match_rate` (RDKit, comparable pairs). Classifier = binary accuracy (non-reaction). Variants < 70% **are not accepted**. **Exemption:** stress dossiers with `floor_applies=false` in their frozen manifest (currently the colored-background set) are **reported without the floor** and do not gate selection — the exemption is explicit in the manifest, never implicit.
 - **Additional criteria (resolved by evidence):** for compressed variants, the ≥70% floor must hold **robustly** (not just borderline on `eval`; validated against `remainder`/held-out when applicable). `Δ vs FP32` and p95 are recorded; selection prioritizes meeting the floor and fidelity/quality (and compression when it does not break the floor). Paired McNemar/bootstrap CI remain future tooling improvements (the report records Δpp and paired `n`).
 
 ### 4.3 Preprocessing (recorded per model)

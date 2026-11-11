@@ -119,7 +119,7 @@ def fetch_benchmark_cmd(
 
 @app.command("import-benchmark")
 def import_benchmark_cmd(
-    source: str = typer.Option(..., help="Source: hf-clef, hf-jpo, hf-uob, hf-uspto, classifier-13378718"),
+    source: str = typer.Option(..., help="Source: hf-clef, hf-jpo, hf-uob, hf-uspto, hf-colored, classifier-13378718"),
     data_dir: Path = typer.Option(Path("data/benchmark"), help="Benchmark data directory"),
     root: Path = typer.Option(None, help="Local root (for classifier-13378718 extracted zip)"),
     split: str = typer.Option("classified", help="Classifier split: classified, for_model/test, ..."),

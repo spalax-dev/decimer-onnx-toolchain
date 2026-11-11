@@ -46,6 +46,13 @@ HF_OCSR_SUBSETS: dict[str, dict[str, Any]] = {
         "provenance": "USPTO-based OCSR benchmark (OSRA context, as distributed in Keylab/OCSR-Benchmarks).",
         "license_note": "HF aggregate license is mixed-see-sources; verify original USPTO/OSRA subset terms before redistribution.",
     },
+    "COLORED": {
+        "hf_dataset": "hheiden/Colored_Background_OCSR_benchmark", "config": "default", "split": "train", "expected_rows": 200,
+        "hf_commit": "cf73bddf3f7124620d0c23c850e243d9b591599d",
+        "provenance": "Alpha-Extractor (alphaMa/SIMM) OCSR benchmark test subset: 200 deliberately challenging images (colored backgrounds, low quality, hand-drawn), HF version prepared by Hunter Heidenreich.",
+        "license_note": "MIT per HF dataset card; derived from alphaExtractor test data — verify original alphaExtractor terms before redistribution.",
+        "aggregate_license": "MIT",
+    },
 }
 
 
@@ -90,7 +97,7 @@ def import_hf_ocsr(config: str, data_dir: Path = DEFAULT_BENCH_DIR, *, model: st
             break
         for item in rows:
             row = item.get("row", {})
-            image_id = str(row.get("image_id") or item.get("row_idx") or len(labels))
+            image_id = str(row.get("image_id") or row.get("id") or item.get("row_idx") or len(labels))
             smiles = str(row.get("smiles") or row.get("SMILES") or "").strip()
             img = row.get("image") or {}
             src = img.get("src")
@@ -117,10 +124,10 @@ def import_hf_ocsr(config: str, data_dir: Path = DEFAULT_BENCH_DIR, *, model: st
     labels_path.write_text("".join(json.dumps(r, ensure_ascii=False) + "\n" for r in labels), encoding="utf-8")
     manifest = {
         "suite": suite, "title": f"HF import {meta['hf_dataset']} {config}",
-        "hf_dataset": meta["hf_dataset"], "hf_dataset_commit_observed": HF_DATASET_COMMIT,
-        "config": config, "split": meta["split"], "model": model,
+        "hf_dataset": meta["hf_dataset"], "hf_dataset_commit_observed": meta.get("hf_commit") or HF_DATASET_COMMIT,
+        "config": meta["config"], "split": meta["split"], "model": model,
         "provenance": meta["provenance"], "license_note": meta["license_note"],
-        "aggregate_license": "mixed-see-sources",
+        "aggregate_license": meta.get("aggregate_license", "mixed-see-sources"),
         "labels_path": str(labels_path), "labels_count": len(labels),
         "expected_rows": meta["expected_rows"],
     }
