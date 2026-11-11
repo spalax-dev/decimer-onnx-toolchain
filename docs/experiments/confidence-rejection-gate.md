@@ -94,6 +94,37 @@ The gate is not "reject and done" — it is "reject and guide". Without an actio
 ## Thresholds are in-domain — re-calibrate on real inputs before shipping
 The absolute thresholds (0.928 printed / 0.901 hand-drawn) are calibrated on the frozen in-domain `eval-1000` used for model selection. Real chemistry-draw photos/scans may have a shifted confidence distribution. **Do not hardcode them**: re-calibrate on real inputs before shipping, and treat the eval-based values as starting points only.
 
+## Stress-set behavior: does the gate catch colored/hard images, or fail silently?
+**Product question:** if a user uploads a colored-background image, does the system say *"I'm not sure"* or does it silently return a wrong SMILES?
+
+**Method:** apply the calibrated in-domain thresholds (0.928 printed / 0.901 hand-drawn, above) to the confidences of the official colored-background stress run (n=200 per model, FP32; `data/benchmark/experiments/confidence/colored/`, reproduce with `python scripts/benchmark_confidence_gate.py --dossier colored`). Same confidence source as the rest of this experiment (decoder per-token, mean-token summary). The stress dossier itself stays as reported in `docs/benchmark-report.md` §5.C (official, `floor_applies=false`); this section is experiment-only.
+
+**Outcome vs the three pre-registered scenarios:**
+
+| Scenario | Rejection at in-domain threshold | Retained accuracy | Reading | Observed? |
+|---|---:|---:|---|---|
+| 1 — full detection | ~100% | — | "this image type is not well supported" | No |
+| 2 — gate is blind | ~15% (same as in-domain) | ~0.25 (base) | worst case: silent failure | No |
+| 3 — partial detection | ~50% | ~0.50 | decide if operating point is acceptable | **printed: yes (57.0%); hand-drawn: partial (31.5%, between 2 and 3)** |
+
+**Observed numbers (fixed in-domain thresholds, production basis):**
+
+| | printed (th 0.928) | hand-drawn (th 0.901) |
+|---|---:|---:|
+| Base accuracy (all 200) | 0.1400 (28/200) | 0.2200 (44/200) |
+| **Rejection rate** | **57.0% (114/200)** | **31.5% (63/200)** |
+| Retained accuracy | 0.3023 (26/86) | 0.3139 (43/137) |
+| **Rejected-set accuracy** | **0.0175 (2/114)** | **0.0159 (1/63)** |
+| AUC (confidence → correct), stress | 0.916 | 0.899 |
+| Median mean-token conf | 0.918 | 0.932 |
+
+**Reading:**
+- **Not scenario 2 (not silent-blind):** AUC stays high (0.916 / 0.899, vs 0.938 / 0.857 in-domain) and the rejected set is **nearly pure failure (1.6–1.8% accuracy)**. Confidence still identifies errors well under domain shift.
+- **Not scenario 1 either:** the gate does not blanket-reject. At the in-domain threshold it rejects **57% (printed)** — closest to scenario 3 — and **31.5% (hand-drawn)**, between scenarios 2 and 3. The confidence distribution visibly shifts down (median 0.918 printed vs well above 0.928 in-domain), which is itself the detection signal.
+- **The honest limitation:** retention improves the ratio (0.14 → 0.30 printed) but **never reaches acceptable absolute quality** — no coverage point on the stress set approaches the 70% floor (even 50% coverage gives 0.26 printed / 0.41 hand-drawn). So on stress-type images the gate converts most silent failures into rejections, yet **~30–40% of retained predictions are still wrong**. The gate is necessary but not sufficient here: pair it with an explicit "supported image type" check (color/background detection or an OOD signal) whose message is scenario-1 style (*"this type of image is not well supported yet"*), rather than relying on the confidence gate alone.
+- **Denominator note:** this experiment uses the production basis (non-comparable = failure): base 0.1400 / 0.2200. Report §5.C shows the comparable-basis canonical rates 0.1806 (28/155) / 0.2558 (44/172). **Same hits (28 and 44), different denominators** — read either, never mix them.
+- **Scope caveat:** the stress set confounds **color + image quality + style**; this section answers *"is the failure detectable by confidence?"*, not *"how much does color alone cost?"* — that controlled experiment is pending (see `preprocessing-strategies.md` caveats).
+
 ## Product implications (chemistry-draw v1)
 ```
 image → classifier (no confidence gate — rejected above)

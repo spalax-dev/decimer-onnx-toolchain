@@ -150,4 +150,5 @@ The classifier eval-1000 binary subset **mixes image types**: `one_molecule` 243
 ## Caveats
 - Exploratory; not included in official report. Latency includes preprocessing differences but measured on shared CPU environment.
 - Preprocessing changes can help some image types and hurt others; improvements on frozen curated sets may not generalize to chemistry-draw real inputs.
+- **Stress set cross-reference:** the colored-background stress dossier (report §5.C, official but floor-exempt) confounds **three variables at once — color + image quality + style** — so its low accuracy (printed 0.18 / hand-drawn 0.26 canonical) cannot be attributed to color alone. A **color-only controlled experiment is pending** (same structures, background color as the single changed factor); until then, do not read §5.C as a color-sensitivity result.
 - `decimer_tf_ref` requires TensorFlow/DECIMER in env (toolchain context), not the lightweight runtime path.

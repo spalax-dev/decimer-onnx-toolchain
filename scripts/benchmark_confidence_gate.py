@@ -262,7 +262,27 @@ def main() -> None:
     ap.add_argument("--model", choices=["ocsr-printed", "ocsr-handdrawn", "classifier", "all"], default="all")
     ap.add_argument("--split", choices=["pilot", "eval"], default="eval")
     ap.add_argument("--out-dir", type=Path, default=ROOT / "data/benchmark/experiments/confidence")
+    ap.add_argument("--dossier", choices=["standard", "colored"], default="standard",
+                    help="standard = in-domain frozen dossiers (default); colored = stress dossier "
+                         "(both OCSR FP32 models, colored.frozen.json, split=eval n=200)")
     args = ap.parse_args()
+
+    if args.dossier == "colored":
+        # Stress set cross-check: apply the confidence gate to the colored-background
+        # dossier (both selected OCSR FP32 models). No classifier (gate already rejected).
+        man = ROOT / "data/manifests/frozen/colored.frozen.json"
+        out_col = args.out_dir / "colored"
+        for mk, enc, dec, vocab in (
+            ("ocsr-printed", "data/artifacts/fp32/ocsr-printed/encoder.fp32.onnx",
+             "data/artifacts/fp32/ocsr-printed/decoder_step.fp32.onnx",
+             "data/artifacts/tokenizer_SMILES.vocab.json"),
+            ("ocsr-handdrawn", "data/artifacts/fp32/ocsr-handdrawn/encoder.fp32.onnx",
+             "data/artifacts/fp32/ocsr-handdrawn/decoder_step.fp32.onnx",
+             "data/artifacts/tokenizer_handdrawn.vocab.json"),
+        ):
+            run_ocsr(mk, ROOT / enc, ROOT / dec, ROOT / vocab, man, "eval",
+                     out_col / f"{mk}.evalcolored.json")
+        return
 
     suffix = "pilot300" if args.split == "pilot" else "eval1000"
     out_dir = args.out_dir / suffix
