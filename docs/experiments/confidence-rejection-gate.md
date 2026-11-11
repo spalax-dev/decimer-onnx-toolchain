@@ -126,15 +126,24 @@ The absolute thresholds (0.928 printed / 0.901 hand-drawn) are calibrated on the
 - **Scope caveat:** the stress set confounds **color + image quality + style**; this section answers *"is the failure detectable by confidence?"*, not *"how much does color alone cost?"* — that controlled experiment is pending (see `preprocessing-strategies.md` caveats).
 
 ## Product implications (chemistry-draw v1)
+
+**Note: the classifier is binary (0/1) — `structure` / `no-structure` from a single logit.** It cannot distinguish the four benchmark categories; those are dataset labels used to *slice the binary metric*, not model outputs. Routing beyond binary needs a separate signal.
+
 ```
-image → classifier (no confidence gate — rejected above)
-  ├── other              → "no structure detected" (0.9962, reliable)
-  ├── one_molecule       → OCSR (selected ckpt) + confidence gate
-  │                        ├── conf ≥ threshold → return SMILES
-  │                        └── conf < threshold → "couldn't read confidently; try another image"
-  ├── several_molecules  → "found several molecules; crop to one" (do NOT run OCSR — classifier
-  │                        accuracy here is 0.416 and OCSR is trained on single structures)
-  └── reactions          → "not supported yet"
+image → classifier E4 FP16 — BINARY (no confidence gate on it — rejected above)
+  ├── "no-structure" (0) → "no structure detected"
+  │     (reliable when the image truly has none: 0.9962 on `other`; but ~58% of
+  │      multi-molecule images also land here → wrongly told "no structure")
+  └── "structure" (1) → OCSR (selected ckpt) + confidence gate
+        ├── conf ≥ threshold → return SMILES
+        └── conf < threshold → "couldn't read confidently; try another image"
+
+Not derivable from the binary classifier (separate signal needed):
+  • multi-molecule → "crop to one": candidates = post-hoc '.' check on the OCSR
+    output, or a region/multiclass detector (unmeasured). Rationale: OCSR is
+    trained on single structures, so multi-molecule input is out of scope for it.
+  • reactions → "not supported yet": no correct binary label exists (excluded as
+    ambiguous); reaction detection is unmeasured.
 ```
 The OCSR confidence gate is the only component of this experiment series with **measured, free, product-ready value**; it requires no model change and no extra inference cost.
 

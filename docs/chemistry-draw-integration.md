@@ -96,20 +96,34 @@ Reading the rows: row 1 is the product; row 2 is the **confidence gate doing its
 
 ## 4. v1 routing (reference implementation sketch)
 
+**Important: the classifier is BINARY (0/1).** It outputs a single logit → sigmoid → `structure` / `no-structure` (`src/toolchain/benchmark_run.py`, threshold `0.000089`). The four benchmark categories (`one_molecule` / `several_molecules` / `other` / `reactions`) are **dataset labels used to evaluate the binary output per slice** — the model cannot distinguish them. Any routing beyond binary needs a separate signal (see below).
+
 ```
-image → classifier E4 FP16 (NO confidence gate — rejected, AUC 0.603)
-  ├── other              → "no structure detected"            (0.9962, reliable)
-  ├── one_molecule       → OCSR (selected ckpt) + confidence gate
-  │                        ├── conf ≥ threshold → return SMILES        (row 1)
-  │                        └── conf < threshold → "couldn't read
-  │                            confidently; try a sharper image"       (row 2)
-  ├── several_molecules  → "found several molecules; crop to one"
-  │                        (do NOT run OCSR: classifier acc here is
-  │                         0.416 and OCSR expects a single structure)
-  └── reactions          → "not supported yet"
+image → classifier E4 FP16 — BINARY: structure(1) / no-structure(0)
+        (NO confidence gate on it — rejected, AUC 0.603)
+  │
+  ├── "no-structure" (0) → "no structure detected"
+  │     reliable when the image truly has none (0.9962 on `other`),
+  │     BUT ~58% of multi-molecule images also land here (146/250
+  │     `several_molecules` predicted no-structure) → user is wrongly
+  │     told "no structure" for an image that HAS structures
+  │
+  └── "structure" (1) → OCSR (selected ckpt) + confidence gate
+        ├── conf ≥ threshold → return SMILES          (row 1: single-molecule images)
+        └── conf < threshold → "couldn't read confidently; try a sharper image"  (row 2)
+
+NOT derivable from this binary classifier (needs a separate signal — data/model gap):
+  • several_molecules → "crop to one" prompt: candidates are (a) post-hoc check of the
+    OCSR output for '.' fragment separators, (b) a region/multiclass detector.
+    Unmeasured today; the classifier alone cannot route here.
+  • reactions → "not supported yet": the model also emits binary on reactions
+    (174 structure / 72 no-structure of 246) but there is no correct binary label —
+    excluded from the metric as ambiguous. Reaction detection is unmeasured.
 ```
 
-**Rare-type handling (row 3)** sits beside this tree: an image-type/OOD signal (or a sustained high rejection rate) routes to the *"not well supported"* message instead of the retry message. Classifier per-category evidence (eval-1000): `one_molecule` 0.8848, `other` 0.9962, `several_molecules` 0.4160; `reactions` excluded from binary.
+Classifier per-category numbers are **binary-accuracy slices by true label** (eval-1000): `one_molecule` 0.8848, `other` 0.9962, `several_molecules` 0.4160 (dominant failure: 146/174 FN are `several_molecules` → no-structure, systematically confident — hence no gate on the classifier); `reactions` excluded from binary.
+
+**Rare-type handling (row 3)** sits beside this tree: an image-type/OOD signal (or a sustained high rejection rate) routes to the *"not well supported"* message instead of the retry message.
 
 ---
 
