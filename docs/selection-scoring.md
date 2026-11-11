@@ -1,109 +1,109 @@
-# Matriz de calificación y puntaje por variante (decisión de artefactos)
+# Qualification matrix and per-variant scoring (artifact selection)
 
-> Documento de **síntesis argumentada** de la selección para los **tres modelos distintos** del proyecto (`ocsr-printed`, `ocsr-handdrawn`, `image-classifier`), evaluados en dossiers independientes. Complementa (no reemplaza) la evidencia cruda en `docs/benchmark-report.md` y los registros en `data/artifacts/selection/*.selection.json`. Las ponderaciones reflejan las prioridades del proyecto; los puntajes por criterio se derivan de resultados medidos con reglas explícitas.
+> **Synthesis/argumentation** document for the selection of the **three distinct models** in this project (`ocsr-printed`, `ocsr-handdrawn`, `image-classifier`), evaluated in independent dossiers. It complements (does not replace) raw evidence in `docs/benchmark-report.md` and records in `data/artifacts/selection/*.selection.json`. Weights reflect project priorities; per-criterion scores are derived from measured results with explicit rules.
 
-## 1. Metodología
+## 1. Methodology
 
-- **Puntaje final:** escala **0–100** por variante, calculado como suma ponderada: `Σ (peso_i × puntaje_i) / 100`, donde cada criterio se puntúa **0–100** y los pesos suman **100%** dentro de cada dossier.
-- **Fuente de evidencia:** splits congelados (seed `20260308`, mismos IDs), métrica primaria del dossier, reportes `data/benchmark/{eval-1000,pilot,remainder}/*.json`. Latencias p50 en ms (CPU/ORT); cuando hubo contención se prioriza la comparación cualitativa/mediciones en solitario (la accuracy no se ve afectada).
-- **Regla de piso (gate):** variantes con métrica primaria **<70%** en `eval` congelado no son aceptables. En OCSR además se exige **robustez** (no basta un borde en eval si cae en `remainder`/held-out). Un fallo de piso/robustez fuerza el puntaje de “Calidad/precisión” a 0–30 y limita la elegibilidad, aunque el total ponderado sea alto en otros ejes.
+- **Final score:** **0–100** scale per variant, computed as weighted sum: `Σ (weight_i × score_i) / 100`, where each criterion is scored **0–100** and weights sum to **100%** within each dossier.
+- **Evidence source:** frozen splits (seed `20260308`, same IDs), dossier primary metric, reports in `data/benchmark/{eval-1000,pilot,remainder}/*.json`. Latencies are p50 in ms (CPU/ORT); where there was contention, qualitative comparison/solo measurements are prioritized (accuracy is unaffected).
+- **Floor rule (gate):** variants with primary metric **<70%** on frozen `eval` are not acceptable. In OCSR, **robustness** is also required (a borderline eval result is insufficient if it falls on `remainder`/held-out). A floor/robustness failure forces the “Quality/accuracy” score to 0–30 and limits eligibility, even if the weighted total is high on other axes.
 
-### Normalización usada (criterio → puntaje 0–100)
-| Criterio | Cómo se puntúa (0–100) |
+### Normalization used (criterion → 0–100 score)
+| Criterion | Scoring (0–100) |
 |---|---|
-| **Calidad/precisión primaria** (gate, **determinante**) | ≥75%: 90–100; 70–74.9%: 70–89 (según margen y estabilidad); <70% o no robusto (borde eval pero <70% held-out): 0–40. 100 = mejor observado en el dossier manteniendo robustez. **Este criterio tiene peso determinante**: no cumplir el piso/robustez invalida la variante para selección. |
-| **Robustez / generalización** | 100: cumple piso en eval y se sostiene (sin caída relevante en held-out cuando aplica); 50: borde sin evidencia robusta; 0–30: cae bajo piso o colapsa. |
-| **Fidelidad (TF/paridad)** | Escala lineal aprox. sobre la métrica de fidelidad del dossier (`tf_match` OCSR, paridad TF clasificador): 100≈mejor/ref, 0≈fallo severo. |
-| **Latencia** | 100 = más rápida (p50) entre opciones viables del dossier; escala relativa (mejor = 100, peor ≈ 0–30). Penaliza variantes más lentas que la referencia. |
-| **Tamaño / compresión** | 100 = menor tamaño (mayor compresión) útil; 0 = mayor tamaño; ponderado según objetivo del dossier. |
-| **Viabilidad runtime** | 100 = ejecuta correctamente en CPU/ORT; 0 = no viable (error runtime). |
+| **Primary quality/accuracy** (gate, **determinant**) | ≥75%: 90–100; 70–74.9%: 70–89 (by margin and stability); <70% or not robust (borderline eval but <70% held-out): 0–40. 100 = best observed in the dossier while maintaining robustness. **This criterion is determinant**: failing floor/robustness disqualifies the variant for selection. |
+| **Robustness / generalization** | 100: meets floor on eval and holds (no relevant drop on held-out when applicable); 50: borderline without robust evidence; 0–30: falls below floor or collapses. |
+| **Fidelity (TF/parity)** | Approx. linear scale over dossier fidelity metric (`tf_match` for OCSR, TF parity for classifier): 100≈best/ref, 0≈severe failure. |
+| **Latency** | 100 = fastest (p50) among viable options in the dossier; relative scale (best = 100, worst ≈ 0–30). Penalizes variants slower than reference. |
+| **Size / compression** | 100 = smallest size (most useful compression); 0 = largest size; weighted by dossier objective. |
+| **Runtime viability** | 100 = runs correctly on CPU/ORT; 0 = not viable (runtime error). |
 
-> **Nota:** los puntajes son una **rúbrica transparente** para comparar trade-offs medidos, no una métrica “oficial” del modelo. El criterio dominante de aceptación es el piso ≥70% + robustez, reflejado con un **peso determinante** en accuracy/calidad.
+> **Note:** scores are a **transparent rubric** for comparing measured trade-offs, not an “official” model metric. The dominant acceptance criterion is the ≥70% floor + robustness, reflected with a **determinant weight** on accuracy/quality.
 
 ---
 
-## 2. Dossier `ocsr-printed` (impreso)
+## 2. Dossier `ocsr-printed` (printed)
 
-**Objetivo:** cumplir ≥70% canónico robusto; comprimir solo si no se degrada el piso.
+**Objective:** meet robust ≥70% canonical accuracy; compress only if it does not degrade the floor.
 
-| Criterio | Peso | Justificación del peso |
+| Criterion | Weight | Rationale for weight |
 |---|---:|---|
-| **Calidad/precisión canónica (gate, determinante)** | **60%** | Métrica primaria y piso obligatorio; factor determinante de elegibilidad. |
-| Robustez (eval→held-out) | 15% | Evita seleccionar variantes borde/no generalizables. |
-| Fidelidad TF (`tf_match`) | 10% | Preservar comportamiento del baseline. |
-| Latencia (p50) | 5% | Relevante, pero secundaria frente a corrección. |
-| Tamaño (compresión) | 5% | Deseable si no rompe el piso. |
-| Viabilidad runtime | 5% | Debe ejecutarse en CPU/ORT. |
+| **Canonical quality/accuracy (gate, determinant)** | **60%** | Primary metric and mandatory floor; determinant eligibility factor. |
+| Robustness (eval→held-out) | 15% | Avoids selecting borderline/non-generalizable variants. |
+| TF fidelity (`tf_match`) | 10% | Preserve baseline behavior. |
+| Latency (p50) | 5% | Relevant, but secondary to correctness. |
+| Size (compression) | 5% | Desirable if it does not break the floor. |
+| Runtime viability | 5% | Must run on CPU/ORT. |
 
-| Variante | Tamaño | Eval canónica | Held-out canónica | `tf_match` (eval) | p50 (ms) | Calidad (60) | Robustez (15) | Fidelidad (10) | Latencia (5) | Tamaño (5) | Viab. (5) | **Total** |
+| Variant | Size | Eval canonical | Held-out canonical | `tf_match` (eval) | p50 (ms) | Quality (60) | Robustness (15) | Fidelity (10) | Latency (5) | Size (5) | Viab. (5) | **Total** |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| **FP32 (seleccionada)** | 301.2 MB | **0.7041** | — (ref. estable) | 0.820 | 2317 | 78 | 90 | 90 | 80 | 20 | 100 | **79.3** |
-| FP32enc+e1sdec | 264.2 MB | 0.7000 (borde) | **0.6870** ❌ | 0.812 | 2813 | 30 | 30 | 88 | 65 | 35 | 100 | **41.3** |
-| selCenc+e1sdec | 123.0 MB | 0.703* (piloto) | **0.6944** ❌ | ~0.797* | 3080* | 28 | 30 | 85 | 60 | 75 | 100 | **41.6** |
-| selMidenc+e1sdec | 240.1 MB | 0.701* (piloto) | **0.6880** ❌ | ~0.803* | 2325* | 28 | 30 | 86 | 78 | 45 | 100 | **41.1** |
+| **FP32 (selected)** | 301.2 MB | **0.7041** | — (stable ref.) | 0.820 | 2317 | 78 | 90 | 90 | 80 | 20 | 100 | **79.3** |
+| FP32enc+e1sdec | 264.2 MB | 0.7000 (borderline) | **0.6870** ❌ | 0.812 | 2813 | 30 | 30 | 88 | 65 | 35 | 100 | **41.3** |
+| selCenc+e1sdec | 123.0 MB | 0.703* (pilot) | **0.6944** ❌ | ~0.797* | 3080* | 28 | 30 | 85 | 60 | 75 | 100 | **41.6** |
+| selMidenc+e1sdec | 240.1 MB | 0.701* (pilot) | **0.6880** ❌ | ~0.803* | 2325* | 28 | 30 | 86 | 78 | 45 | 100 | **41.1** |
 | E1 dynamic INT8 all | 81.3 MB | **0.6776** ❌ | — | 0.757 | 3816 | 20 | 40 | 70 | 45 | 90 | 100 | **36.8** |
 | E3 hybrid (static enc) | 84.4 MB | **0.4854** ❌ | — | 0.389 | 3060 | 0 | 0 | 20 | 55 | 88 | 100 | **14.2** |
 | E4 FP16 (OCSR) | — | — | — | — | — | 0 | 0 | 0 | 0 | 60 | 0 | **3.0** |
 
-\* señal de piloto (n=300), usada como screening; la decisión de robustez se toma con `remainder`/eval.
+\* pilot signal (n=300), used for screening; robustness decision is taken with `remainder`/eval.
 
-**Argumento:** con **accuracy como criterio determinante (60%)**, FP32 es la única variante que supera el gate de **≥70% canónico de forma robusta**. Las alternativas comprimidas/mixtas o fallan el piso en eval (E1/E3) o son borde y **no se sostienen en held-out** (caen ~1–3 pp bajo 70%), por lo que no son elegibles pese a mejor tamaño/compresión. E4 FP16 no es viable en ORT CPU. → **Selección: FP32**.
+**Rationale:** with **accuracy as the determinant criterion (60%)**, FP32 is the only variant that passes the **robust ≥70% canonical** gate. Compressed/mixed alternatives either fail the floor on eval (E1/E3) or are borderline and **do not hold on held-out** (dropping ~1–3 pp below 70%), so they are not eligible despite better size/compression. E4 FP16 is not viable on CPU ORT. → **Selection: FP32**.
 
 ---
 
-## 3. Dossier `ocsr-handdrawn` (manuscrito)
+## 3. Dossier `ocsr-handdrawn` (hand-drawn)
 
-**Objetivo:** cumplir ≥70% canónico; entre opciones que cumplen, priorizar calidad/fidelidad y latencia para uso por defecto. (Modelo entrenado para manuscrito según upstream; en cross-eval piloto mostró buena generalización a impreso, i.e. especialización no exclusiva.)
+**Objective:** meet ≥70% canonical accuracy; among options that pass, prioritize quality/fidelity and latency for default use. (Model trained for hand-drawn according to upstream; in pilot cross-eval it showed good generalization to printed, i.e. non-exclusive specialization.)
 
-| Criterio | Peso | Justificación del peso |
+| Criterion | Weight | Rationale for weight |
 |---|---:|---|
-| **Calidad/precisión canónica (gate, determinante)** | **60%** | Métrica primaria y piso obligatorio; factor determinante de elegibilidad. |
-| Fidelidad TF (`tf_match`) | 15% | Importante para preservar comportamiento. |
-| Latencia (p50) | 10% | Relevante para experiencia de uso. |
-| Robustez | 5% | Estabilidad de la variante. |
-| Tamaño (compresión) | 5% | Deseable, secundario si hay trade-off fuerte. |
-| Viabilidad runtime | 5% | Debe ejecutarse en CPU/ORT. |
+| **Canonical quality/accuracy (gate, determinant)** | **60%** | Primary metric and mandatory floor; determinant eligibility factor. |
+| TF fidelity (`tf_match`) | 15% | Important for preserving behavior. |
+| Latency (p50) | 10% | Relevant for user experience. |
+| Robustness | 5% | Variant stability. |
+| Size (compression) | 5% | Desirable, secondary if there is a strong trade-off. |
+| Runtime viability | 5% | Must run on CPU/ORT. |
 
-| Variante | Tamaño | Eval canónica | `tf_match` | p50 / p95 (ms) | Calidad (60) | Fidelidad (15) | Latencia (10) | Robustez (5) | Tamaño (5) | Viab. (5) | **Total** |
+| Variant | Size | Eval canonical | `tf_match` | p50 / p95 (ms) | Quality (60) | Fidelity (15) | Latency (10) | Robustness (5) | Size (5) | Viab. (5) | **Total** |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| **FP32 (seleccionada)** | 301.2 MB | **0.7300** | **0.912** | **1115 / 2156** | 88 | 100 | 100 | 90 | 20 | 100 | **88.3** |
+| **FP32 (selected)** | 301.2 MB | **0.7300** | **0.912** | **1115 / 2156** | 88 | 100 | 100 | 90 | 20 | 100 | **88.3** |
 | E1 dynamic INT8 all | 81.3 MB | **0.7149** (−1.51 pp) | **0.858** (−5.4 pp) | **2860 / 3951** (~2.6×) | 78 | 82 | 35 | 85 | 90 | 100 | **76.4** |
 | E3 hybrid (static enc) | 84.4 MB | **0.0000** ❌ | 0.000 | 17705 / 27366 | 0 | 0 | 0 | 0 | 88 | 100 | **9.4** |
 
-**Argumento:** con **accuracy como criterio determinante (60%)**, E1 **sí cumple** el piso (≥70%) pero queda por debajo de FP32 en canónica (−1.51 pp) y además degrada fidelidad y latencia (~2.6× más lento; la cuantización dinámica no garantiza aceleración en CPU). **FP32** ofrece mayor calidad, fidelidad y latencia con holgura sobre el piso, por lo que es la opción por defecto para `chemistry_draw`; E1 queda como alternativa válida registrada si se prioriza tamaño sobre velocidad/fidelidad. → **Selección: FP32**.
+**Rationale:** with **accuracy as the determinant criterion (60%)**, E1 **does meet** the floor (≥70%) but is below FP32 in canonical accuracy (−1.51 pp) and also degrades fidelity and latency (~2.6× slower; dynamic quantization does not guarantee CPU speedup). **FP32** offers higher quality, fidelity, and latency with margin above the floor, so it is the default choice for `chemistry_draw`; E1 remains a recorded valid alternative if size is prioritized over speed/fidelity. → **Selection: FP32**.
 
 ---
 
-## 4. Dossier `image-classifier` (clasificador)
+## 4. Dossier `image-classifier` (classifier)
 
-**Objetivo:** cumplir ≥70% accuracy binaria y **mejorar compresión** manteniendo fidelidad.
+**Objective:** meet ≥70% binary accuracy and **improve compression** while maintaining fidelity.
 
-| Criterio | Peso | Justificación del peso |
+| Criterion | Weight | Rationale for weight |
 |---|---:|---|
-| **Calidad (accuracy binaria, gate, determinante)** | **55%** | Métrica primaria y piso obligatorio; factor determinante de elegibilidad. |
-| Tamaño / compresión | 25% | Objetivo explícito (reducir tamaño). |
-| Fidelidad/paridad TF | 10% | Preservar comportamiento del baseline. |
-| Latencia | 5% | Relevante, sin degradar. |
-| Viabilidad runtime | 5% | Debe ejecutarse correctamente. |
+| **Quality (binary accuracy, gate, determinant)** | **55%** | Primary metric and mandatory floor; determinant eligibility factor. |
+| Size / compression | 25% | Explicit objective (reduce size). |
+| TF fidelity/parity | 10% | Preserve baseline behavior. |
+| Latency | 5% | Relevant, without degradation. |
+| Runtime viability | 5% | Must run correctly. |
 
-| Variante | Tamaño | Accuracy binaria (eval) | Paridad TF | Latencia | Calidad (55) | Tamaño (25) | Fidelidad (10) | Latencia (5) | Viab. (5) | **Total** |
+| Variant | Size | Binary accuracy (eval) | TF parity | Latency | Quality (55) | Size (25) | Fidelity (10) | Latency (5) | Viab. (5) | **Total** |
 |---|---:|---:|---:|---|---:|---:|---:|---:|---:|---:|
-| **E4 FP16 (seleccionada)** | **7.8 MB** (−49%) | **0.7679** | **0.998** | ~≈ FP32 CPU | 90 | 100 | 99 | 85 | 100 | **93.7** |
-| FP32 (referencia) | 15.4 MB | 0.7666 | 1.000 (ref) | ref | 90 | 40 | 100 | 85 | 100 | **78.8** |
-| E1s selective (no Conv) | ~15.4 MB | 0.7666 | alta | — | 90 | 40 | 98 | 85 | 100 | **78.6** |
+| **E4 FP16 (selected)** | **7.8 MB** (−49%) | **0.7679** | **0.998** | ~≈ FP32 CPU | 90 | 100 | 99 | 85 | 100 | **93.7** |
+| FP32 (reference) | 15.4 MB | 0.7666 | 1.000 (ref) | ref | 90 | 40 | 100 | 85 | 100 | **78.8** |
+| E1s selective (no Conv) | ~15.4 MB | 0.7666 | high | — | 90 | 40 | 98 | 85 | 100 | **78.6** |
 | E2 static QDQ (holdout) | 4.8 MB | **0.5345** ❌ | — | — | 10 | 100 | 40 | 90 | 100 | **44.0** |
 | E1 dynamic INT8 all | 4.3 MB | **0.4085** ❌ | — | — | 0 | 100 | 20 | 90 | 100 | **36.5** |
 
-**Argumento:** con **accuracy como criterio determinante (55%)**, E4 FP16 es la **única** variante que cumple ≥70% y a la vez logra compresión sustancial (−49%) con paridad TF muy alta, sin penalizar la accuracy. E1-all/E2 caen muy por debajo del piso por cuantizar Conv agresivamente; E1s conserva accuracy pero no comprime. → **Selección: E4 FP16**.
+**Rationale:** with **accuracy as the determinant criterion (55%)**, E4 FP16 is the **only** variant that meets ≥70% and also achieves substantial compression (−49%) with very high TF parity, without penalizing accuracy. E1-all/E2 fall well below the floor due to aggressive Conv quantization; E1s preserves accuracy but does not compress. → **Selection: E4 FP16**.
 
 ---
 
-## 5. Resumen de selección
+## 5. Selection summary
 
-| Dossier | Seleccionada | Puntaje | Motivo principal |
+| Dossier | Selected | Score | Main reason |
 |---|---|---:|---|
-| `ocsr-printed` | **FP32** | **79.3** | Única variante robustamente ≥70% canónico (accuracy determinante); alternativas comprimidas no sostienen el piso en held-out. |
-| `ocsr-handdrawn` | **FP32** | **88.3** | Mejor calidad/fidelidad/latencia entre las que cumplen ≥70%; E1 válido en accuracy pero con trade-offs. |
-| `image-classifier` | **E4 FP16** | **93.7** | Cumple ≥70% (determinante) y maximiza compresión con alta fidelidad (mejor balance objetivo). |
+| `ocsr-printed` | **FP32** | **79.3** | Only variant robustly ≥70% canonical (accuracy determinant); compressed alternatives do not hold the floor on held-out. |
+| `ocsr-handdrawn` | **FP32** | **88.3** | Best quality/fidelity/latency among those meeting ≥70%; E1 valid on accuracy but with trade-offs. |
+| `image-classifier` | **E4 FP16** | **93.7** | Meets ≥70% (determinant) and maximizes compression with high fidelity (best objective balance). |
 
-*Los puntajes sintetizan evidencia medida bajo el protocolo descrito; la **accuracy tiene peso determinante** (gate ≥70% + robustez) y cualquier cambio de pesos/criterios desplazaría el ranking de forma explícita en la tabla.*
+*Scores synthesize evidence measured under the described protocol; **accuracy has determinant weight** (gate ≥70% + robustness) and any change in weights/criteria would shift the ranking explicitly in the table.*

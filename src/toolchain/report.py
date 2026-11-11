@@ -231,59 +231,59 @@ def _row(label: str, report_path: Path, *, tf_join_note: str = "", fp32_path: Pa
     )
 
 
-GLOSSARY = r"""## 1. Glosario
+GLOSSARY = r"""## 1. Glossary
 
-Las métricas se calculan con el mismo harness sobre el mismo conjunto de imágenes/IDs congelados cuando aplica (comparación pareada), salvo que se indique caché.
+Metrics are computed with the same harness over the same frozen image/ID set when applicable (paired comparison), unless cache is indicated.
 
-| Término / columna | Qué mide | Cómo leerla | Matiz importante |
+| Term / column | What it measures | How to read it | Important nuance |
 |---|---|---|---|
-| **OCSR** | Optical Chemical Structure Recognition: reconocer una estructura química desde una imagen y producir una representación (aquí, SMILES). | — | — |
-| **SMILES** | Simplified Molecular Input Line Entry System: cadena de texto que representa una molécula. | — | La misma molécula puede escribirse con SMILES distintos. |
-| **Modelo TF (baseline)** | Modelo DECIMER original en TensorFlow (SavedModel), usado como referencia de comportamiento. | — | Es la referencia para `tf_match`; no implica “verdad química” absoluta. |
-| **Modelo ONNX** | Modelo convertido a ONNX (encoder + `decoder_step`) ejecutado con ONNX Runtime (ORT). | — | — |
-| **FP32** | Exportación ONNX en precisión flotante de 32 bits (control/referencia de fidelidad). | — | Base para calcular Δ vs FP32. |
-| **INT8 dynamic (all)** | Cuantización dinámica INT8 aplicada a ops soportadas (p. ej. E1), sin calibración. | — | Puede reducir tamaño; **no** garantiza menor latencia en CPU. |
-| **INT8 dynamic (sin atención)** | Variante dinámica que excluye atención u ops selectivas. | — | `[según artefacto/disponibilidad]`. |
-| **FP16** | Pesos/cómputo en media precisión donde aplique. | — | `[según viabilidad/runtime]`. |
-| **INT8 estática (QDQ/calibración)** | Cuantización estática con datos de calibración (p. ej. E3 híbrido). | — | Sensible a calibración/distribución; evaluar en holdout según protocolo. |
-| **`canonical_match` RDKit (primaria, vs label)** | **Métrica primaria OCSR (calidad química):** igualdad de SMILES **canónicos RDKit** entre predicción y etiqueta, contada solo cuando **ambos parsean** (`aciertos/comparables (tasa)`). | `210/292 (0.7192)` = 210 aciertos sobre 292 comparables. | Preferible para equivalencia de representación. Depende de RDKit/parseo; el denominador es `canonical_comparable` (puede ser < n). Casos no comparables se interpretan junto con `valid`/`incomplete`. |
-| **`exact_match` string (secundaria, vs label)** | Coincidencia **exacta como texto** `predicho == esperado` (sin canonicalizar). | `121 (0.4033)` = 121/300 cadenas idénticas. | **Secundaria** para química: SMILES equivalentes pueden diferir y contar como no exactos. Útil como señal de salida cruda/consistencia textual. |
-| **`tf_match` ONNX↔TF (fidelidad, string)** | Fidelidad de conversión: salida **ONNX** idéntica (string) a la del **baseline TF** para la misma imagen. `tf_canonical` (cuando se reporta) es la fidelidad en forma canónica. | `279/300 (0.9300)`. | Mide **paridad ONNX ≈ TF**, **no** corrección química frente a la etiqueta. |
-| **Δ vs FP32 (pp): Δcanonical / Δtf / Δexact** | Diferencia absoluta en **puntos porcentuales** vs FP32, sobre la **misma métrica y mismos IDs** (pareado). | `-1.03 pp` en canónica = 1.03 pp menos que FP32. `(ref)` = FP32. | **Primario para calidad:** `Δcanonical`. “pp” es diferencia absoluta. |
-| **`valid` / `incomplete`** | Heurísticas del harness (sin RDKit): `valid_rate` = fracción marcada válida por reglas simples (p. ej. no vacía/no inválida heurística); `incomplete` = secuencias que no finalizaron (p. ej. sin fin de secuencia). | `0.9967 / 1` = 99.67% válidas heurísticamente, 1 incompleta de 300. | Aproximación; **no** garantiza validez química real. |
-| **Latencia p50 / p95 (ms)** | Tiempo por imagen (ms) en el mismo hardware y execution provider (aquí, ORT CPU): **p50** = mediana (50% ≤ t), **p95** = cola (95% ≤ t). | `3455 / 4676` = mediana ~3.46 s, cola p95 ~4.68 s. | No usar solo media. No comparable entre máquinas/configuraciones sin control. Si hay `cache_hits`, la latencia no es fresca/comparable (a veces `n/a`). |
-| **Tamaño (MB)** | Tamaño en disco de los artefactos de la variante (p. ej. encoder+decoder). | — | `[si se calcula]`. |
-| **Throughput** | Imágenes/s o lotes/s si se evalúa en lote. | — | `[si aplica]`. |
-| **Clasificador (binario + reactions)** | Métrica binaria sobre 3 clases mapeadas (`one/several_molecule→structure`, `other→no-structure`); `reactions` **excluida** del binario y reportada aparte como `ambiguous`. | Matriz `[[TP,FN],[FP,TN]]`, accuracy binaria, paridad TF, conteo reactions→predicción. | El binario no incluye `reactions`; interpretar por separado. |
-| **`cache_hits`** | Predicciones reutilizadas desde caché `(model, variant, image_id)`. | — | Acelera reruns; si todas son cache hits, no hay latencia fresca medida. |
-| **McNemar** | Prueba pareada sobre discordancias (A acierta/B falla vs inverso) en el mismo set. | — | `[pendiente implementar en reporte/harness]`. |"""
+| **OCSR** | Optical Chemical Structure Recognition: recognizing a chemical structure from an image and producing a representation (here, SMILES). | — | — |
+| **SMILES** | Simplified Molecular Input Line Entry System: a text string representing a molecule. | — | The same molecule can be written with different SMILES. |
+| **TF model (baseline)** | Original DECIMER model in TensorFlow (SavedModel), used as behavior reference. | — | Reference for `tf_match`; not absolute "chemical truth". |
+| **ONNX model** | Model converted to ONNX (encoder + `decoder_step`) executed with ONNX Runtime (ORT). | — | — |
+| **FP32** | ONNX export in 32-bit floating point precision (fidelity control/reference). | — | Baseline for computing Δ vs FP32. |
+| **INT8 dynamic (all)** | Dynamic INT8 quantization applied to supported ops (e.g. E1), without calibration. | — | Can reduce size; **does not** guarantee lower CPU latency. |
+| **INT8 dynamic (no attention)** | Dynamic variant excluding attention or selected ops. | — | `[depends on artifact/availability]`. |
+| **FP16** | Weights/compute in half precision where applicable. | — | `[depends on viability/runtime]`. |
+| **Static INT8 (QDQ/calibration)** | Static quantization with calibration data (e.g. E3 hybrid). | — | Sensitive to calibration/distribution; evaluate on holdout per protocol. |
+| **`canonical_match` RDKit (primary, vs label)** | **Primary OCSR metric (chemical quality):** equality of **RDKit canonical SMILES** between prediction and label, counted only when **both parse** (`correct/comparable (rate)`). | `210/292 (0.7192)` = 210 correct over 292 comparable. | Preferred for representation equivalence. Depends on RDKit/parsing; denominator is `canonical_comparable` (may be < n). Non-comparable cases are interpreted together with `valid`/`incomplete`. |
+| **`exact_match` string (secondary, vs label)** | **Exact text** match `predicted == expected` (no canonicalization). | `121 (0.4033)` = 121/300 identical strings. | **Secondary** for chemistry: equivalent SMILES may differ and count as non-matches. Useful as raw output/text consistency signal. |
+| **`tf_match` ONNX↔TF (fidelity, string)** | Conversion fidelity: **ONNX** output identical (string) to **TF baseline** for the same image. `tf_canonical` (when reported) is fidelity in canonical form. | `279/300 (0.9300)`. | Measures **ONNX ≈ TF parity**, **not** chemical correctness vs label. |
+| **Δ vs FP32 (pp): Δcanonical / Δtf / Δexact** | Absolute difference in **percentage points** vs FP32, over the **same metric and same IDs** (paired). | `-1.03 pp` canonical = 1.03 pp lower than FP32. `(ref)` = FP32. | **Primary for quality:** `Δcanonical`. “pp” is absolute difference. |
+| **`valid` / `incomplete`** | Harness heuristics (no RDKit): `valid_rate` = fraction marked valid by simple rules (e.g. non-empty/non-heuristically-invalid); `incomplete` = sequences that did not finish (e.g. missing end token). | `0.9967 / 1` = 99.67% heuristically valid, 1 incomplete out of 300. | Approximation; **does not** guarantee real chemical validity. |
+| **Latency p50 / p95 (ms)** | Time per image (ms) on same hardware and execution provider (here, ORT CPU): **p50** = median (50% ≤ t), **p95** = tail (95% ≤ t). | `3455 / 4676` = median ~3.46 s, p95 tail ~4.68 s. | Do not use mean only. Not comparable across machines/configurations without control. If there are `cache_hits`, latency is not fresh/comparable (sometimes `n/a`). |
+| **Size (MB)** | On-disk size of variant artifacts (e.g. encoder+decoder). | — | `[if computed]`. |
+| **Throughput** | Images/s or batches/s if evaluated in batch. | — | `[if applicable]`. |
+| **Classifier (binary + reactions)** | Binary metric over 3 mapped classes (`one/several_molecule→structure`, `other→no-structure`); `reactions` **excluded** from binary and reported separately as `ambiguous`. | Matrix `[[TP,FN],[FP,TN]]`, binary accuracy, TF parity, reactions→prediction counts. | Binary does not include `reactions`; interpret separately. |
+| **`cache_hits`** | Predictions reused from cache `(model, variant, image_id)`. | — | Speeds reruns; if all are cache hits, no fresh latency is measured. |
+| **McNemar** | Paired test over discordances (A correct/B wrong vs inverse) on the same set. | — | `[pending implementation in report/harness]`. |"""
 
-CRITERIA = r"""## 2. Criterios de aceptación (definidos para la evaluación)
+CRITERIA = r"""## 2. Acceptance criteria (defined for evaluation)
 
-| Criterio | Definición / condición de aceptación |
+| Criterion | Definition / acceptance condition |
 |---|---|
-| **Piso absoluto (obligatorio, todos)** | **Accuracy ≥ 70%** en la **métrica primaria** del dossier, sobre el **split `eval` congelado** (mismos IDs). **OCSR:** `canonical_match_rate` RDKit (sobre pares comparables). **Clasificador:** `binary accuracy` (no-reacción). Variantes < 70% **no se aceptan**. |
-| **Comparación pareada** | Todas las variantes se miden sobre el **mismo set/IDs congelados** (piloto ⊂ eval ⊂ pool). Δ vs FP32 en pp sobre mismos IDs. |
-| **Fidelidad (tasa / estricta)** | `tf_match_rate`/`tf_canonical_match_rate` (ONNX≈TF). Estricto: 100%. Umbral numérico (`≥ [TBD]%`) es parámetro externo si se define. |
-| **Δ vs FP32 (precisión/fidelidad)** | Diferencia absoluta en pp vs FP32, misma métrica e IDs. Umbral `≤ [TBD] pp` `[TBD]`. |
-| **Exactitud OCSR (primaria/secundaria)** | **Primaria:** canónica RDKit (`canonical_match`). **Secundaria:** `exact_match` string (sin canonicalizar), dato informativo. |
-| **Validez / completitud** | `valid_rate`, `incomplete_rate`. Umbrales externos si se definen. |
-| **Latencia** | **p50/p95** ms, mismo hardware y execution provider (ORT CPU). No solo media. Umbral p95 `[TBD]`. INT8 dinámico no implica menor latencia. |
-| **Tamaño / throughput** | MB en disco (artefactos); throughput (img/s, batch) si aplica. |
-| **Clasificador** | Binaria sobre 3 clases mapeadas; `reactions` separada/excluida del binario. |
-| **Reproducibilidad** | Fuente/pin/manifiesto/checksums, IDs congelados (seed), hardware/provider/versiones. |"""
+| **Absolute floor (mandatory, all)** | **Accuracy ≥ 70%** on the dossier **primary metric**, on the **frozen `eval` split** (same IDs). **OCSR:** RDKit `canonical_match_rate` (over comparable pairs). **Classifier:** `binary accuracy` (non-reaction). Variants < 70% **are not accepted**. |
+| **Paired comparison** | All variants are measured on the **same frozen set/IDs** (pilot ⊂ eval ⊂ pool). Δ vs FP32 in pp over same IDs. |
+| **Fidelity (rate / strict)** | `tf_match_rate`/`tf_canonical_match_rate` (ONNX≈TF). Strict: 100%. Numeric threshold (`≥ [TBD]%`) is an external parameter if defined. |
+| **Δ vs FP32 (accuracy/fidelity)** | Absolute difference in pp vs FP32, same metric and IDs. Threshold `≤ [TBD] pp` `[TBD]`. |
+| **OCSR accuracy (primary/secondary)** | **Primary:** RDKit canonical (`canonical_match`). **Secondary:** `exact_match` string (no canonicalization), informational. |
+| **Validity / completeness** | `valid_rate`, `incomplete_rate`. External thresholds if defined. |
+| **Latency** | **p50/p95** ms, same hardware and execution provider (ORT CPU). Not mean only. p95 threshold `[TBD]`. Dynamic INT8 does not imply lower latency. |
+| **Size / throughput** | Disk MB (artifacts); throughput (img/s, batch) if applicable. |
+| **Classifier** | Binary over 3 mapped classes; `reactions` separate/excluded from binary. |
+| **Reproducibility** | Source/pin/manifest/checksums, frozen IDs (seed), hardware/provider/versions. |"""
 
-PROVENANCE = r"""## 3. Fuentes de datos y procedencia (hechos)
+PROVENANCE = r"""## 3. Data sources and provenance (facts)
 
-| Suite / uso | Modelo objetivo | Fuente | Identificador / pin | Licencia / procedencia (según manifiesto/fuente) | Artefactos locales |
+| Suite / use | Target model | Source | Identifier / pin | License / provenance (per manifest/source) | Local artifacts |
 |---|---|---|---|---|---|
-| Golden impreso CLEF | `ocsr-printed` | `Keylab/OCSR-Benchmarks` (HF, rows API) | dataset commit observado `2fdcdc59`; config `CLEF`, split `test`, 992 | HF agregado **mixed-see-sources**; verificar términos originales CLEF 2012 | `data/benchmark/hf-clef/labels.jsonl`; `data/manifests/benchmark-hf-clef.import.json` |
-| Golden impreso JPO | `ocsr-printed` | `Keylab/OCSR-Benchmarks` (HF, rows API) | config `JPO`, split `test`, 449 | HF agregado **mixed-see-sources**; verificar términos originales JPO/ChemInfty/OSRA | `data/benchmark/hf-jpo/labels.jsonl`; `data/manifests/benchmark-hf-jpo.import.json` |
+| Printed golden CLEF | `ocsr-printed` | `Keylab/OCSR-Benchmarks` (HF, rows API) | observed dataset commit `2fdcdc59`; config `CLEF`, split `test`, 992 | HF aggregate **mixed-see-sources**; verify original CLEF 2012 terms | `data/benchmark/hf-clef/labels.jsonl`; `data/manifests/benchmark-hf-clef.import.json` |
+| Printed golden JPO | `ocsr-printed` | `Keylab/OCSR-Benchmarks` (HF, rows API) | config `JPO`, split `test`, 449 | HF aggregate **mixed-see-sources**; verify original JPO/ChemInfty/OSRA terms | `data/benchmark/hf-jpo/labels.jsonl`; `data/manifests/benchmark-hf-jpo.import.json` |
 | Hand-drawn HDM | `ocsr-handdrawn` | Zenodo DECIMER Hand-drawn molecule images | record `7617107`, DOI 10.5281/zenodo.7617107, 5088 | CC-BY-4.0 | `data/benchmark/handdrawn-hdm/labels.jsonl`; `data/manifests/benchmark-handdrawn-hdm.fetch.json` |
-| Clasificador (preparado) | `image-classifier` | Zenodo 13378718 | record `13378718`, md5 zip `e7e47f2aa4af4b79874a19382cec06da` (Zenodo API) | Registro indica MIT; origen imágenes mixto | `decimer-export import-benchmark --source classifier-13378718` (requiere extracción local) |
-| Clasificador 6670746 | `image-classifier` | Zenodo 6670746 | archivo único 126.6 GB, md5 `9e847917a75ac77d7fbe1f50b2818a5b` | CC-BY-4.0 | No descargado. |
+| Classifier (prepared) | `image-classifier` | Zenodo 13378718 | record `13378718`, zip md5 `e7e47f2aa4af4b79874a19382cec06da` (Zenodo API) | Record indicates MIT; mixed image origins | `decimer-export import-benchmark --source classifier-13378718` (requires local extraction) |
+| Classifier 6670746 | `image-classifier` | Zenodo 6670746 | single file 126.6 GB, md5 `9e847917a75ac77d7fbe1f50b2818a5b` | CC-BY-4.0 | Not downloaded. |
 
-**Mapeo clasificador (13378718, binario):** `one_molecule`→`structure`, `several_molecules`→`structure`, `other`→`no-structure` (incluidas en matriz binaria); `reactions`→excluida del binario, métrica separada `ambiguous_excluded`."""
+**Classifier mapping (13378718, binary):** `one_molecule`→`structure`, `several_molecules`→`structure`, `other`→`no-structure` (included in binary matrix); `reactions`→excluded from binary, separate metric `ambiguous_excluded`."""
 
 
 def _latency_from_details(d: dict[str, Any]) -> tuple[str, str, str]:
@@ -394,14 +394,14 @@ def _ocsr_variant_label(path: Path, data: dict[str, Any] | None) -> str:
     vk = (d.get("variant_key") or path.stem or "").lower()
     name = path.name
     if "fp32enc-e1sdec-rr" in name or vk == "fp32enc-e1sdec-rr": return "FP32enc + e1sdec (no-attn) + reduce_range"
-    if "fp32enc-e1sdec" in name or vk == "fp32enc-e1sdec": return "FP32enc + e1sdec (no-attn, dec mixto)"
+    if "fp32enc-e1sdec" in name or vk == "fp32enc-e1sdec": return "FP32enc + e1sdec (no-attn, mixed dec)"
     if "fp32enc-e1dec-rr" in name or vk == "fp32enc-e1dec-rr": return "FP32enc + E1dec + reduce_range"
     if "fp32enc-e1dec" in name or vk == "fp32enc-e1dec": return "FP32enc + E1dec (dyn)"
     if "e1enc-fp32dec" in name or vk == "e1enc-fp32dec": return "E1enc (dyn) + FP32dec"
-    if "selbenc-e1sdec" in name or vk == "selbenc-e1sdec": return "selBenc (bloques 40..56 FP32) + e1sdec"
+    if "selbenc-e1sdec" in name or vk == "selbenc-e1sdec": return "selBenc (blocks 40..56 FP32) + e1sdec"
     if "selaenc-e1sdec" in name or vk == "selaenc-e1sdec": return "selAenc (stem+0..5+50..56 FP32) + e1sdec"
     if "selcenc-e1sdec" in name or vk == "selcenc-e1sdec": return "selCenc (stem+0..15 FP32) + e1sdec"
-    if "e1s-sel-noattn" in name or "e1s" in vk and "noattn" in name: return "E1s selective dyn (decoder sin atención)"
+    if "e1s-sel-noattn" in name or "e1s" in vk and "noattn" in name: return "E1s selective dyn (decoder without attention)"
     if "int8-dyn-all" in name or vk == "int8-dyn-all" or ("e1" in vk and "dyn" in vk): return "E1 dynamic INT8 all"
     if "e3" in name or "e3" in vk: return "E3 hybrid (static-enc QDQ + dyn-dec)"
     if "e4" in name or "fp16" in vk: return "E4 FP16"
@@ -415,12 +415,12 @@ def _render_ocsr(lines: list[str], pending: list[str]) -> None:
         ("`ocsr-printed`", "printed", ROOT/"data/manifests/frozen/printed.frozen.json"),
         ("`ocsr-handdrawn`", "handdrawn", ROOT/"data/manifests/frozen/handdrawn.frozen.json"),
     ]
-    header = "| Variante | n | **canonical RDKit (primaria, comp.)** | exact string | tf_match string (+ tf_canonical) | Δcanonical pp | Δtf pp | Δexact pp | valid | incomplete | p50 ms | p95 ms | tamaño MB | Reporte |"
+    header = "| Variant | n | **RDKit canonical (primary, comp.)** | exact string | tf_match string (+ tf_canonical) | Δcanonical pp | Δtf pp | Δexact pp | valid | incomplete | p50 ms | p95 ms | size MB | Report |"
     sep = "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|"
     splits = [
         ("eval-1000", "split `eval` (gate, n=1000)", "eval1000"),
-        ("remainder", "split `remainder` (held-out, sin selección)", "remainder"),
-        ("pilot", "split `pilot` (señal/selección, n=300)", "pilot300"),
+        ("remainder", "split `remainder` (held-out, no selection)", "remainder"),
+        ("pilot", "split `pilot` (signal/selection, n=300)", "pilot300"),
     ]
     for title, prefix, fman in configs:
         man = _load_json(fman) or {}
@@ -451,14 +451,14 @@ def _render_ocsr(lines: list[str], pending: list[str]) -> None:
             lines.append("")
             lines.append(header); lines.append(sep); lines.extend(got); lines.append("")
     if (ROOT / "data/benchmark/eval-1000/printed.fp32.eval1000.json").exists():
-        pending = [p for p in pending if "eval-1000 pendiente" not in p.lower()]
+        pending = [p for p in pending if "eval-1000 pending" not in p.lower()]
 
 
 def _classifier_label(path: Path, data: dict[str, Any] | None) -> str:
     d = data or {}
     vk = (d.get("variant_key") or path.stem or "").lower()
     name = path.name.lower()
-    if "e4-fp16" in name or "fp16" in vk: return "E4 FP16 (seleccionada, ≥50% compresión, acc ≥70%)"
+    if "e4-fp16" in name or "fp16" in vk: return "E4 FP16 (selected, ≥50% compression, acc ≥70%)"
     if "e2-static" in name or ("e2" in vk and "static" in vk): return "E2 static QDQ (holdout calib)"
     if "e1s-sel" in name or ("e1s" in vk): return "E1s selective dyn (no Conv)"
     if "int8-dyn-all" in name or vk == "int8-dyn-all": return "E1 dynamic INT8 all"
@@ -493,19 +493,19 @@ def _render_classifier(lines: list[str], pending: list[str]) -> None:
         lines.append("")
         fman = _load_json(ROOT/"data/manifests/frozen/classifier.frozen.json") or {}
         if fman and dirname == "eval-1000":
-            lines.append(f"Frozen: n={fman.get('frozen_n')}, eval={fman.get('eval_n')}, pilot={fman.get('pilot_n')}, seed={fman.get('seed')}, clases {fman.get('class_allocated')}. Binaria sobre `one/several_molecule→structure`, `other→no-structure` (threshold `0.000089`); `reactions` excluida del binario y reportada aparte. Objetivo: **accuracy ≥70%** mejorando compresión. **Todos** los resultados de esta suite se registran (incluidos los no seleccionados).")
+            lines.append(f"Frozen: n={fman.get('frozen_n')}, eval={fman.get('eval_n')}, pilot={fman.get('pilot_n')}, seed={fman.get('seed')}, classes {fman.get('class_allocated')}. Binary over `one/several_molecule→structure`, `other→no-structure` (threshold `0.000089`); `reactions` excluded from binary and reported separately. Goal: **accuracy ≥70%** while improving compression. **All** results for this suite are recorded (including non-selected).")
             lines.append("")
-        lines.append("| Variante (split) | total filas | Binaria acc (no-reaction) | Matriz `[[TN,FP],[FN,TP]]` | Δacc vs FP32 | Paridad TF (incl. reactions) | reactions (separada) | p50 ms | p95 ms | Reporte |")
+        lines.append("| Variant (split) | total rows | Binary acc (non-reaction) | Matrix `[[TN,FP],[FN,TP]]` | Δacc vs FP32 | TF parity (incl. reactions) | reactions (separate) | p50 ms | p95 ms | Report |")
         lines.append("|---|---:|---:|---|---:|---:|---:|---:|---:|---|")
         lines.extend(got2)
         lines.append("")
     if (ROOT / "data/benchmark/eval-1000/classifier.e4-fp16.eval1000.json").exists():
-        lines.append("> **Decisión (clasificador, por ahora):** `E4 FP16` cumple el objetivo (acc ≈ FP32, ≥70%; **-49% tamaño**; paridad TF alta). INT8 en Conv (E1-all/E2 static holdout) regresa bajo 70%; E1s preserva accuracy pero no comprime.")
+        lines.append("> **Decision (classifier, for now):** `E4 FP16` meets the goal (acc ≈ FP32, ≥70%; **-49% size**; high TF parity). INT8 on Conv (E1-all/E2 static holdout) drops below 70%; E1s preserves accuracy but does not compress.")
         lines.append("")
-    lines.append("| Suite | Estado | Nota |")
+    lines.append("| Suite | Status | Note |")
     lines.append("|---|---|---|")
-    lines.append("| Zenodo 6670746 | OUT OF SCOPE | No descargar/usar (126.6 GB). |")
-    lines.append("| Zenodo 13378718 | Todos los runs registrados en este reporte | 4→binario mapeado; `reactions` separada. Imago excluido (experimento de curiosidad, `docs/experiments/`). |")
+    lines.append("| Zenodo 6670746 | OUT OF SCOPE | Do not download/use (126.6 GB). |")
+    lines.append("| Zenodo 13378718 | All runs recorded in this report | 4→binary mapped; `reactions` separate. Imago excluded (curiosity experiment, `docs/experiments/`). |")
     lines.append("")
 def render_machine(info: dict[str, Any]) -> str:
     ram = info.get("ram_total_bytes")
@@ -514,29 +514,29 @@ def render_machine(info: dict[str, Any]) -> str:
     ram_av_s = f"{ram_av/1024**3:.2f} GiB" if ram_av else "—"
     pkgs = info.get("packages") or {}
     pkg_rows = "\n".join(f"| `{k}` | `{v}` |" for k, v in sorted(pkgs.items())) or "| — | — |"
-    return f"""## 4. Características de la máquina (recolección automática)
+    return f"""## 4. Machine characteristics (automatic collection)
 
-Recolectado automáticamente el `{info.get('collected_at_utc','')}` mediante `platform`, `lscpu` y `free`.
+Automatically collected at `{info.get('collected_at_utc','')}` using `platform`, `lscpu`, and `free`.
 
-| Campo | Valor |
+| Field | Value |
 |---|---|
 | Hostname | `{info.get('hostname','')}` |
 | OS | `{info.get('os','')}` |
-| Versión kernel/OS | `{info.get('os_version','')}` |
-| Arquitectura | `{info.get('arch','')}` |
+| Kernel/OS version | `{info.get('os_version','')}` |
+| Architecture | `{info.get('arch','')}` |
 | Python | `{info.get('python','')}` |
-| CPU modelo | `{info.get('cpu_model','')}` |
-| Sockets / núcleos por socket / hilos por núcleo | `{info.get('cpu_sockets','')}` / `{info.get('cpu_cores_per_socket','')}` / `{info.get('cpu_threads_per_core','')}` |
-| CPUs lógicas | `{info.get('cpu_logical','')}` |
-| Frecuencia CPU máx/mín (MHz) | `{info.get('cpu_max_mhz','')}` / `{info.get('cpu_min_mhz','')}` |
-| Cachés L1d/L1i/L2/L3 | `{info.get('l1d','')}` / `{info.get('l1i','')}` / `{info.get('l2','')}` / `{info.get('l3','')}` |
-| Flags CPU relevantes | `{info.get('cpu_flags_relevant','')}` |
-| RAM total | {ram_gb} |
-| RAM disponible (al recolectar) | {ram_av_s} |
+| CPU model | `{info.get('cpu_model','')}` |
+| Sockets / cores per socket / threads per core | `{info.get('cpu_sockets','')}` / `{info.get('cpu_cores_per_socket','')}` / `{info.get('cpu_threads_per_core','')}` |
+| Logical CPUs | `{info.get('cpu_logical','')}` |
+| CPU max/min frequency (MHz) | `{info.get('cpu_max_mhz','')}` / `{info.get('cpu_min_mhz','')}` |
+| Caches L1d/L1i/L2/L3 | `{info.get('l1d','')}` / `{info.get('l1i','')}` / `{info.get('l2','')}` / `{info.get('l3','')}` |
+| Relevant CPU flags | `{info.get('cpu_flags_relevant','')}` |
+| Total RAM | {ram_gb} |
+| Available RAM (at collection) | {ram_av_s} |
 
-### Versiones de paquetes (entorno de ejecución)
+### Package versions (execution environment)
 
-| Paquete | Versión |
+| Package | Version |
 |---|---|
 {pkg_rows}
 """
@@ -546,15 +546,15 @@ def render_results() -> tuple[str, list[str]]:
     b = ROOT / "data" / "benchmark"
     pending: list[str] = []
     lines = [
-        "## 5. Resultados",
+        "## 5. Results",
         "",
-        "Este reporte cubre **tres modelos distintos** evaluados en dossiers independientes: `ocsr-printed`, `ocsr-handdrawn` e `image-classifier` (no hay ranking entre modelos).",
+        "This report covers **three distinct models** evaluated in independent dossiers: `ocsr-printed`, `ocsr-handdrawn`, and `image-classifier` (no ranking across models).",
         "",
-        "Protocolo: variantes comparadas sobre **mismos IDs** cuando aplica (pareado, piloto ⊂ eval ⊂ pool congelado). Latencia **p50/p95** (mismo hardware/provider), no solo media; INT8 dinámico puede no ser más rápido. **Δ vs FP32** = diferencia en pp sobre IDs comunes (misma métrica). `—` = no medido/no disponible.",
+        "Protocol: variants compared on **same IDs** when applicable (paired, pilot ⊂ eval ⊂ frozen pool). Latency **p50/p95** (same hardware/provider), not mean only; dynamic INT8 may not be faster. **Δ vs FP32** = difference in pp over common IDs (same metric). `—` = not measured/not available.",
         "",
-        "> **Nota de ejecución (realidad):** algunas corridas (pilotos/remainders) se ejecutaron con contención de CPU, por lo que sus `p50/p95` pueden no ser comparables (la accuracy no se ve afectada); preferir mediciones en solitario para comparar latencia. McNemar/IC bootstrap no están automatizados en este reporte (se reportan tasas/Δpp/`n`). Hubo reintentos por fallos transitorios de carga ONNX y limitaciones de runtime/cuantización documentadas en resultados/selecciones. Ver glosario (§1) y `docs/benchmark-spec.md` (§7) para detalle.",
+        "> **Execution note (reality):** some runs (pilots/remainders) were executed with CPU contention, so their `p50/p95` may not be comparable (accuracy is unaffected); prefer solo measurements for latency comparison. McNemar/bootstrap CI are not automated in this report (rates/Δpp/`n` are reported). There were retries due to transient ONNX load failures and runtime/quantization limitations documented in results/selections. See glossary (§1) and `docs/benchmark-spec.md` (§7) for details.",
         "",
-        "> **Dominio/especialización (en evaluación):** `ocsr-printed` y `ocsr-handdrawn` son modelos distintos (pesos/tokenizadores/orígenes diferentes) pero **no son especialistas exclusivos** según la evidencia de cross-evaluación observada (p. ej. piloto 2×2 FP32: handdrawn 0.712 en impreso vs 0.711 impreso in-domain; 0.719 en manuscrito, mientras impreso cae a 0.677 en manuscrito). Pruebas adicionales (eval-1000 cruzado y mezcla 1:1 impreso+manuscrito) están en curso/pendientes de consolidación para confirmar diferencias.",
+        "> **Domain/specialization (under evaluation):** `ocsr-printed` and `ocsr-handdrawn` are distinct models (different weights/tokenizers/origins) but **not exclusive specialists** based on observed cross-evaluation evidence (e.g. 2×2 pilot FP32: handdrawn 0.712 on printed vs 0.711 printed in-domain; 0.719 on hand-drawn, while printed drops to 0.677 on hand-drawn). Additional tests (cross eval-1000 and 1:1 printed+hand-drawn mix) are in progress/pending consolidation to confirm differences.",
         "",
     ]
 
@@ -564,7 +564,7 @@ def render_results() -> tuple[str, list[str]]:
             return
         lines.append(f"### {title}")
         lines.append("")
-        lines.append("| Variante | n | **canonical RDKit (primaria, comp.)** | exact string | tf_match string (+ tf_canonical) | Δcanonical pp | Δtf pp | Δexact pp | valid | incomplete | p50 ms | p95 ms | tamaño MB (enc+dec) | Reporte |")
+        lines.append("| Variant | n | **RDKit canonical (primary, comp.)** | exact string | tf_match string (+ tf_canonical) | Δcanonical pp | Δtf pp | Δexact pp | valid | incomplete | p50 ms | p95 ms | size MB (enc+dec) | Report |")
         lines.append("|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|")
         lines.extend(got)
         lines.append("")
@@ -572,48 +572,48 @@ def render_results() -> tuple[str, list[str]]:
     # Pilotos congelados (tres dossiers)
     _render_ocsr(lines, pending)
 
-    table("5.1 `ocsr-printed` — golden CLEF (Keylab/OCSR-Benchmarks, n=992, evidencia histórica)", [
+    table("5.1 `ocsr-printed` — golden CLEF (Keylab/OCSR-Benchmarks, n=992, historical evidence)", [
         _row("E1 dynamic INT8 (+TF)", b/"hf-clef/report.e1.tf.json"),
         _row("E3 static-enc + dyn-dec (tf_match por join a TF de E1)", b/"hf-clef/report.e3.tfjoined.json", tf_join_note="[join]"),
     ])
-    table("5.2 `ocsr-printed` — golden JPO (Keylab/OCSR-Benchmarks, n=449, evidencia histórica)", [
+    table("5.2 `ocsr-printed` — golden JPO (Keylab/OCSR-Benchmarks, n=449, historical evidence)", [
         _row("E1 dynamic INT8 (+TF)", b/"hf-jpo/report.e1.tf.json"),
         _row("E3 static-enc + dyn-dec (tf_match por join a TF de E1)", b/"hf-jpo/report.e3.tfjoined.json", tf_join_note="[join]"),
     ])
     hdm_fp32 = b/"handdrawn-hdm/report.fp32.tf.limit500.json"
-    table("5.3 `ocsr-handdrawn` — HDM Zenodo 7617107 (muestra ad hoc `--limit 500`, no decisión formal)", [
+    table("5.3 `ocsr-handdrawn` — HDM Zenodo 7617107 (ad hoc sample `--limit 500`, not a formal decision)", [
         _row("FP32 (+TF)", hdm_fp32, fp32_path=hdm_fp32),
         _row("E1 dynamic INT8 (+TF)", b/"handdrawn-hdm/report.e1.tf.limit500.json", fp32_path=hdm_fp32),
         _row("E3 static-enc + dyn-dec (+TF, calib 32 HDM)", b/"handdrawn-hdm/report.e3.tf.limit500.json", fp32_path=hdm_fp32),
     ])
     full = b/"handdrawn-hdm/report.e1.tf.full5088.json"
     if full.exists():
-        table("5.4 `ocsr-handdrawn` — HDM completo (5088)", [
+        table("5.4 `ocsr-handdrawn` — full HDM (5088)", [
             _row("E1 dynamic INT8 (+TF)", full),
         ])
     else:
-        pending.append(f"`ocsr-handdrawn` HDM completo n=5088, E1+TF: `{full.relative_to(ROOT)}` (no encontrado al generar).")
-        lines.append("### 5.4 `ocsr-handdrawn` — HDM completo (5088)")
+        pending.append(f"`ocsr-handdrawn` full HDM n=5088, E1+TF: `{full.relative_to(ROOT)}` (not found at generation time).")
+        lines.append("### 5.4 `ocsr-handdrawn` — full HDM (5088)")
         lines.append("")
-        lines.append("| Variante | n | Estado | Reporte esperado |")
+        lines.append("| Variant | n | Status | Expected report |")
         lines.append("|---|---:|---|---|")
-        lines.append(f"| E1 dynamic INT8 (+TF) | 5088 | Pendiente / no disponible al generar | `{full.relative_to(ROOT)}` |")
+        lines.append(f"| E1 dynamic INT8 (+TF) | 5088 | Pending / not available at generation time | `{full.relative_to(ROOT)}` |")
         lines.append("")
 
     _render_classifier(lines, pending)
     return "\n".join(lines), pending
 
 
-LIMITATIONS = r"""## 6. Limitaciones de medición (hechos metodológicos)
+LIMITATIONS = r"""## 6. Measurement limitations (methodological facts)
 
-- `exact_match` (string) compara `predicho == esperado` **sin canonicalización RDKit**. `canonical_match` (RDKit) compara SMILES canónicos cuando ambos parsean (integrado en benchmark OCSR; puede no estar en reportes históricos). Diferencias equivalentes de representación pueden contar como no exactas en `exact_match`.
-- `tf_match` mide fidelidad **ONNX↔TF** según el baseline/pipeline del harness; no es exactitud química canónica frente a la etiqueta.
-- `valid`/`incomplete` son heurísticas sin RDKit (aproximación).
-- Latencias son del entorno de ejecución/harness (máquina/provider/carga/hilos/versiones). Reportar **p50/p95**; no usar solo media. `cache_hits` invalida latencia fresca. INT8 dinámico puede ser más lento que FP32 en CPU.
-- Δ en pp calculado sobre la misma métrica e IDs cuando hay datos pareados; si falta pareo, puede indicarse agregado.
-- Subsets HF CLEF/JPO: agregado `mixed-see-sources`; verificar términos originales antes de redistribución.
-- Cuantización estática (E3/QDQ) depende fuertemente del set de calibración (tamaño/distribución/holdout); resultados no generalizan sin protocolo controlado.
-- Clasificador: binario solo sobre 3 clases mapeadas; `reactions` excluida y reportada aparte (`ambiguous_excluded`)."""
+- `exact_match` (string) compares `predicted == expected` **without RDKit canonicalization**. `canonical_match` (RDKit) compares canonical SMILES when both parse (integrated in OCSR benchmark; may be absent in historical reports). Equivalent representation differences may count as non-exact in `exact_match`.
+- `tf_match` measures **ONNX↔TF** fidelity according to the harness baseline/pipeline; it is not canonical chemical correctness against the label.
+- `valid`/`incomplete` are heuristics without RDKit (approximation).
+- Latencies come from the execution environment/harness (machine/provider/load/threads/versions). Report **p50/p95**; do not use mean only. `cache_hits` invalidate fresh latency. Dynamic INT8 can be slower than FP32 on CPU.
+- Δ in pp computed over the same metric and IDs when paired data is available; if pairing is missing, an aggregate may be indicated.
+- HF CLEF/JPO subsets: aggregate `mixed-see-sources`; verify original terms before redistribution.
+- Static quantization (E3/QDQ) strongly depends on the calibration set (size/distribution/holdout); results do not generalize without a controlled protocol.
+- Classifier: binary only over 3 mapped classes; `reactions` excluded and reported separately (`ambiguous_excluded`)."""
 
 
 def generate_report(targets: list[Path] | None = None, machine_info: dict[str, Any] | None = None) -> str:
@@ -623,13 +623,13 @@ def generate_report(targets: list[Path] | None = None, machine_info: dict[str, A
     results, pending = render_results()
     now = datetime.now(timezone.utc).isoformat()
     parts = [
-        "# Informe de benchmarks DECIMER → ONNX",
+        "# DECIMER → ONNX benchmark report",
         "",
-        "> Documento generado automáticamente a partir de reportes JSON/manifiestos en `data/`. No incluye decisiones ni juicios sobre los resultados; reporta mediciones, definiciones y criterios de aceptación definidos para la evaluación.",
+        "> Document auto-generated from JSON reports/manifests in `data/`. It does not include decisions or judgments about results; it reports measurements, definitions, and acceptance criteria defined for evaluation.",
         "",
-        f"**Generado (UTC):** `{now}`  ",
-        "**Generador:** `toolchain.report.generate_report` / `dtx report` (alias: `decimer-export report`)  ",
-        "**Rama/commits relevantes:** `main` (workspace fetch/export/runtime/cuantización/benchmark).",
+        f"**Generated (UTC):** `{now}`  ",
+        "**Generator:** `toolchain.report.generate_report` / `dtx report` (alias: `decimer-export report`)  ",
+        "**Relevant branch/commits:** `main` (workspace fetch/export/runtime/quantization/benchmark).",
         "",
         "---",
         "",
@@ -641,18 +641,18 @@ def generate_report(targets: list[Path] | None = None, machine_info: dict[str, A
         "",
         render_machine(info),
         results,
-        "## 7. Archivos de referencia",
+        "## 7. Reference files",
         "",
-        "- Manifiestos fetch/import (trackeados): `data/manifests/benchmark-*.json`.",
-        "- Reportes detallados (gitignored, generados localmente): `data/benchmark/**/*.json`.",
-        "- Resumen golden printed (trackeado): `data/artifacts/selection/ocsr-printed.hf-golden.json`.",
-        "- Selección printed (trackeada, puede contener interpretación): `data/artifacts/selection/ocsr-printed.selection.json`.",
+        "- Fetch/import manifests (tracked): `data/manifests/benchmark-*.json`.",
+        "- Detailed reports (gitignored, generated locally): `data/benchmark/**/*.json`.",
+        "- Printed golden summary (tracked): `data/artifacts/selection/ocsr-printed.hf-golden.json`.",
+        "- Printed selection (tracked, may contain interpretation): `data/artifacts/selection/ocsr-printed.selection.json`.",
         "",
         LIMITATIONS,
         "",
     ]
     if pending:
-        parts += ["## 8. Elementos pendientes al generar", ""] + [f"- {p}" for p in pending] + [""]
+        parts += ["## 8. Pending items at generation time", ""] + [f"- {p}" for p in pending] + [""]
     text = "\n".join(parts)
     for t in targets:
         t.parent.mkdir(parents=True, exist_ok=True)

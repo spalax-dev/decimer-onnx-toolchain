@@ -1,56 +1,56 @@
-# Dossier — Clasificador de imagen (`image-classifier`)
+# Dossier — Image classifier (`image-classifier`)
 
-> Dossier independiente. No se compara con OCSR impreso/manuscrito.
+> Independent dossier. Not compared with printed/hand-drawn OCSR.
 
-## Propósito
-Validar conversión DECIMER Image Classifier → ONNX: fidelidad vs baseline (si aplica) y calidad de clasificación structure/no-structure; cerrar export ONNX + wiring + selección de variante.
+## Purpose
+Validate DECIMER Image Classifier → ONNX conversion: fidelity vs baseline (if applicable) and structure/no-structure classification quality; close ONNX export + wiring + variant selection.
 
 ## Suite
-| Fuente | n | Licencia/procedencia | Estado |
+| Source | n | License/provenance | Status |
 |---|---:|---|---|
-| Zenodo **13378718** (`dataset_for_image_classifier.zip`) | por split extraído (p. ej. `classified` 4×4000, `for_model/test` 1604) | registro indica MIT; origen imágenes mixto (verificar) | **IN** — requiere extracción local |
-| Zenodo **6670746** | 126.6 GB | CC-BY-4.0 | **OUT OF SCOPE (formalizado)** — no descargar, no usar (archivo único, sin test separado expuesto) |
+| Zenodo **13378718** (`dataset_for_image_classifier.zip`) | per extracted split (e.g. `classified` 4×4000, `for_model/test` 1604) | record indicates MIT; mixed image origins (verify) | **IN** — requires local extraction |
+| Zenodo **6670746** | 126.6 GB | CC-BY-4.0 | **OUT OF SCOPE (formalized)** — do not download or use (single file, no exposed separate test set) |
 
-Importador: `decimer-export import-benchmark --source classifier-13378718 --root <zip_extraido> --split <classified|for_model/test|...>`.
+Importer: `decimer-export import-benchmark --source classifier-13378718 --root <extracted_zip> --split <classified|for_model/test|...>`.
 
-## Mapeo de etiquetas (contrato, visible)
-| Categoría original | Binario | En matriz binaria | Reporte |
+## Label mapping (contract, explicit)
+| Original category | Binary | In binary matrix | Reporting |
 |---|---|:---:|---|
-| `one_molecule` | `structure` | Sí | 4×4 + binario |
-| `several_molecules` | `structure` | Sí | 4×4 + binario |
-| `other` | `no-structure` | Sí | 4×4 + binario |
-| `reactions` | — | **No** | métrica separada `ambiguous_excluded` (no entra en TP/TN/FP/FN) |
+| `one_molecule` | `structure` | Yes | 4×4 + binary |
+| `several_molecules` | `structure` | Yes | 4×4 + binary |
+| `other` | `no-structure` | Yes | 4×4 + binary |
+| `reactions` | — | **No** | separate metric `ambiguous_excluded` (not in TP/TN/FP/FN) |
 
-Reportar **4×4** y **binario colapsado**; la exclusión de `reactions` es explícita.
+Report **4×4** and **collapsed binary**; exclusion of `reactions` is explicit.
 
-## `n` / IDs (congelado)
-- **Pool congelado objetivo n=10000**, **estratificado por las 4 clases, clases raras sobrerrepresentadas** (seed `20260308`, método determinístico: floor por clase + remanente ponderado por sqrt(capacidad); ver `data/manifests/frozen/classifier.frozen.spec.json`).
-- **Estado:** `pending_data` hasta importar etiquetas 13378718 (`decimer-export import-benchmark --source classifier-13378718 --root <zip_extraido>`). Generar: `python -m decimer_onnx_export.frozen --classifier-labels <labels.jsonl> --out data/manifests/frozen/classifier.frozen.json`.
-- **Eval n=1000**, **Piloto n=300** = primeras 300 del eval (orden congelado fijo), mismos IDs para todas las variantes. Resto del pool para análisis/reporte ampliado según se defina.
-- Cache de predicciones: `(model, variant, image_id)`.
+## `n` / IDs (frozen)
+- **Target frozen pool n=10000**, **stratified by the 4 classes, rare classes overrepresented** (seed `20260308`, deterministic method: per-class floor + remainder weighted by sqrt(capacity); see `data/manifests/frozen/classifier.frozen.spec.json`).
+- **Status:** `pending_data` until 13378718 labels are imported (`decimer-export import-benchmark --source classifier-13378718 --root <extracted_zip>`). Generate: `python -m decimer_onnx_export.frozen --classifier-labels <labels.jsonl> --out data/manifests/frozen/classifier.frozen.json`.
+- **Eval n=1000**, **Pilot n=300** = first 300 of eval (fixed frozen order), same IDs for all variants. Remaining pool for extended analysis/reporting as defined.
+- Prediction cache: `(model, variant, image_id)`.
 
-## Métricas (protocolo pareado)
-- Matriz 4×4 + binaria (solo 3 categorías mapeadas), accuracy/precision/recall/F1 `[TBD]`. `reactions` aparte.
-- Fidelidad ONNX↔baseline/TF si aplica `[TBD]`. Latencia **p50/p95** (mismo hardware, mismo provider), **tamaño MB**, **throughput** si lotes. No solo media.
-- **Δ absoluto en pp vs FP32** (misma métrica, mismos IDs congelados) + valor absoluto. Comparación pareada: **McNemar** + IC bootstrap donde aplique; `n`+IC. Piloto ⊂ eval ⊂ pool congelado. Cache `(model,variant,image_id)`.
-- Nota: INT8 dinámico puede no ser más rápido; medir latencia.
+## Metrics (paired protocol)
+- 4×4 + binary matrix (only 3 mapped categories), accuracy/precision/recall/F1 `[TBD]`. `reactions` separate.
+- ONNX↔baseline/TF fidelity if applicable `[TBD]`. Latency **p50/p95** (same hardware, same provider), **size MB**, **throughput** if batches. Not mean only.
+- **Absolute Δ in pp vs FP32** (same metric, same frozen IDs) + absolute value. Paired comparison: **McNemar** + bootstrap CI where applicable; `n`+CI. Pilot ⊂ eval ⊂ frozen pool. Cache `(model,variant,image_id)`.
+- Note: dynamic INT8 may not be faster; measure latency.
 
-## Criterios de aceptación (placeholders `[TBD]`)
-| Criterio | Umbral |
+## Acceptance criteria (placeholders `[TBD]`)
+| Criterion | Threshold |
 |---|---|
-| Métrica binaria principal | `[TBD]` |
-| Fidelidad export (si aplica) | `[TBD]` |
-| Latencia p95 | `≤ [TBD] ms` |
+| Main binary metric | `[TBD]` |
+| Export fidelity (if applicable) | `[TBD]` |
+| p95 latency | `≤ [TBD] ms` |
 
-## Variantes a comparar (orden de medición)
+## Variants to compare (measurement order)
 1. **FP32** (control)
 2. **INT8 dynamic (all)**
-3. **INT8 dynamic (sin atención / MLP selectivo)** `[pendiente generar]`
+3. **INT8 dynamic (no attention / selective MLP)** `[pending generation]`
 4. **FP16**
 
-Registro por variante: `model_key=image-classifier`, `variant_key` estable. Pendiente export ONNX + wiring predict.
+Record per variant: `model_key=image-classifier`, stable `variant_key`. Pending ONNX export + predict wiring.
 
-## Estado
-- Pesos: fetch disponible (`--model image-classifier`, commit pin). **Export ONNX no realizado.** Wiring predict en CLI/harness pendiente.
-- Harness lógico/mapeo implementado en `benchmark_run`/importador; falta ejecución e2e sobre 13378718.
-- Bloqueante inmediato: exportar clasificador a ONNX y definir split/`n` de iteración (manifiesto).
+## Status
+- Weights: fetch available (`--model image-classifier`, pinned commit). **ONNX export not performed.** Predict wiring in CLI/harness pending.
+- Logical harness/mapping implemented in `benchmark_run`/importer; e2e execution over 13378718 pending.
+- Immediate blocker: export classifier to ONNX and define iteration split/`n` (manifest).

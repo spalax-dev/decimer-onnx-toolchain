@@ -4,10 +4,10 @@ Reproducible pipeline to convert [DECIMER](https://github.com/Kohulan/DECIMER-Im
 
 This toolchain works with **three distinct models** (different sources/weights, tokenizers and separate evaluation dossiers):
 1. **`ocsr-printed`** — DECIMER v2 OCSR for printed structures (Zenodo 8300489)
-2. **`ocsr-handdrawn`** — DECIMER v2 OCSR trained for hand-drawn structures (upstream “Hand-drawn specialist”, Zenodo 10781330; in our cross-eval it also performs competitively on printed, so not exclusive to hand-drawn)
+2. **`ocsr-handdrawn`** — DECIMER v2 OCSR trained for hand-drawn structures (upstream “Hand-drawn specialist”, Zenodo 10781330; in our cross-evaluation it also performs competitively on printed, so it is not exclusive to hand-drawn)
 3. **`image-classifier`** — DECIMER Image Classifier (Iagea/DECIMER-Image-Classifier)
 
-> Status: bootstrap → consolidated. Fetch/export/quantization/benchmark/selection completed per dossier; selected artifacts staged in `chemistry-draw-ocsr/` (ignored, for HF/chemistry_draw). Some engineering/packaging items remain (see `TODO.md`).
+> Status: bootstrap → consolidated. Fetch/export/quantization/benchmark/selection completed per dossier; selected artifacts staged in `chemistry-draw-ocsr/` (ignored, for HF/`chemistry_draw`). Some engineering/packaging items remain (see `TODO.md`).
 
 ## Pipeline
 
@@ -24,10 +24,10 @@ See [`TODO.md`](TODO.md) for progress.
 
 ## Benchmark report
 
-- [`docs/benchmark-spec.md`](docs/benchmark-spec.md): especificación general — **tres dossiers independientes** (impreso, manuscrito, clasificador), sin ranking entre modelos; fuentes por dossier, `n` por IDs congelados, 3 vistas dentro de dossier, 6670746 fuera de scope.
+- [`docs/benchmark-spec.md`](docs/benchmark-spec.md): general specification — **three independent dossiers** (printed, hand-drawn, classifier), no ranking across models; per-dossier sources, frozen-ID `n`, 3 views within a dossier; 6670746 out of scope.
 - Dossiers: [`docs/benchmark-dossier-printed.md`](docs/benchmark-dossier-printed.md) · [`docs/benchmark-dossier-handdrawn.md`](docs/benchmark-dossier-handdrawn.md) · [`docs/benchmark-dossier-classifier.md`](docs/benchmark-dossier-classifier.md)
-- [`docs/benchmark-report.md`](docs/benchmark-report.md): informe neutral auto-generado (pendiente alinear a 3 secciones por dossier).
-- Regenerar: `uv run decimer-export report`
+- [`docs/benchmark-report.md`](docs/benchmark-report.md): neutral auto-generated report (pending alignment to 3 sections per dossier).
+- Regenerate: `uv run decimer-export report`
 
 ## Quick start (bootstrap)
 
@@ -41,7 +41,7 @@ uv run decimer-export fetch --model ocsr-handdrawn  # hand-drawn specialist
 uv run decimer-export fetch --model image-classifier
 ```
 
-Downloaded weights are cached under `data/weights/`  and verified against pinned checksums.
+Downloaded weights are cached under `data/weights/` and verified against pinned checksums.
 
 ## Models & sources
 
@@ -50,8 +50,6 @@ Downloaded weights are cached under `data/weights/`  and verified against pinned
 | `ocsr-printed` | DECIMER v2 printed OCSR (inference, `models.zip`) | [Zenodo 8300489 — DECIMER V2 Models](https://zenodo.org/records/8300489) | CC-BY-4.0 (Rajan et al.) |
 | `ocsr-handdrawn` | DECIMER v2 OCSR trained for hand-drawn structures (upstream: Hand-drawn specialist) | [Zenodo 10781330 — DECIMER V2 Hand drawn Model](https://zenodo.org/records/10781330) | CC-BY-4.0 |
 | `image-classifier` | DECIMER Image Classifier (EfficientNetB0, structure vs non-structure) | [Iagea/DECIMER-Image-Classifier](https://github.com/Iagea/DECIMER-Image-Classifier) (pinned commit) | MIT (upstream code); trained weights fetched from upstream repo at a pinned commit |
-
-
 
 ## Layout
 

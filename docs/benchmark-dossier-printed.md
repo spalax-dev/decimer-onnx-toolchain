@@ -1,50 +1,50 @@
-# Dossier — OCSR impreso (`ocsr-printed`)
+# Dossier — Printed OCSR (`ocsr-printed`)
 
-> Dossier independiente. No se compara con manuscrito ni con clasificador.
+> Independent dossier. Not compared with hand-drawn or classifier.
 
-## Propósito
-Validar conversión DECIMER printed → ONNX: fidelidad vs TF y calidad SMILES en dominio impreso; seleccionar variante (FP32/E1/E3) y política de calibración.
+## Purpose
+Validate DECIMER printed → ONNX conversion: fidelity vs TF and SMILES quality on the printed domain; select variant (FP32/E1/E3) and calibration policy.
 
 ## Suite
-| Fuente | n | Dominio | Licencia/procedencia | Manifiesto/labels |
+| Source | n | Domain | License/provenance | Manifest/labels |
 |---|---:|---|---|---|
-| `hf-clef` | 992 | impreso | Keylab/OCSR-Benchmarks, HF mixed-see-sources; verificar CLEF 2012 | `data/manifests/benchmark-hf-clef.import.json` |
-| `hf-jpo` | 449 | impreso | idem; verificar JPO/ChemInfty/OSRA | `data/manifests/benchmark-hf-jpo.import.json` |
-| **Total dossier (intra-dossier)** | **1441** | impreso | — | `data/benchmark/hf-clef/labels.jsonl`, `data/benchmark/hf-jpo/labels.jsonl` |
+| `hf-clef` | 992 | printed | Keylab/OCSR-Benchmarks, HF mixed-see-sources; verify CLEF 2012 terms | `data/manifests/benchmark-hf-clef.import.json` |
+| `hf-jpo` | 449 | printed | same; verify JPO/ChemInfty/OSRA terms | `data/manifests/benchmark-hf-jpo.import.json` |
+| **Total dossier (intra-dossier)** | **1441** | printed | — | `data/benchmark/hf-clef/labels.jsonl`, `data/benchmark/hf-jpo/labels.jsonl` |
 
-## `n` / IDs (congelado)
-- **Pool congelado n=1400** (seed `20260308`, selección determinística desde 1441 disponibles; 41 excluidos registrados por método) → `data/manifests/frozen/printed.frozen.json`.
-- **Eval n=1000** = primeras 1000 del pool congelado (orden fijo). **Piloto n=300** = primeras 300 del eval (mismos IDs para todas las variantes).
-- Todas las variantes comparadas sobre los **mismos IDs** del split (pareado). Vista por fuente primaria + pooled intra-dossier etiquetado (CLEF+JPO dentro del split).
-- Cache de predicciones: `(model, variant, image_id)` en `data/cache/predictions/` (gitignored), reutilizable vía `--model-key/--variant-key/--cache-dir`.
+## `n` / IDs (frozen)
+- **Frozen pool n=1400** (seed `20260308`, deterministic selection from 1441 available; 41 excluded recorded by method) → `data/manifests/frozen/printed.frozen.json`.
+- **Eval n=1000** = first 1000 of the frozen pool (fixed order). **Pilot n=300** = first 300 of eval (same IDs for all variants).
+- All compared variants run on the **same IDs** of the split (paired). View by primary source + labeled intra-dossier pooled (CLEF+JPO within the split).
+- Prediction cache: `(model, variant, image_id)` in `data/cache/predictions/` (gitignored), reusable via `--model-key/--variant-key/--cache-dir`.
 
-## Métricas (protocolo pareado)
-- `tf_match` (ONNX==TF, fidelidad end-to-end; contrato de preprocesado registrado). Exactitud SMILES **canónica (RDKit)** `[pendiente integrar]` + `exact_match` cadena como dato. `valid`, `incomplete`.
-- Latencia **p50/p95** (mismo hardware, ORT `CPUExecutionProvider`), **tamaño MB** (encoder+decoder), **throughput** si lotes. No solo media.
-- Reportar **Δ absoluto en pp vs FP32** (misma métrica, mismos IDs) + valor absoluto. Comparación pareada: **McNemar** + Δ pp con **IC bootstrap**; `n`+IC. Piloto ⊂ eval ⊂ pool congelado. Cache `(model,variant,image_id)`.
-- Nota: INT8 dinámico puede no ser más rápido (overhead de activaciones); medir latencia.
+## Metrics (paired protocol)
+- `tf_match` (ONNX==TF, end-to-end fidelity; preprocessing contract recorded). RDKit **canonical SMILES accuracy** `[pending integration]` + `exact_match` string as data. `valid`, `incomplete`.
+- Latency **p50/p95** (same hardware, ORT `CPUExecutionProvider`), **size MB** (encoder+decoder), **throughput** if batches. Not mean only.
+- Report **absolute Δ in pp vs FP32** (same metric, same IDs) + absolute value. Paired comparison: **McNemar** + Δ pp with **bootstrap CI**; `n`+CI. Pilot ⊂ eval ⊂ frozen pool. Cache `(model,variant,image_id)`.
+- Note: dynamic INT8 may not be faster (activation overhead); measure latency.
 
-## Criterios de aceptación (placeholders `[TBD]`)
-| Criterio | Umbral |
+## Acceptance criteria (placeholders `[TBD]`)
+| Criterion | Threshold |
 |---|---|
-| `tf_match` fidelidad | `≥ [TBD]%` (estricto 100% o tolerancia definida) |
-| Δ canónica vs TF/etiqueta | `≤ [TBD]` pp / Tanimoto `[TBD]` |
+| `tf_match` fidelity | `≥ [TBD]%` (strict 100% or defined tolerance) |
+| Canonical Δ vs TF/label | `≤ [TBD]` pp / Tanimoto `[TBD]` |
 | `valid` / `incomplete` | `≥ [TBD]%` / `≤ [TBD]%` |
-| Latencia p95 | `≤ [TBD] ms` (hardware fijo) |
+| p95 latency | `≤ [TBD] ms` (fixed hardware) |
 
-## Variantes a comparar (orden de medición)
-1. **FP32** (control fidelidad)
-2. **INT8 dynamic (all)** — pesos/ops cuantizados dinámicamente (actual: artefactos E1)
-3. **INT8 dynamic (sin atención)** — variante dinámica excluyendo atención `[pendiente generar/exportar si aplica]`
-4. **FP16** `[pendiente: E4 decoder presentó error runtime en ORT CPU; evaluar viabilidad/runtime target]`
-5. **INT8 estática (si 2–4 fallan criterios)** — calibración fija/holdout, método documentado `[condicional]`
+## Variants to compare (measurement order)
+1. **FP32** (fidelity control)
+2. **INT8 dynamic (all)** — weights/ops dynamically quantized (current: E1 artifacts)
+3. **INT8 dynamic (no attention)** — dynamic variant excluding attention `[pending generation/export if applicable]`
+4. **FP16** `[pending: E4 decoder showed runtime error on CPU ORT; evaluate viability/target runtime]`
+5. **Static INT8 (if 2–4 fail criteria)** — fixed/holdout calibration, documented method `[conditional]`
 
-Registro por variante: `model_key=ocsr-printed`, `variant_key` estable (ej. `fp32`, `int8-dyn-all`, `int8-dyn-noattn`, `fp16`, `int8-static`), artefactos y config.
+Record per variant: `model_key=ocsr-printed`, stable `variant_key` (e.g. `fp32`, `int8-dyn-all`, `int8-dyn-noattn`, `fp16`, `int8-static`), artifacts and config.
 
-## Calibración (E3)
-Política `[TBD]`: fuente, `n`, método fijos; evaluación en **holdout** (no in-sample). Evidencia actual: E3 calibrado con 2 fixtures mostró regresión fuerte de `tf_match` en CLEF/JPO (ver reportes/selección) — define nueva calibración antes de reconsiderar.
+## Calibration (E3)
+Policy `[TBD]`: fixed source, `n`, method; evaluation on **holdout** (not in-sample). Current evidence: E3 calibrated with 2 fixtures showed strong `tf_match` regression on CLEF/JPO (see reports/selection) — define new calibration before reconsidering.
 
-## Estado
-- Pesos: `data/weights/ocsr-printed/DECIMER_model`. Tokenizer: `data/artifacts/tokenizer_SMILES.vocab.json`.
-- Medido: E1+TF y E3 (join TF) en CLEF/JPO. Pendiente: control FP32+TF en golden, RDKit canónico, fijar `[TBD]`, recalibrar E3 en holdout si aplica.
-- Reportes: `data/benchmark/hf-{clef,jpo}/report.*.json` (gitignored).
+## Status
+- Weights: `data/weights/ocsr-printed/DECIMER_model`. Tokenizer: `data/artifacts/tokenizer_SMILES.vocab.json`.
+- Measured: E1+TF and E3 (TF join) on CLEF/JPO. Pending: FP32+TF control on golden, RDKit canonical, set `[TBD]`, recalibrate E3 on holdout if applicable.
+- Reports: `data/benchmark/hf-{clef,jpo}/report.*.json` (gitignored).

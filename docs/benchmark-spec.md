@@ -1,103 +1,103 @@
-# Especificación de benchmark — DECIMER → ONNX (tres modelos / tres dossiers)
+# Benchmark specification — DECIMER → ONNX (three models / three dossiers)
 
-> Documento de diseño/protocolo. Se trabaja con **tres modelos distintos** (distintas fuentes/pesos, tokenizadores, tareas y dominios), cada uno con su **dossier independiente** de evaluación y selección: `ocsr-printed`, `ocsr-handdrawn` e `image-classifier`. **No es un benchmark único** ni hay ranking entre modelos; cada dossier tiene su suite, métricas, criterios de aceptación y decisión de variante ONNX. Lo compartido es solo infraestructura: harness, formato `labels.jsonl`, export/benchmark/reporting.
+> Design/protocol document. This project works with **three distinct models** (different sources/weights, tokenizers, tasks, and domains), each with its **own independent evaluation and selection dossier**: `ocsr-printed`, `ocsr-handdrawn`, and `image-classifier`. **This is not a single benchmark** and there is no ranking across models; each dossier has its own suite, metrics, acceptance criteria, and ONNX variant decision. Only infrastructure is shared: harness, `labels.jsonl` format, export/benchmark/reporting.
 
-**Nota de dominio (evidencia observada):** `ocsr-handdrawn` proviene del modelo upstream entrenado para manuscrito (Zenodo 10781330), pero en la cross-evaluación 2×2 (piloto, FP32) rindió competitivo también en impreso (0.712 en impreso vs 0.711 del modelo impreso; 0.719 en manuscrito), mientras `ocsr-printed` degradó en manuscrito (0.677). Por tanto, son modelos distintos con especialización **no exclusiva** (el manuscrito generaliza bien a impreso en esta evaluación).
+**Domain note (observed evidence):** `ocsr-handdrawn` comes from the upstream model trained for hand-drawn structures (Zenodo 10781330), but in 2×2 cross-evaluation (pilot, FP32) it also performed competitively on printed structures (0.712 on printed vs 0.711 for the printed model; 0.719 on hand-drawn), while `ocsr-printed` degraded on hand-drawn (0.677). Therefore, these are distinct models with **non-exclusive specialization** (the hand-drawn model generalizes well to printed in this evaluation).
 
-**Estado:** formalizado (2026-11-08, reframing por modelo/fin).  
-**Fuentes operativas:** `docs/benchmark-report.md` (resultados neutrales auto-generados), `data/manifests/*.json`, `data/artifacts/selection/*` (decisiones por dossier/modelo, separadas del informe).
+**Status:** formalized (2026-11-08, per-model/per-purpose reframing).  
+**Operational sources:** `docs/benchmark-report.md` (neutral auto-generated results), `data/manifests/*.json`, `data/artifacts/selection/*` (per-dossier/model decisions, separate from the report).
 
 ---
 
-## 1. Principio: tres dossiers de calificación
+## 1. Principle: three qualification dossiers
 
-Cada modelo se valida contra **su** suite, con **su** métrica, **su** criterio de aceptación y **su** decisión. Cada fuente de datos pertenece a **exactamente un dossier**.
+Each model is validated against **its** suite, with **its** metric, **its** acceptance criterion, and **its** decision. Each data source belongs to **exactly one dossier**.
 
-| Dossier | Modelo | Suite(s) | Pregunta | Decisión que cierra |
+| Dossier | Model | Suite(s) | Question | Decision it closes |
 |---|---|---|---|---|
-| [Impreso](benchmark-dossier-printed.md) | `ocsr-printed` | CLEF + JPO (n=1441) | ¿La variante ONNX reproduce TF y acierta SMILES en impreso? | Variante (E1/E3/FP32) + política de calibración |
-| [Manuscrito](benchmark-dossier-handdrawn.md) | `ocsr-handdrawn` | HDM (n=5088) | ¿La variante ONNX reproduce TF y acierta SMILES en manuscrito? | Variante + política de calibración (modelo entrenado para manuscrito; especialización no exclusiva según cross-eval) |
-| [Clasificador](benchmark-dossier-classifier.md) | `image-classifier` | Zenodo 13378718 (split definido al importar) | ¿Acierta clasificación structure/no-structure según mapeo definido? | Export ONNX + wiring + variante |
+| [Printed](benchmark-dossier-printed.md) | `ocsr-printed` | CLEF + JPO (n=1441) | Does the ONNX variant reproduce TF and predict correct SMILES on printed structures? | Variant (E1/E3/FP32) + calibration policy |
+| [Hand-drawn](benchmark-dossier-handdrawn.md) | `ocsr-handdrawn` | HDM (n=5088) | Does the ONNX variant reproduce TF and predict correct SMILES on hand-drawn structures? | Variant + calibration policy (model trained for hand-drawn; non-exclusive specialization per cross-eval) |
+| [Classifier](benchmark-dossier-classifier.md) | `image-classifier` | Zenodo 13378718 (split defined at import) | Does it classify structure/no-structure correctly under the defined mapping? | ONNX export + wiring + variant |
 
-**No aplica:** matriz 2×2 cross-domain como requisito (no hay router que envíe la misma imagen a ambos modelos OCSR). Las celdas cross-domain quedan, si acaso, como **chequeo opcional de robustez**, no como parte del dossier. **No** hay tabla comparativa única ni pooled entre dossiers/dominios.
+**Not applicable:** a 2×2 cross-domain matrix as a requirement (there is no router sending the same image to both OCSR models). Cross-domain cells remain, if anything, an **optional robustness check**, not part of the dossier. There is **no** single comparative or pooled table across dossiers/domains.
 
-## 2. Fuentes (cada una en un solo dossier)
+## 2. Sources (each in exactly one dossier)
 
-| ID fuente | Dossier | n / alcance | Licencia / procedencia | Estado | Manifiesto / labels |
+| Source ID | Dossier | n / scope | License / provenance | Status | Manifest / labels |
 |---|---|---:|---|---|---|
-| `hf-clef` | Impreso | 992 | Keylab/OCSR-Benchmarks, commit obs. `2fdcdc59`; HF **mixed-see-sources**; verificar términos originales CLEF 2012 | **IN** | `data/manifests/benchmark-hf-clef.import.json`, `data/benchmark/hf-clef/labels.jsonl` |
-| `hf-jpo` | Impreso | 449 | idem agregado; verificar términos originales JPO/ChemInfty/OSRA | **IN** | `data/manifests/benchmark-hf-jpo.import.json`, `data/benchmark/hf-jpo/labels.jsonl` |
-| `handdrawn-hdm` | Manuscrito | 5088 | Zenodo 7617107, CC-BY-4.0, md5 verificados | **IN** | `data/manifests/benchmark-handdrawn-hdm.fetch.json`, `data/benchmark/handdrawn-hdm/labels.jsonl` |
-| `classifier-13378718` | Clasificador | por split extraído | Zenodo 13378718, md5 zip `e7e47f2aa4af4b79874a19382cec06da` (Zenodo API); registro MIT, origen imágenes mixto (verificar) | **IN** (requiere extracción local + export ONNX) | importador `--source classifier-13378718` |
-| Zenodo **6670746** | — | 126.6 GB, archivo único | CC-BY-4.0; sin test separado expuesto | **OUT OF SCOPE (formalizado)** — no se descarga ni usa | — |
-| `decimer-smoke` | Impreso (sanity opcional) | 4 | DECIMER-Image_Transformer `@9d06861`, MIT, SHA-256 | **IN opcional**, fuera del informe principal | `data/manifests/benchmark-decimer-smoke.fetch.json` |
+| `hf-clef` | Printed | 992 | Keylab/OCSR-Benchmarks, observed commit `2fdcdc59`; HF **mixed-see-sources**; verify original CLEF 2012 terms | **IN** | `data/manifests/benchmark-hf-clef.import.json`, `data/benchmark/hf-clef/labels.jsonl` |
+| `hf-jpo` | Printed | 449 | same aggregate; verify original JPO/ChemInfty/OSRA terms | **IN** | `data/manifests/benchmark-hf-jpo.import.json`, `data/benchmark/hf-jpo/labels.jsonl` |
+| `handdrawn-hdm` | Hand-drawn | 5088 | Zenodo 7617107, CC-BY-4.0, verified checksums | **IN** | `data/manifests/benchmark-handdrawn-hdm.fetch.json`, `data/benchmark/handdrawn-hdm/labels.jsonl` |
+| `classifier-13378718` | Classifier | per extracted split | Zenodo 13378718, zip md5 `e7e47f2aa4af4b79874a19382cec06da` (Zenodo API); record indicates MIT, mixed image origins (verify) | **IN** (requires local extraction + ONNX export) | importer `--source classifier-13378718` |
+| Zenodo **6670746** | — | 126.6 GB, single file | CC-BY-4.0; no exposed separate test set | **OUT OF SCOPE (formalized)** — not downloaded or used | — |
+| `decimer-smoke` | Printed (optional sanity) | 4 | DECIMER-Image_Transformer `@9d06861`, MIT, SHA-256 | **IN optional**, outside main report | `data/manifests/benchmark-decimer-smoke.fetch.json` |
 
-## 3. Regla de `n` (estandarización)
+## 3. `n` rule (standardization)
 
-- **`n` se estandariza por dossier y por conjunto de IDs congelado.** Nunca “todo a 1441” entre dossiers.
-- **Dentro de un dossier:** todas las variantes comparadas ven los **mismos IDs** (comparación pareada). Congelar subconjunto de iteración con **seed + IDs en manifiesto**; el conjunto completo del dossier es el resultado final.
-  - **Impreso:** pool/frozen n=1400 (CLEF+JPO, seed `20260308`) → `eval=1000`, `pilot=300`, `remainder=400` (`data/manifests/frozen/printed.frozen.json`).
-  - **Manuscrito:** frozen n=1400 (HDM, seed `20260308`) → `eval=1000`, `pilot=300`, `remainder=400` (`data/manifests/frozen/handdrawn.frozen.json`).
-  - **Clasificador:** frozen n=4000 estratificado (seed `20260308`) → `eval=1000`, `pilot=300` (`data/manifests/frozen/classifier.frozen.json`). `reactions` excluida del binario y reportada aparte.
+- **`n` is standardized per dossier and per frozen ID set.** Never "normalize everything to 1441" across dossiers.
+- **Within a dossier:** all compared variants see the **same IDs** (paired comparison). Freeze iteration subsets with **seed + IDs in manifest**; the full dossier set is the final result.
+  - **Printed:** frozen pool n=1400 (CLEF+JPO, seed `20260308`) → `eval=1000`, `pilot=300`, `remainder=400` (`data/manifests/frozen/printed.frozen.json`).
+  - **Hand-drawn:** frozen n=1400 (HDM, seed `20260308`) → `eval=1000`, `pilot=300`, `remainder=400` (`data/manifests/frozen/handdrawn.frozen.json`).
+  - **Classifier:** frozen n=4000 stratified (seed `20260308`) → `eval=1000`, `pilot=300` (`data/manifests/frozen/classifier.frozen.json`). `reactions` excluded from binary and reported separately.
 
-## 4. Contratos compartidos (infraestructura)
+## 4. Shared contracts (infrastructure)
 
-### 4.1 Protocolo de medición pareado (por variante)
-Cada variante se mide sobre el **mismo set congelado / mismos IDs** (piloto ⊂ eval ⊂ pool; nunca mezclar sets entre variantes). Por cada corrida registrar:
-- **Precisión/tarea (primaria):** métrica definida por dossier. **OCSR:** exactitud SMILES **canónica RDKit** (`canonical_match`, **primaria**, integrada) + `exact_match` cadena (secundaria); fidelidad `tf_match`/`tf_canonical_match` ONNX↔TF. **Clasificador:** binary accuracy (primaria). **Piso absoluto: ≥70%** en métrica primaria (eval congelado). Reportar **Δ absoluto en pp contra FP32** (misma métrica, mismos IDs).
-- **Latencia:** **p50 y p95** en el **mismo hardware** y **mismo execution provider** (p. ej. ORT `CPUExecutionProvider`), registrados. No reportar solo media; la cola (p95) es relevante.
-- **Tamaño en disco:** MB de los artefactos del modelo (encoder+decoder u equivalente), por variante.
-- **Throughput:** si se procesan lotes, reportar lotes/s o imágenes/s con tamaño de lote `[si aplica]`.
-- **Comparación de variantes (pareada):** **McNemar** sobre pares discordantes + Δ pp con **IC bootstrap**; reportar `n` + IC.
-- **Caché:** predicciones por `(model_key, variant_key, image_id)` para no recalcular (`data/cache/predictions/`, gitignored).
+### 4.1 Paired measurement protocol (per variant)
+Each variant is measured on the **same frozen set / same IDs** (pilot ⊂ eval ⊂ pool; never mix sets across variants). For each run record:
+- **Task accuracy (primary):** metric defined by the dossier. **OCSR:** **RDKit canonical SMILES accuracy** (`canonical_match`, **primary**, integrated) + `exact_match` string (secondary); fidelity `tf_match`/`tf_canonical_match` ONNX↔TF. **Classifier:** binary accuracy (primary). **Absolute floor: ≥70%** on the primary metric (frozen eval). Report **absolute Δ in pp vs FP32** (same metric, same IDs).
+- **Latency:** **p50 and p95** on the **same hardware** and **same execution provider** (e.g. ORT `CPUExecutionProvider`), recorded. Do not report only the mean; the tail (p95) matters.
+- **Disk size:** MB of model artifacts (encoder+decoder or equivalent), per variant.
+- **Throughput:** if batches are processed, report batches/s or images/s with batch size `[if applicable]`.
+- **Variant comparison (paired):** **McNemar** over discordant pairs + Δ pp with **bootstrap CI**; report `n` + CI.
+- **Cache:** predictions by `(model_key, variant_key, image_id)` to avoid recomputation (`data/cache/predictions/`, gitignored).
 
-**Advertencia de medición:** la cuantización dinámica (INT8) **no siempre es más rápida** (el overhead de cuantizar activaciones en runtime puede anular/peorar la ganancia). La latencia se mide, no se asume.
+**Measurement note:** dynamic INT8 quantization **is not always faster** (runtime activation quantization overhead can offset/eliminate gains). Latency is measured, not assumed.
 
-### 4.2 Etiquetas / métricas por bloque
-- **OCSR (impreso/manuscrito):** **`canonical_match` RDKit (primaria, calidad química)** sobre pares comparables + `exact_match` cadena (secundaria), `tf_match`/`tf_canonical_match` (fidelidad ONNX↔TF), `valid`/`incomplete`, latencia p50/p95, tamaño, throughput si aplica.
-- **Clasificador:** **accuracy binaria (primaria)** sobre 3 clases mapeadas (`one/several_molecule→structure`, `other/rest→no-structure`), **matriz** `[[TN,FP],[FN,TP]]`, con **`reactions` excluida del binario** y reportada aparte (`ambiguous_excluded`). Fidelidad ONNX↔baseline/paridad TF.
-- **Piso absoluto (obligatorio, todos los modelos/variantes aceptables):** **accuracy ≥ 70%** en la métrica primaria del dossier, sobre el **split `eval` congelado** (mismos IDs). OCSR = `canonical_match_rate` (RDKit, comparables). Clasificador = binary accuracy (no-reacción). Variantes < 70% **no se aceptan**.
-- **Criterios adicionales (resueltos por evidencia):** para variantes comprimidas se exige cumplir el piso ≥70% de forma **robusta** (no solo borde en `eval`; validado contra `remainder`/held-out cuando aplica). `Δ vs FP32` y p95 se registran; la selección prioriza cumplir el piso y fidelidad/calidad (y compresión cuando no degrada el piso). McNemar/IC bootstrap pareado quedan como mejora de tooling futura (el reporte registra Δpp y `n` pareado).
+### 4.2 Labels / metrics by block
+- **OCSR (printed/hand-drawn):** **RDKit `canonical_match` (primary, chemical quality)** on comparable pairs + `exact_match` string (secondary), `tf_match`/`tf_canonical_match` (ONNX↔TF fidelity), `valid`/`incomplete`, latency p50/p95, size, throughput if applicable.
+- **Classifier:** **binary accuracy (primary)** over 3 mapped classes (`one/several_molecule→structure`, `other/rest→no-structure`), **confusion matrix** `[[TN,FP],[FN,TP]]`, with **`reactions` excluded from binary** and reported separately (`ambiguous_excluded`). ONNX↔baseline/TF parity fidelity.
+- **Absolute floor (mandatory, all acceptable models/variants):** **accuracy ≥ 70%** on the dossier primary metric, on the **frozen `eval` split** (same IDs). OCSR = `canonical_match_rate` (RDKit, comparable pairs). Classifier = binary accuracy (non-reaction). Variants < 70% **are not accepted**.
+- **Additional criteria (resolved by evidence):** for compressed variants, the ≥70% floor must hold **robustly** (not just borderline on `eval`; validated against `remainder`/held-out when applicable). `Δ vs FP32` and p95 are recorded; selection prioritizes meeting the floor and fidelity/quality (and compression when it does not break the floor). Paired McNemar/bootstrap CI remain future tooling improvements (the report records Δpp and paired `n`).
 
-### 4.2 Preprocesado (registrado por modelo)
-Registrar entrada, resize/normalización/canales, ruta TF baseline vs runtime ONNX usada en `tf_match`, versión. Control **FP32+TF** antes de concluir sobre cuantización (separa export/preprocess vs cuantización).
+### 4.3 Preprocessing (recorded per model)
+Record input, resize/normalization/channels, TF baseline vs ONNX runtime path used in `tf_match`, version. **FP32+TF** control before concluding about quantization (separates export/preprocess from quantization effects).
 
-## 5. Reporte
+## 5. Reporting
 
-- Reporte neutral auto-generado por `dtx report` (`docs/benchmark-report.md`) desde `data/benchmark/**/*.json` y manifiestos: incluye **todos los resultados** por dossier/split (eval/pilot/remainder), variantes no seleccionadas incluidas; Imago excluido (experimento aparte en `docs/experiments/`).
-- Comparación pareada (mismos IDs) dentro de dossier, Δpp vs FP32, métricas primarias/secundarias, p50/p95, tamaños. Secciones por dossier/modelo y fuentes históricas cuando aplican.
+- Neutral report auto-generated by `dtx report` (`docs/benchmark-report.md`) from `data/benchmark/**/*.json` and manifests: includes **all results** per dossier/split (eval/pilot/remainder), including non-selected variants; Imago excluded (separate experiment in `docs/experiments/`).
+- Paired comparison (same IDs) within dossier, Δpp vs FP32, primary/secondary metrics, p50/p95, sizes. Sections per dossier/model and historical sources when applicable.
 
-## 6. Decisiones (consolidadas)
+## 6. Decisions (consolidated)
 
-| Dossier | Variante seleccionada | Evidencia (métrica primaria, eval congelado) | Nota |
+| Dossier | Selected variant | Evidence (primary metric, frozen eval) | Note |
 |---|---|---|---|
-| Impreso `ocsr-printed` | **FP32** | 0.7041 canónico (614/872, n=1000) ≥70% | Ninguna variante comprimida/mixta probada (E1/E3, mixes enc/dec, e1s, particiones por bloques) fue robustamente ≥70% en held-out. |
-| Manuscrito `ocsr-handdrawn` | **FP32** | 0.7300 canónico (576/789, n=1000) ≥70% | Cumple piso con mejor calidad/fidelidad; E1 cumplió accuracy en eval pero con tradeoff de latencia/fidelidad. |
-| Clasificador `image-classifier` | **E4 FP16** | 0.7679 acc binaria (n=1000, no-reaction) ≥70% | Paridad TF 0.998, 7.78 MB (-49%). INT8 Conv (E1-all/E2) <70%; E1s sin compresión relevante. |
+| Printed `ocsr-printed` | **FP32** | 0.7041 canonical (614/872, n=1000) ≥70% | No tested compressed/mixed variant (E1/E3, enc/dec mixes, e1s, block-wise partitions) was robustly ≥70% on held-out. |
+| Hand-drawn `ocsr-handdrawn` | **FP32** | 0.7300 canonical (576/789, n=1000) ≥70% | Meets floor with better quality/fidelity; E1 met accuracy on eval but with latency/fidelity tradeoff. |
+| Classifier `image-classifier` | **E4 FP16** | 0.7679 binary accuracy (n=1000, non-reaction) ≥70% | TF parity 0.998, 7.78 MB (-49%). INT8 Conv (E1-all/E2) <70%; E1s no meaningful compression. |
 
-**Matriz de calificación ponderada (1–100):** ver [`docs/selection-scoring.md`](selection-scoring.md) para criterios, pesos por dossier, puntajes por variante y argumento de selección.
+**Weighted qualification matrix (1–100):** see [`docs/selection-scoring.md`](selection-scoring.md) for criteria, per-dossier weights, per-variant scores, and selection rationale.
 
-Artefactos seleccionados consolidados en `chemistry-draw-ocsr/` (ignorado en este repo) para publicación en HF/`chemistry_draw`.
+Selected artifacts consolidated in `chemistry-draw-ocsr/` (ignored in this repo) for publication to HF/`chemistry_draw`.
 
-## 7. Estado actual y conformidad con el protocolo (realidad)
+## 7. Current status and protocol conformance (reality)
 
-### Ejecutado conforme al protocolo (núcleo)
-- **Conjuntos congelados y pareo:** manifiestos frozen (seed `20260308`) y splits `eval`/`pilot`/`remainder` por dossier (`data/manifests/frozen/*.frozen.json`); comparaciones sobre **mismos IDs** dentro del mismo split (`--frozen-manifest ... --split ...`).
-- **Métricas:** OCSR con **`canonical_match` RDKit** (primaria, comparables), `exact_match` (secundaria) y fidelidad `tf_match`/`tf_canonical_match` vs TF; clasificador con **accuracy binaria** (no-reacción), matriz, paridad TF y `reactions` separada.
-- **Selección y registro:** piso **≥70%** (métrica primaria, eval congelado) con criterio de robustez (validación en `remainder` cuando aplica). **Todos** los resultados (incluidos no seleccionados) en `data/benchmark/**/*.json` y en `docs/benchmark-report.md` auto-generado (`dtx report`); Imago excluido del reporte y documentado en `docs/experiments/`.
-- **Latencia/caché:** `p50/p95`, `n_measured` y `cache_hits` reportados; caché por `(model_key, variant_key, image_id)`. Referencias FP32+TF medidas y Δpp vs FP32 registrados.
+### Executed according to protocol (core)
+- **Frozen sets and pairing:** frozen manifests (seed `20260308`) and `eval`/`pilot`/`remainder` splits per dossier (`data/manifests/frozen/*.frozen.json`); comparisons on **same IDs** within the same split (`--frozen-manifest ... --split ...`).
+- **Metrics:** OCSR with **RDKit `canonical_match`** (primary, comparable pairs), `exact_match` (secondary), and `tf_match`/`tf_canonical_match` fidelity vs TF; classifier with **binary accuracy** (non-reaction), confusion matrix, TF parity, and `reactions` reported separately.
+- **Selection and recording:** **≥70%** floor (primary metric, frozen eval) with robustness criterion (`remainder`/held-out validation when applicable). **All** results (including non-selected) in `data/benchmark/**/*.json` and in auto-generated `docs/benchmark-report.md` (`dtx report`); Imago excluded from report and documented in `docs/experiments/`.
+- **Latency/cache:** `p50/p95`, `n_measured`, and `cache_hits` reported; cache by `(model_key, variant_key, image_id)`. FP32+TF references measured and Δpp vs FP32 recorded.
 
-### Desviaciones / matices respecto al ideal
-- **Latencia y contención de CPU:** algunas corridas (pilotos/remainders) se ejecutaron con otros jobs en paralelo, lo que elevó `p50/p95` y las hace **no comparables** como latencia; la **accuracy no se ve afectada**. Las mediciones en solitario (p. ej. evals/remainders sin contención) son las representativas para comparar latencia.
-- **Estadística pareada formal no automatizada:** no se calculan automáticamente **McNemar ni IC bootstrap** sobre discordancias; se reportan tasas, Δpp y `n` pareado. (Mejora de tooling pendiente.)
-- **Evidencia histórica:** coexisten corridas históricas previas al protocolo frozen (p. ej. CLEF/JPO 1441, muestras HDM ad hoc) etiquetadas como tal; las decisiones consolidadas se basan en splits frozen.
-- **Criterios finos:** umbrales adicionales (Δpp/p95 como gate numérico duro único) se resolvieron por evidencia/robustez y registro de métricas, no como un único umbral pre-fijado global más allá del piso ≥70%.
+### Deviations / nuances from the ideal
+- **Latency and CPU contention:** some runs (pilots/remainders) executed with other jobs in parallel, which inflated `p50/p95` and makes them **not comparable** as latency; **accuracy is unaffected**. Solo measurements (e.g. evals/remainders without contention) are the representative ones for latency comparison.
+- **Paired formal statistics not automated:** **McNemar and bootstrap CI** over discordances are not computed automatically; rates, Δpp, and paired `n` are reported. (Pending tooling improvement.)
+- **Historical evidence:** historical runs predating the frozen protocol coexist (e.g. CLEF/JPO 1441, ad hoc HDM samples) labeled as such; consolidated decisions are based on frozen splits.
+- **Fine-grained criteria:** additional thresholds (Δpp/p95 as a single hard global numeric gate) were resolved by evidence/robustness and metric recording, not as a single pre-fixed global threshold beyond the ≥70% floor.
 
-### Incidentes de ejecución (mitigados)
-- **Reintentos por carga ONNX transitoria:** fallos `NoSuchFile` al iniciar algunas corridas (p. ej. variantes `sel*`) pese a existir los artefactos; se reintentó y las ejecuciones completadas quedaron registradas.
-- **Viabilidad/runtime:** E4 FP16 OCSR no viable en ORT CPU (error de broadcast en atención del decoder) → descartada. E3 (QDQ estático enc.) produjo degradación severa en OCSR → rechazada.
-- **Imago:** crashes nativos intermitentes mitigados con runner por subproceso por imagen (`scripts/benchmark_imago_resilient.py`); resultados solo en `docs/experiments/` (fuera del reporte).
-- **Avisos de cuantización:** warnings de pre-procesamiento de ONNX Runtime durante cuantización dinámica; no impidieron generar/evaluar artefactos.
+### Execution incidents (mitigated)
+- **Transient ONNX load retries:** `NoSuchFile` failures when starting some runs (e.g. `sel*` variants) despite artifacts existing; retried and completed runs were recorded.
+- **Viability/runtime:** OCSR FP16 (E4) not viable on CPU ORT (decoder attention broadcast error) → discarded. E3 (static QDQ encoder) caused severe degradation in OCSR → rejected.
+- **Imago:** intermittent native crashes mitigated with a per-image subprocess runner (`scripts/benchmark_imago_resilient.py`); results only in `docs/experiments/` (outside the report).
+- **Quantization warnings:** ONNX Runtime pre-processing warnings during dynamic quantization; did not prevent artifact generation/evaluation.
 
-### Pendiente (mejoras de tooling/ingeniería)
-- McNemar/IC bootstrap automatizados; gates finos de p95 si se fijan; empaquetado canónico del toolchain (`selection.json` unificado/`default`, NOTICE/manifest de bundle); tareas M1/M6 (check/CI, probe, hardening).
+### Pending (tooling/engineering improvements)
+- Automated McNemar/bootstrap CI; fine-grained p95 gates if fixed; canonical toolchain packaging (`selection.json` unified/`default`, NOTICE/bundle manifest); M1/M6 tasks (check/CI, probe, hardening).
