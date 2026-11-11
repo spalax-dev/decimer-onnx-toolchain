@@ -135,6 +135,8 @@ Classifier per-category numbers are **binary-accuracy slices by true label** (ev
 | OCSR hand-drawn FP32 | `ocsr-handdrawn@zenodo:10781330` | `91c70fee79b7d64c09d433ff82e2216d16070e4d098b83da2c13d34c52439fde` | 1115 / 2156 ms |
 | Classifier E4 FP16 | `image-classifier@Iagea/d21f4cb` | `1f1f192e3a63c8985f20d8a0777a558458ef829379e5373fdad25bc0b4161978` | 49 / 206 ms |
 
+**Output contract:** OCSR returns `smiles` + per-token `confidences` (gating input) + `incomplete` flag (hit `max_len=302` without `end_id` → treat as failure/retry); classifier returns a **single logit** (sigmoid, `score ≤ 0.000089` → structure). Tensor names/shapes, greedy-decode loop and `vocab.json` layout are documented in the HF model card (`chemistry-draw-ocsr` README, "Inference contract") and in `src/runtime/api.py` / `src/runtime/decode.py`.
+
 ---
 
 ## 6. Caveats and pending decisions before shipping
