@@ -15,6 +15,39 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
 
+MODEL_IDENTITY = {
+    "ocsr-printed": {
+        "model_id": "ocsr-printed@zenodo:8300489",
+        "checkpoint": "models.zip (DECIMER_model)",
+        "sha256": "8ebc7db18fffac7e71a2cf8487708053620d124846bc9502eddac1283b431d2b",
+        "source": "https://zenodo.org/records/8300489",
+    },
+    "ocsr-handdrawn": {
+        "model_id": "ocsr-handdrawn@zenodo:10781330",
+        "checkpoint": "DECIMER_HandDrawn_model.zip",
+        "sha256": "91c70fee79b7d64c09d433ff82e2216d16070e4d098b83da2c13d34c52439fde",
+        "source": "https://zenodo.org/records/10781330",
+    },
+    "image-classifier": {
+        "model_id": "image-classifier@Iagea/d21f4cb",
+        "checkpoint": "SavedModel (pinned commit d21f4cb005f20571bb5e75b08ca375f56655884b)",
+        "sha256": "1f1f192e3a63c8985f20d8a0777a558458ef829379e5373fdad25bc0b4161978",
+        "source": "https://github.com/Iagea/DECIMER-Image-Classifier/tree/d21f4cb005f20571bb5e75b08ca375f56655884b",
+    },
+}
+
+def _identity_for(dossier_prefix: str) -> dict:
+    if dossier_prefix == "printed":
+        return MODEL_IDENTITY["ocsr-printed"]
+    if dossier_prefix == "handdrawn":
+        return MODEL_IDENTITY["ocsr-handdrawn"]
+    if dossier_prefix == "classifier":
+        return MODEL_IDENTITY["image-classifier"]
+    return {"model_id": "—", "sha256": "—"}
+
+def _short_sha(sha: str) -> str:
+    return sha[:16] + "…" if sha and len(sha) > 16 else (sha or "—")
+
 
 def _run(cmd: str) -> str | None:
     try:
@@ -225,9 +258,12 @@ def _row(label: str, report_path: Path, *, tf_join_note: str = "", fp32_path: Pa
     rep = str(report_path.relative_to(ROOT)) if report_path.is_relative_to(ROOT) else str(report_path)
     mark = " ✅≥70%" if cmr is not None and cmr >= 0.70 else (" ❌<70%" if cmr is not None else "")
     can_cell = f"**{cm}/{ccomp} ({cmr:.4f})**{mark}" if (cm is not None and ccomp) else "—"
+    name = report_path.name.lower(); full = str(report_path).lower()
+    ident = _identity_for("handdrawn" if "handdrawn" in name or "hdm" in full else ("classifier" if "classifier" in name else "printed"))
+    mid = ident.get("model_id","—"); sha = ident.get("sha256","—")
     return (
         f"| {label} | {n} | {can_cell} | {ex} ({exr:.4f}) | {tf_cell} | {dcan} | {dtf} | {dex} | {valid} ({vr:.4f}) | {inc} | "
-        f"{p50}{note} | {p95} | {size} | `{rep}` |"
+        f"{p50}{note} | {p95} | {size} | `{mid}` | `{sha}` | `{rep}` |"
     )
 
 
@@ -351,10 +387,14 @@ def _pilot_ocsr_row(label: str, report_path: Path, *, fp32_path: Path | None = N
         tf_cell = f"{tf_cell} / can {tcm}/{tcc} ({tcr:.3f})"
     mark = " ✅≥70%" if cmr is not None and cmr >= 0.70 else (" ❌<70%" if cmr is not None else "")
     can_cell = f"**{cm}/{ccomp} ({cmr:.4f})**{mark}" if (cm is not None and ccomp) else "—"
+    name = report_path.name.lower()
+    ident = _identity_for("handdrawn" if name.startswith("handdrawn") else ("classifier" if name.startswith("classifier") else "printed"))
+    # if cross-eval of handdrawn model appears, keep handdrawn identity (prefix is handdrawn in filename)
+    mid = ident.get("model_id","—"); sha = ident.get("sha256","—")
     # Primary = canonical RDKit (floor >=70%)
     return (
         f"| {label} | {n} | {can_cell} | {ex} ({exr:.4f}) | {tf_cell} | {dcan} | {dtf} | {dex} | {valid} ({vr:.4f}) | {inc} | "
-        f"{p50}{note} | {p95} | {size} | `{rep}` |"
+        f"{p50}{note} | {p95} | {size} | `{mid}` | `{sha}` | `{rep}` |"
     )
 
 
@@ -386,7 +426,9 @@ def _classifier_row(report_path: Path, *, fp32_path: Path | None = None) -> str 
         dacc = "(ref)"
     rep = str(report_path.relative_to(ROOT)) if report_path.is_relative_to(ROOT) else str(report_path)
     split = d.get("split") or "—"
-    return f"| `{variant}` (`{split}`) | {d.get('total_rows','—')} | {acc_s} | {mat_s} | {dacc} | {tf_s} | {rx_s} | {p50}{note} | {p95} | `{rep}` |"
+    ident = _identity_for("classifier")
+    mid = ident.get("model_id","—"); sha = ident.get("sha256","—")
+    return f"| `{variant}` (`{split}`) | {d.get('total_rows','—')} | {acc_s} | {mat_s} | {dacc} | {tf_s} | {rx_s} | {p50}{note} | {p95} | `{mid}` | `{sha}` | `{rep}` |"
 
 
 def _ocsr_variant_label(path: Path, data: dict[str, Any] | None) -> str:
@@ -415,7 +457,7 @@ def _render_ocsr(lines: list[str], pending: list[str]) -> None:
         ("`ocsr-printed`", "printed", ROOT/"data/manifests/frozen/printed.frozen.json"),
         ("`ocsr-handdrawn`", "handdrawn", ROOT/"data/manifests/frozen/handdrawn.frozen.json"),
     ]
-    header = "| Variant | n | **RDKit canonical (primary, comp.)** | exact string | tf_match string (+ tf_canonical) | Δcanonical pp | Δtf pp | Δexact pp | valid | incomplete | p50 ms | p95 ms | size MB | Report |"
+    header = "| Variant | n | **RDKit canonical (primary, comp.)** | exact string | tf_match string (+ tf_canonical) | Δcanonical pp | Δtf pp | Δexact pp | valid | incomplete | p50 ms | p95 ms | size MB | model_id | checkpoint sha256 | Report |"
     sep = "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|"
     splits = [
         ("eval-1000", "split `eval` (gate, n=1000)", "eval1000"),
@@ -495,8 +537,8 @@ def _render_classifier(lines: list[str], pending: list[str]) -> None:
         if fman and dirname == "eval-1000":
             lines.append(f"Frozen: n={fman.get('frozen_n')}, eval={fman.get('eval_n')}, pilot={fman.get('pilot_n')}, seed={fman.get('seed')}, classes {fman.get('class_allocated')}. Binary over `one/several_molecule→structure`, `other→no-structure` (threshold `0.000089`); `reactions` excluded from binary and reported separately. Goal: **accuracy ≥70%** while improving compression. **All** results for this suite are recorded (including non-selected).")
             lines.append("")
-        lines.append("| Variant (split) | total rows | Binary acc (non-reaction) | Matrix `[[TN,FP],[FN,TP]]` | Δacc vs FP32 | TF parity (incl. reactions) | reactions (separate) | p50 ms | p95 ms | Report |")
-        lines.append("|---|---:|---:|---|---:|---:|---:|---:|---:|---|")
+        lines.append("| Variant (split) | total rows | Binary acc (non-reaction) | Matrix `[[TN,FP],[FN,TP]]` | Δacc vs FP32 | TF parity (incl. reactions) | reactions (separate) | p50 ms | p95 ms | model_id | checkpoint sha256 | Report |")
+        lines.append("|---|---:|---:|---|---:|---:|---:|---:|---:|---|---|---|")
         lines.extend(got2)
         lines.append("")
     if (ROOT / "data/benchmark/eval-1000/classifier.e4-fp16.eval1000.json").exists():
@@ -554,7 +596,7 @@ def render_results() -> tuple[str, list[str]]:
         "",
         "> **Execution note (reality):** some runs (pilots/remainders) were executed with CPU contention, so their `p50/p95` may not be comparable (accuracy is unaffected); prefer solo measurements for latency comparison. McNemar/bootstrap CI are not automated in this report (rates/Δpp/`n` are reported). There were retries due to transient ONNX load failures and runtime/quantization limitations documented in results/selections. See glossary (§1) and `docs/benchmark-spec.md` (§7) for details.",
         "",
-        "> **Domain/specialization (under evaluation):** `ocsr-printed` and `ocsr-handdrawn` are distinct models (different weights/tokenizers/origins) but **not exclusive specialists** based on observed cross-evaluation evidence (e.g. 2×2 pilot FP32: handdrawn 0.712 on printed vs 0.711 printed in-domain; 0.719 on hand-drawn, while printed drops to 0.677 on hand-drawn). Additional tests (cross eval-1000 and 1:1 printed+hand-drawn mix) are in progress/pending consolidation to confirm differences.",
+        "> **Domain/specialization (cross-evaluation):** `ocsr-printed` and `ocsr-handdrawn` are distinct models (different weights/tokenizers/origins) with **non-exclusive specialization**, but neither is uniformly better in both domains. On printed `eval-1000` (FP32, n=1000) `ocsr-handdrawn` scored **0.694** canonical (628/905) vs `ocsr-printed` in-domain **0.704** (614/872); on hand-drawn it scored **0.730** in-domain (eval-1000) while `ocsr-printed` dropped to **0.677** (pilot). Mixed 1:1 benchmark was not run (discarded).",
         "",
     ]
 
@@ -564,8 +606,8 @@ def render_results() -> tuple[str, list[str]]:
             return
         lines.append(f"### {title}")
         lines.append("")
-        lines.append("| Variant | n | **RDKit canonical (primary, comp.)** | exact string | tf_match string (+ tf_canonical) | Δcanonical pp | Δtf pp | Δexact pp | valid | incomplete | p50 ms | p95 ms | size MB (enc+dec) | Report |")
-        lines.append("|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|")
+        lines.append("| Variant | n | **RDKit canonical (primary, comp.)** | exact string | tf_match string (+ tf_canonical) | Δcanonical pp | Δtf pp | Δexact pp | valid | incomplete | p50 ms | p95 ms | size MB (enc+dec) | model_id | checkpoint sha256 | Report |")
+        lines.append("|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|---|---|")
         lines.extend(got)
         lines.append("")
 

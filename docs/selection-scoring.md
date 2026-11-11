@@ -53,7 +53,7 @@
 
 ## 3. Dossier `ocsr-handdrawn` (hand-drawn)
 
-**Objective:** meet ≥70% canonical accuracy; among options that pass, prioritize quality/fidelity and latency for default use. (Model trained for hand-drawn according to upstream; in pilot cross-eval it showed good generalization to printed, i.e. non-exclusive specialization.)
+**Objective:** meet ≥70% canonical accuracy; among options that pass, prioritize quality/fidelity and latency for default use. (Model trained for hand-drawn according to upstream; cross-eval shows good generalization to printed but not strictly better than the printed model in-domain — non-exclusive specialization.)
 
 | Criterion | Weight | Rationale for weight |
 |---|---:|---|
