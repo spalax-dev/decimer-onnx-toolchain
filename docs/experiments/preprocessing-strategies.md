@@ -114,6 +114,22 @@ Direct on eval-1000 (cheap). Baseline `default` matches selected reference (≈0
 
 > **Matrix orientation (to avoid misreads):** the JSON field is `matrix_rows_expected_cols_predicted = [[TP, FN], [FP, TN]]` with `labels = ["structure", "no-structure"]` (positive class = **structure**), built by `_confusion()` in `src/toolchain/benchmark_run.py`. So for `default`, `[[319, 174], [1, 260]]` means **TP=319, FN=174, FP=1, TN=260** — the 174 are *missed structures* (FN), **not** false positives. The baseline already had FP=1; `higher_contrast` moves FP 1→0 and FN 174→158 (+16 TP, +1 TN = +17 correct → +2.25 pp, exactly the reported Δ). Cross-check: (319+260)/754 = 0.7679 and (335+261)/754 = 0.7905, both matching the reported accuracies.
 
+#### Per-category cut (single- vs multi-molecule) — product-relevant analysis
+The classifier eval-1000 binary subset **mixes image types**: `one_molecule` 243, `several_molecules` 250, `other` (non-structure) 261; `reactions` 246 are excluded from binary. Per-category accuracy (from run details, no new run needed):
+
+| Category | expected | `default` | `higher_contrast` | Δ |
+|---|---|---:|---:|---:|
+| `one_molecule` | structure | 215/243 (**0.8848**) | 214/243 (0.8807) | −0.4 pp |
+| `several_molecules` | structure | 104/250 (**0.4160**) | 121/250 (0.4840) | **+6.8 pp** |
+| `other` | no-structure | 260/261 (0.9962) | 261/261 (1.0000) | +0.4 pp |
+
+**Findings:**
+1. **The `higher_contrast` +2.26 pp overall gain comes entirely from `several_molecules`** (+17 correct there); on `one_molecule` it is flat/slightly negative. The promotion case for the variant is therefore weak for a single-molecule product (chemistry-draw), and the variant stays unpromoted.
+2. **The classifier's dominant error is multi-molecule images:** 146 of its 174 total FN (84%) are `several_molecules` predicted `no-structure` (0.416 accuracy — barely above the 0.5 chance line for that slice). The model appears tuned to single-structure crops; multi-molecule images often read as "no structure" to it.
+3. **Product implication:** if chemistry-draw expects one molecule per image, the relevant classifier slice is `one_molecule` = **0.8848** (default) — well above the 0.70 floor. Conversely, a user submitting a multi-molecule image would be wrongly rejected ~58% of the time (`no-structure`); if multi-molecule inputs are in scope, this is a data/model gap to address (e.g. crop-then-classify), not a preprocessing gap.
+
+**OCSR benchmarks are single-molecule by construction:** printed eval-1000 has only 2/1000 multi-fragment (dot) expected SMILES (0.2%, both edge cases: one Markush-like CLEF crop, one JPO salt `Cl.…`); hand-drawn eval-1000 has 0/1000 (HDM = CDK Depict renders of single molecules; CLEF = per-structure crops `_c00xxx`). No OCSR metric change is needed for a single-molecule product view.
+
 ## Interpretation plan
 1. **Fidelity first:** compare `decimer_tf_ref` vs `runtime_default` (causal interpretation: TF gaussian+efn preprocess vs PIL LANCZOS). A consistent gap suggests runtime preprocessing fidelity gap.
 2. **Domain/model-specific:** optimal preprocessing may differ per model/domain (printed vs hand-drawn vs classifier); do not assume transfer.
@@ -125,7 +141,7 @@ Direct on eval-1000 (cheap). Baseline `default` matches selected reference (≈0
 - **`no_border_crop`:** -2.42 pp and ~2.1× slower on printed pilot — harmful here.
 - **`sharpen_unsharp`:** +0.76 pp on printed pilot (small, below promotion threshold alone).
 - **`autocontrast`:** neutral/slightly negative on printed pilot.
-- **Classifier (eval-1000, complete):** `higher_contrast` **+2.26 pp** (0.7905), `sharpen` +1.46 pp, `autocontrast` +1.19 pp vs default (0.7679). Gains mainly reduce false negatives (missed structures) while false positives remain near-zero in this set (e.g. higher_contrast: TP 335, FN 158, FP 0, TN 261 vs default TP 319, FN 174, FP 1, TN 260). `invert` and `equalize` are strongly harmful (~-14 pp). Promising but not yet promoted to official selection — validate on real/product inputs and confirm stability (eval-1000 is decisive here given low cost, but domain shift possible).
+- **Classifier (eval-1000, complete):** `higher_contrast` **+2.26 pp** (0.7905), `sharpen` +1.46 pp, `autocontrast` +1.19 pp vs default (0.7679) — but the **per-category cut shows the `higher_contrast` gain is entirely from `several_molecules`** (0.416 → 0.484), while `one_molecule` (the product-relevant slice) is flat (0.8848 → 0.8807). See per-category table above. `invert` and `equalize` are strongly harmful (~-14 pp). **Not promoted** — weak case for a single-molecule product; also validate on real inputs before any use.
 - **Hand-drawn OCSR (pilot, complete):** `runtime_default` ref 0.7192. **`decimer_tf_ref` is -1.03 pp (0.7089)** — opposite direction to printed (+1.18 pp), so the two pilot signals together are consistent with **noise (SE ~2.7 pp) rather than a systematic runtime fidelity gap**; any runtime preprocess change would need eval-1000 confirmation per model and must not be assumed to transfer. **Preprocessing winners differ by domain:** `no_border_crop` is harmful on printed (-2.42 pp) but positive on hand-drawn (+1.09 pp); `sharpen_unsharp` positive on printed, negative on hand-drawn. This confirms the per-domain reporting rule (no assumed transfer).
 - **`invert` on hand-drawn is catastrophic:** 0/289 canonical, validity drops to 0.653 (34.7% incomplete) — the hand-drawn model cannot parse inverted input at all. Combined with the classifier result (-14.85 pp), **`invert` is harmful in every model measured**; reject it outright (relevant for the chemistry-draw product: never auto-invert scans/photos).
 - **`no_binarize` on hand-drawn:** -1.61 pp (0.7031) — the binarization step helps slightly on this domain too (printed not yet run for this variant).
