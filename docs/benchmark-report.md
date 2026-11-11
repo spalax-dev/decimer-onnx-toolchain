@@ -2,7 +2,7 @@
 
 > Document auto-generated from JSON reports/manifests in `data/`. It does not include decisions or judgments about results; it reports measurements, definitions, and acceptance criteria defined for evaluation.
 
-**Generated (UTC):** `2026-11-11T20:16:07.373633+00:00`  
+**Generated (UTC):** `2026-11-11T23:11:18.634490+00:00`  
 **Generator:** `toolchain.report.generate_report` / `dtx report` (alias: `decimer-export report`)  
 **Relevant branch/commits:** `main` (workspace fetch/export/runtime/quantization/benchmark).
 
@@ -39,7 +39,7 @@ Metrics are computed with the same harness over the same frozen image/ID set whe
 
 | Criterion | Definition / acceptance condition |
 |---|---|
-| **Absolute floor (mandatory, all primary dossiers)** | **Accuracy ≥ 70%** on the dossier **primary metric**, on the **frozen `eval` split** (same IDs). **OCSR:** RDKit `canonical_match_rate` (over comparable pairs). **Classifier:** `binary accuracy` (non-reaction). Variants < 70% **are not accepted**. **Scope:** printed, hand-drawn (in-domain) and classifier dossiers. **Stress dossiers are exempt** (see `floor_applies=false` in their frozen manifest): the colored-background stress set (§5.C) is deliberately hard and is reported for robustness only — it does not gate selection. |
+| **Absolute floor (mandatory, all primary dossiers)** | **Accuracy ≥ 70%** on the dossier **primary metric**, on the **frozen `eval` split** (same IDs). **OCSR:** RDKit `canonical_match_rate` (over comparable pairs). **Classifier:** `binary accuracy` (non-reaction). Variants < 70% **are not accepted**. **Scope:** printed, hand-drawn (in-domain) and classifier dossiers. **Stress dossiers are exempt** (see `floor_applies=false` in their frozen manifest): the colored-background stress set (section 5.C) is deliberately hard and is reported for robustness only — it does not gate selection. |
 | **Paired comparison** | All variants are measured on the **same frozen set/IDs** (pilot ⊂ eval ⊂ pool). Δ vs FP32 in pp over same IDs. |
 | **Fidelity (rate / strict)** | `tf_match_rate`/`tf_canonical_match_rate` (ONNX≈TF). Strict: 100%. Numeric threshold (`≥ [TBD]%`) is an external parameter if defined. |
 | **Δ vs FP32 (accuracy/fidelity)** | Absolute difference in pp vs FP32, same metric and IDs. Threshold `≤ [TBD] pp` `[TBD]`. |
@@ -65,7 +65,7 @@ Metrics are computed with the same harness over the same frozen image/ID set whe
 
 ## 4. Machine characteristics (automatic collection)
 
-Automatically collected at `2026-11-11T20:16:06.906428+00:00` using `platform`, `lscpu`, and `free`.
+Automatically collected at `2026-11-11T23:11:18.027469+00:00` using `platform`, `lscpu`, and `free`.
 
 | Field | Value |
 |---|---|
@@ -81,7 +81,7 @@ Automatically collected at `2026-11-11T20:16:06.906428+00:00` using `platform`, 
 | Caches L1d/L1i/L2/L3 | `128 KiB (4 instances)` / `128 KiB (4 instances)` / `1 MiB (4 instances)` / `6 MiB (1 instance)` |
 | Relevant CPU flags | `fma sse4_2 avx avx2` |
 | Total RAM | 15.42 GiB (16555548672 bytes) |
-| Available RAM (at collection) | 7.30 GiB |
+| Available RAM (at collection) | 7.96 GiB |
 
 ### Package versions (execution environment)
 
@@ -101,11 +101,11 @@ Automatically collected at `2026-11-11T20:16:06.906428+00:00` using `platform`, 
 
 ## 5. Results
 
-This report covers **three distinct models** evaluated in independent dossiers: `ocsr-printed`, `ocsr-handdrawn`, and `image-classifier` (no ranking across models). In addition, a **colored-background stress dossier** (αExtractor, n=200) is reported for robustness **without the ≥70% floor** (§5.C).
+This report covers **three distinct models** evaluated in independent dossiers: `ocsr-printed`, `ocsr-handdrawn`, and `image-classifier` (no ranking across models). In addition, a **colored-background stress dossier** (αExtractor, n=200) is reported for robustness **without the ≥70% floor** (section 5.C).
 
 Protocol: variants compared on **same IDs** when applicable (paired, pilot ⊂ eval ⊂ frozen pool). Latency **p50/p95** (same hardware/provider), not mean only; dynamic INT8 may not be faster. **Δ vs FP32** = difference in pp over common IDs (same metric). `—` = not measured/not available.
 
-> **Execution note (reality):** some runs (pilots/remainders) were executed with CPU contention, so their `p50/p95` may not be comparable (accuracy is unaffected); prefer solo measurements for latency comparison. McNemar/bootstrap CI are not automated in this report (rates/Δpp/`n` are reported). There were retries due to transient ONNX load failures and runtime/quantization limitations documented in results/selections. See glossary (§1) and `docs/benchmark-spec.md` (§7) for details.
+> **Execution note (reality):** some runs (pilots/remainders) were executed with CPU contention, so their `p50/p95` may not be comparable (accuracy is unaffected); prefer solo measurements for latency comparison. McNemar/bootstrap CI are not automated in this report (rates/Δpp/`n` are reported). There were retries due to transient ONNX load failures and runtime/quantization limitations documented in results/selections. See glossary (section 1) and `docs/benchmark-spec.md` (section 7) for details.
 
 > **Domain/specialization (cross-evaluation):** `ocsr-printed` and `ocsr-handdrawn` are distinct models (different weights/tokenizers/origins) with **non-exclusive specialization**, but neither is uniformly better in both domains. On printed `eval-1000` (FP32, n=1000) `ocsr-handdrawn` scored **0.694** canonical (628/905) vs `ocsr-printed` in-domain **0.704** (614/872); on hand-drawn it scored **0.730** in-domain (eval-1000) while `ocsr-printed` dropped to **0.677** (pilot). Mixed 1:1 benchmark was not run (discarded).
 
@@ -161,7 +161,7 @@ Protocol: variants compared on **same IDs** when applicable (paired, pilot ⊂ e
 
 ### 5.C Colored-background stress dossier (αExtractor) — **split `eval` (n=200, robustness, NO floor)** (frozen n=200, eval=200, pilot=50, seed=20260308, source=`data/manifests/frozen/colored.frozen.json`)
 
-Deliberately hard images (colored backgrounds, low quality, hand-drawn) curated as αExtractor test data; both selected OCSR FP32 models are evaluated (each with its own tokenizer vocab). **The ≥70% floor does not apply here** (`floor_applies=false` in the frozen manifest): this dossier reports robustness only and does not gate variant selection. Small sample (n=200): rates carry SE ≈ 3–4 pp. License/provenance: see §3.
+Deliberately hard images (colored backgrounds, low quality, hand-drawn) curated as αExtractor test data; both selected OCSR FP32 models are evaluated (each with its own tokenizer vocab). **The ≥70% floor does not apply here** (`floor_applies=false` in the frozen manifest): this dossier reports robustness only and does not gate variant selection. Small sample (n=200): rates carry SE ≈ 3–4 pp. License/provenance: see section 3.
 
 | Variant | n | **RDKit canonical (primary, comp.)** | exact string | tf_match string (+ tf_canonical) | Δcanonical pp | Δtf pp | Δexact pp | valid | incomplete | p50 ms | p95 ms | size MB | model_id | checkpoint sha256 | Report |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|---|---|

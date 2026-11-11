@@ -24,13 +24,13 @@ Imago OCR (EPAM) is the classic **embeddable, non-ML** OCSR tool — the traditi
 
 | Component | Selected variant | Primary metric (frozen eval) | Evidence |
 |---|---|---|---|
-| `ocsr-printed` | **FP32** | **0.7041** canonical (614/872, n=1000) ✅≥70% | [Official report §5](benchmark-report.md) |
+| `ocsr-printed` | **FP32** | **0.7041** canonical (614/872, n=1000) ✅≥70% | [Official report section 5](benchmark-report.md) |
 | `ocsr-handdrawn` | **FP32** | **0.7300** canonical (711/974, n=1000) ✅≥70% | Official report |
 | `image-classifier` | **E4 FP16** | **0.7679** binary acc (n=754, non-reaction) ✅≥70%, TF parity 0.998 | Official report |
 
-No tested compressed OCSR variant (E1/E3/enc-dec mixes) held the floor robustly, so **FP32 is the shipped accuracy choice** (see §6 caveats on size/latency).
+No tested compressed OCSR variant (E1/E3/enc-dec mixes) held the floor robustly, so **FP32 is the shipped accuracy choice** (see section 6 caveats on size/latency).
 
-**Domain note (do not over-promise):** neither OCSR model dominates both domains — hand-drawn-on-printed scores 0.694 vs printed in-domain 0.704, and printed drops to 0.677 on hand-drawn pilot. Specialization is **non-exclusive, not superior**; a single-vs-dual-model routing choice is a product decision (§6).
+**Domain note (do not over-promise):** neither OCSR model dominates both domains — hand-drawn-on-printed scores 0.694 vs printed in-domain 0.704, and printed drops to 0.677 on hand-drawn pilot. Specialization is **non-exclusive, not superior**; a single-vs-dual-model routing choice is a product decision (section 6).
 
 ### 1.3 The confidence gate is measured, free product value
 
@@ -77,7 +77,7 @@ From the [confidence-gate experiment](experiments/confidence-rejection-gate.md) 
 
 - **OCSR:** transparent→white, contrast stretch, B&W (contrast 1.8), empty-border crop, central square, brightness ×1.6, **PIL LANCZOS resize to 512×512**, ImageNet mean/std normalization.
 - **Classifier:** RGBA→white background, grayscale→RGB, aspect-preserving resize + white pad to 224×224.
-- **Model choice by input type** (DECIMER's `hand_drawn` flag equivalent) is the primary "preprocessing strategy" — consistent with our non-exclusive specialization finding (§1.2): match the checkpoint to the image style rather than filtering the pixels.
+- **Model choice by input type** (DECIMER's `hand_drawn` flag equivalent) is the primary "preprocessing strategy" — consistent with our non-exclusive specialization finding (section 1.2): match the checkpoint to the image style rather than filtering the pixels.
 - The DECIMER API exposes **no tunable preprocessing knobs** (fixed pipeline, no TTA/denoise options); confidence is only for gating, never for changing the prediction.
 
 ---
@@ -88,7 +88,7 @@ From the [confidence-gate experiment](experiments/confidence-rejection-gate.md) 
 |---|---|---|
 | **Normal image** (black & white, one molecule) | Correct **~70–73%** (printed 0.7041 / hand-drawn 0.7300 canonical, frozen eval) | **Return the SMILES.** Done. (Confidence ≥ threshold → high certainty of being in that 70–73% band.) |
 | **Dubious image** (blurry, cropped) | **Low confidence** — the errors concentrate at the bottom of the confidence ranking (rejected-set accuracy 3.3% printed / 22.7% hand-drawn at 15% rejection) | **"I couldn't read it confidently; try a sharper image."** The confidence gate already tells you which image is dubious — you don't need a new detector for this case. |
-| **Rare-type image** (colored, photo, hand-drawn style fed to the printed model) | **Fails a lot: 0.18–0.26** canonical on the stress set (printed 0.1806 / hand-drawn 0.2558, §5.C of the official report) — and even what the gate *retains* there is only **~30% correct** (26/86 printed, 43/137 hand-drawn) | **"This type of image isn't well supported yet."** Not *"try again"* — it's *"not for this"*. Pair the gate with an explicit image-type/OOD check: on stress images the gate rejects 57%/31.5%, but ~70% of what it keeps is still wrong, so confidence alone is **not sufficient** here. |
+| **Rare-type image** (colored, photo, hand-drawn style fed to the printed model) | **Fails a lot: 0.18–0.26** canonical on the stress set (printed 0.1806 / hand-drawn 0.2558, section 5.C of the official report) — and even what the gate *retains* there is only **~30% correct** (26/86 printed, 43/137 hand-drawn) | **"This type of image isn't well supported yet."** Not *"try again"* — it's *"not for this"*. Pair the gate with an explicit image-type/OOD check: on stress images the gate rejects 57%/31.5%, but ~70% of what it keeps is still wrong, so confidence alone is **not sufficient** here. |
 
 Reading the rows: row 1 is the product; row 2 is the **confidence gate doing its job** (convert "sometimes wrong" into "sometimes I don't know"); row 3 is an **honest capability boundary** — the message must differ from row 2, because retrying the same image type will not help.
 
@@ -145,13 +145,13 @@ Classifier per-category numbers are **binary-accuracy slices by true label** (ev
 4. **Size/latency:** FP32 OCSR artifacts are **301.2 MB** (enc+dec) with p50 ~1.1–2.3 s on CPU — acceptable for desktop, a decision for mobile/edge (no compressed variant held the ≥70% floor, so compression currently costs acceptance).
 5. **Model routing:** single vs dual OCSR model (printed-only vs handdrawn-only vs classifier-routed) is still open; neither model is uniformly better across domains.
 6. **Stress/rare-type detection:** the confidence gate is necessary but not sufficient for row 3; an explicit image-type/OOD check is recommended. The color-only controlled experiment is pending (stress set confounds color + quality + style).
-7. **Preprocessing:** the default pipeline is validated **on the frozen sets only** (§2) — re-validate on real chemistry-draw inputs before changing anything; the one invariant measured across all three models is **never auto-invert**.
+7. **Preprocessing:** the default pipeline is validated **on the frozen sets only** (section 2) — re-validate on real chemistry-draw inputs before changing anything; the one invariant measured across all three models is **never auto-invert**.
 
 ---
 
 ## 7. Sources
 
-- Official (neutral, auto-generated): [`docs/benchmark-report.md`](benchmark-report.md) — §2 criteria (stress exemption), §3 provenance, §5.C colored stress, §5.1–5.5 dossiers.
+- Official (neutral, auto-generated): [`docs/benchmark-report.md`](benchmark-report.md) — section 2 criteria (stress exemption), section 3 provenance, section 5.C colored stress, section 5.1–5.5 dossiers.
 - Protocol: [`docs/benchmark-spec.md`](benchmark-spec.md).
 - Experiments (excluded from the official report): [`experiments/imago-printed-baseline.md`](experiments/imago-printed-baseline.md), [`experiments/confidence-rejection-gate.md`](experiments/confidence-rejection-gate.md), [`experiments/preprocessing-strategies.md`](experiments/preprocessing-strategies.md).
 - Selection decisions: `data/artifacts/selection/*.selection.json`.

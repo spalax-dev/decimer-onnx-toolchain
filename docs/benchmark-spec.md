@@ -18,7 +18,7 @@ Each model is validated against **its** suite, with **its** metric, **its** acce
 | [Printed](benchmark-dossier-printed.md) | `ocsr-printed` | CLEF + JPO (n=1441) | Does the ONNX variant reproduce TF and predict correct SMILES on printed structures? | Variant (E1/E3/FP32) + calibration policy |
 | [Hand-drawn](benchmark-dossier-handdrawn.md) | `ocsr-handdrawn` | HDM (n=5088) | Does the ONNX variant reproduce TF and predict correct SMILES on hand-drawn structures? | Variant + calibration policy (model trained for hand-drawn; non-exclusive specialization per cross-eval) |
 | [Classifier](benchmark-dossier-classifier.md) | `image-classifier` | Zenodo 13378718 (split defined at import) | Does it classify structure/no-structure correctly under the defined mapping? | ONNX export + wiring + variant |
-| Colored-background stress (no dossier doc; report §5.C) | `ocsr-printed` + `ocsr-handdrawn` | αExtractor subset (n=200) | How robust are the selected OCSR models on deliberately hard images (colored backgrounds, low quality, hand-drawn)? **Robustness reporting only — no selection decision.** | None: **`floor_applies=false`** (≥70% floor exempt by design) |
+| Colored-background stress (no dossier doc; report section 5.C) | `ocsr-printed` + `ocsr-handdrawn` | αExtractor subset (n=200) | How robust are the selected OCSR models on deliberately hard images (colored backgrounds, low quality, hand-drawn)? **Robustness reporting only — no selection decision.** | None: **`floor_applies=false`** (≥70% floor exempt by design) |
 
 **Not applicable:** a 2×2 cross-domain matrix as a requirement (there is no router sending the same image to both OCSR models). Cross-domain cells remain, if anything, an **optional robustness check**, not part of the dossier. There is **no** single comparative or pooled table across dossiers/domains.
 
@@ -41,7 +41,7 @@ Each model is validated against **its** suite, with **its** metric, **its** acce
   - **Printed:** frozen pool n=1400 (CLEF+JPO, seed `20260308`) → `eval=1000`, `pilot=300`, `remainder=400` (`data/manifests/frozen/printed.frozen.json`).
   - **Hand-drawn:** frozen n=1400 (HDM, seed `20260308`) → `eval=1000`, `pilot=300`, `remainder=400` (`data/manifests/frozen/handdrawn.frozen.json`).
   - **Classifier:** frozen n=4000 stratified (seed `20260308`) → `eval=1000`, `pilot=300` (`data/manifests/frozen/classifier.frozen.json`). `reactions` excluded from binary and reported separately.
-  - **Colored stress:** frozen n=200 (all items, seed `20260308`) → `eval=frozen=200`, `pilot=50` (`data/manifests/frozen/colored.frozen.json`, `floor_applies=false`). Smaller than the standard eval by design (whole source set); reported in §5.C without the ≥70% floor.
+  - **Colored stress:** frozen n=200 (all items, seed `20260308`) → `eval=frozen=200`, `pilot=50` (`data/manifests/frozen/colored.frozen.json`, `floor_applies=false`). Smaller than the standard eval by design (whole source set); reported in section 5.C without the ≥70% floor.
 
 ## 4. Shared contracts (infrastructure)
 
