@@ -53,7 +53,7 @@
 
 ## 3. Dossier `ocsr-handdrawn` (manuscrito)
 
-**Objetivo:** cumplir ≥70% canónico; entre opciones que cumplen, priorizar calidad/fidelidad y latencia para uso por defecto.
+**Objetivo:** cumplir ≥70% canónico; entre opciones que cumplen, priorizar calidad/fidelidad y latencia para uso por defecto. (Modelo entrenado para manuscrito según upstream; en cross-eval piloto mostró buena generalización a impreso, i.e. especialización no exclusiva.)
 
 | Criterio | Peso | Justificación del peso |
 |---|---:|---|

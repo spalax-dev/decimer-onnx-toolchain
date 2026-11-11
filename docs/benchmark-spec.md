@@ -1,6 +1,8 @@
 # Especificación de benchmark — DECIMER → ONNX (tres modelos / tres dossiers)
 
-> Documento de diseño/protocolo. Se trabaja con **tres modelos distintos** (distintas fuentes/pesos, tareas y dominios), cada uno con su **dossier independiente** de evaluación y selección: `ocsr-printed`, `ocsr-handdrawn` e `image-classifier`. **No es un benchmark único** ni hay ranking entre modelos; cada dossier tiene su suite, métricas, criterios de aceptación y decisión de variante ONNX. Lo compartido es solo infraestructura: harness, formato `labels.jsonl`, export/benchmark/reporting.
+> Documento de diseño/protocolo. Se trabaja con **tres modelos distintos** (distintas fuentes/pesos, tokenizadores, tareas y dominios), cada uno con su **dossier independiente** de evaluación y selección: `ocsr-printed`, `ocsr-handdrawn` e `image-classifier`. **No es un benchmark único** ni hay ranking entre modelos; cada dossier tiene su suite, métricas, criterios de aceptación y decisión de variante ONNX. Lo compartido es solo infraestructura: harness, formato `labels.jsonl`, export/benchmark/reporting.
+
+**Nota de dominio (evidencia observada):** `ocsr-handdrawn` proviene del modelo upstream entrenado para manuscrito (Zenodo 10781330), pero en la cross-evaluación 2×2 (piloto, FP32) rindió competitivo también en impreso (0.712 en impreso vs 0.711 del modelo impreso; 0.719 en manuscrito), mientras `ocsr-printed` degradó en manuscrito (0.677). Por tanto, son modelos distintos con especialización **no exclusiva** (el manuscrito generaliza bien a impreso en esta evaluación).
 
 **Estado:** formalizado (2026-11-08, reframing por modelo/fin).  
 **Fuentes operativas:** `docs/benchmark-report.md` (resultados neutrales auto-generados), `data/manifests/*.json`, `data/artifacts/selection/*` (decisiones por dossier/modelo, separadas del informe).
@@ -14,7 +16,7 @@ Cada modelo se valida contra **su** suite, con **su** métrica, **su** criterio 
 | Dossier | Modelo | Suite(s) | Pregunta | Decisión que cierra |
 |---|---|---|---|---|
 | [Impreso](benchmark-dossier-printed.md) | `ocsr-printed` | CLEF + JPO (n=1441) | ¿La variante ONNX reproduce TF y acierta SMILES en impreso? | Variante (E1/E3/FP32) + política de calibración |
-| [Manuscrito](benchmark-dossier-handdrawn.md) | `ocsr-handdrawn` | HDM (n=5088) | ¿La variante ONNX reproduce TF y acierta SMILES en manuscrito? | Variante + política de calibración |
+| [Manuscrito](benchmark-dossier-handdrawn.md) | `ocsr-handdrawn` | HDM (n=5088) | ¿La variante ONNX reproduce TF y acierta SMILES en manuscrito? | Variante + política de calibración (modelo entrenado para manuscrito; especialización no exclusiva según cross-eval) |
 | [Clasificador](benchmark-dossier-classifier.md) | `image-classifier` | Zenodo 13378718 (split definido al importar) | ¿Acierta clasificación structure/no-structure según mapeo definido? | Export ONNX + wiring + variante |
 
 **No aplica:** matriz 2×2 cross-domain como requisito (no hay router que envíe la misma imagen a ambos modelos OCSR). Las celdas cross-domain quedan, si acaso, como **chequeo opcional de robustez**, no como parte del dossier. **No** hay tabla comparativa única ni pooled entre dossiers/dominios.

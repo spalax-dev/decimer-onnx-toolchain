@@ -2,9 +2,9 @@
 
 Reproducible pipeline to convert [DECIMER](https://github.com/Kohulan/DECIMER-Image_Transformer) models into **optimized ONNX** artifacts for fast, self-contained inference (no TensorFlow at runtime).
 
-This toolchain works with **three distinct models** (different sources/weights and separate evaluation dossiers):
-1. **`ocsr-printed`** — DECIMER v2 printed OCSR (Zenodo 8300489)
-2. **`ocsr-handdrawn`** — DECIMER v2 hand-drawn specialist OCSR (Zenodo 10781330)
+This toolchain works with **three distinct models** (different sources/weights, tokenizers and separate evaluation dossiers):
+1. **`ocsr-printed`** — DECIMER v2 OCSR for printed structures (Zenodo 8300489)
+2. **`ocsr-handdrawn`** — DECIMER v2 OCSR trained for hand-drawn structures (upstream “Hand-drawn specialist”, Zenodo 10781330; in our cross-eval it also performs competitively on printed, so not exclusive to hand-drawn)
 3. **`image-classifier`** — DECIMER Image Classifier (Iagea/DECIMER-Image-Classifier)
 
 > Status: bootstrap → consolidated. Fetch/export/quantization/benchmark/selection completed per dossier; selected artifacts staged in `chemistry-draw-ocsr/` (ignored, for HF/chemistry_draw). Some engineering/packaging items remain (see `TODO.md`).
@@ -48,7 +48,7 @@ Downloaded weights are cached under `data/weights/`  and verified against pinned
 | Fetch key | What it is | Source | License / notes |
 |---|---|---|---|
 | `ocsr-printed` | DECIMER v2 printed OCSR (inference, `models.zip`) | [Zenodo 8300489 — DECIMER V2 Models](https://zenodo.org/records/8300489) | CC-BY-4.0 (Rajan et al.) |
-| `ocsr-handdrawn` | DECIMER v2 hand-drawn specialist OCSR | [Zenodo 10781330 — DECIMER V2 Hand drawn Model](https://zenodo.org/records/10781330) | CC-BY-4.0 |
+| `ocsr-handdrawn` | DECIMER v2 OCSR trained for hand-drawn structures (upstream: Hand-drawn specialist) | [Zenodo 10781330 — DECIMER V2 Hand drawn Model](https://zenodo.org/records/10781330) | CC-BY-4.0 |
 | `image-classifier` | DECIMER Image Classifier (EfficientNetB0, structure vs non-structure) | [Iagea/DECIMER-Image-Classifier](https://github.com/Iagea/DECIMER-Image-Classifier) (pinned commit) | MIT (upstream code); trained weights fetched from upstream repo at a pinned commit |
 
 

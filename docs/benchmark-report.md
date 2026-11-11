@@ -2,7 +2,7 @@
 
 > Documento generado automáticamente a partir de reportes JSON/manifiestos en `data/`. No incluye decisiones ni juicios sobre los resultados; reporta mediciones, definiciones y criterios de aceptación definidos para la evaluación.
 
-**Generado (UTC):** `2026-11-10T23:18:55.484530+00:00`  
+**Generado (UTC):** `2026-11-11T00:48:13.534307+00:00`  
 **Generador:** `toolchain.report.generate_report` / `dtx report` (alias: `decimer-export report`)  
 **Rama/commits relevantes:** `main` (workspace fetch/export/runtime/cuantización/benchmark).
 
@@ -64,7 +64,7 @@ Las métricas se calculan con el mismo harness sobre el mismo conjunto de imáge
 
 ## 4. Características de la máquina (recolección automática)
 
-Recolectado automáticamente el `2026-11-10T23:18:55.078075+00:00` mediante `platform`, `lscpu` y `free`.
+Recolectado automáticamente el `2026-11-11T00:48:13.022450+00:00` mediante `platform`, `lscpu` y `free`.
 
 | Campo | Valor |
 |---|---|
@@ -80,7 +80,7 @@ Recolectado automáticamente el `2026-11-10T23:18:55.078075+00:00` mediante `pla
 | Cachés L1d/L1i/L2/L3 | `128 KiB (4 instances)` / `128 KiB (4 instances)` / `1 MiB (4 instances)` / `6 MiB (1 instance)` |
 | Flags CPU relevantes | `fma sse4_2 avx avx2` |
 | RAM total | 15.42 GiB (16555548672 bytes) |
-| RAM disponible (al recolectar) | 6.07 GiB |
+| RAM disponible (al recolectar) | 5.85 GiB |
 
 ### Versiones de paquetes (entorno de ejecución)
 
@@ -122,6 +122,7 @@ Protocolo: variantes comparadas sobre **mismos IDs** cuando aplica (pareado, pil
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|
 | E1enc (dyn) + FP32dec | 300 | **182/267 (0.6816)** ❌<70% | 1 (0.0033) | 238/300 (0.7933) / can 224/264 (0.848) | -2.94 pp | -3.33 pp | +0.00 pp | 294 (0.9800) | 6 | 7891.59 | 16833.27 | 154.1 | `data/benchmark/pilot/printed.e1enc-fp32dec.pilot300.json` |
 | E1s selective dyn (decoder sin atención) | 300 | **182/267 (0.6816)** ❌<70% | 1 (0.0033) | 231/300 (0.7700) / can 219/263 (0.833) | -2.94 pp | -5.67 pp | +0.00 pp | 293 (0.9767) | 7 | 3622.71 | 6244.48 | 117.1 | `data/benchmark/pilot/printed.e1s-sel-noattn.pilot300.json` |
+| FP32 (ref) | 300 | **195/288 (0.6771)** ❌<70% | 105 (0.3500) | 266/300 (0.8867) / can 266/287 (0.927) | -3.39 pp | +6.00 pp (agg) | +34.67 pp (agg) | 299 (0.9967) | 1 | 980.80 | 1943.49 | 301.2 | `data/benchmark/pilot/printed.fp32.cross-on-handdrawn.pilot300.json` |
 | FP32 (ref) | 300 | **187/263 (0.7110)** ✅≥70% | 1 (0.0033) | 248/300 (0.8267) / can 230/263 (0.875) | (ref) | (ref) | (ref) | 290 (0.9667) | 10 | — (cache, sin latencia fresca) | — | 301.2 | `data/benchmark/pilot/printed.fp32.pilot300.json` |
 | FP32enc + E1dec + reduce_range | 300 | **186/264 (0.7045)** ✅≥70% | 1 (0.0033) | 243/300 (0.8100) / can 230/264 (0.871) | -0.65 pp | -1.67 pp | +0.00 pp | 291 (0.9700) | 9 | 5320.71 | 14961.17 | 228.4 | `data/benchmark/pilot/printed.fp32enc-e1dec-rr.pilot300.json` |
 | FP32enc + E1dec (dyn) | 300 | **187/264 (0.7083)** ✅≥70% | 1 (0.0033) | 242/300 (0.8067) / can 230/264 (0.871) | -0.27 pp | -2.00 pp | +0.00 pp | 292 (0.9733) | 8 | 3858.88 | 11189.69 | 228.4 | `data/benchmark/pilot/printed.fp32enc-e1dec.pilot300.json` |
@@ -150,6 +151,7 @@ Protocolo: variantes comparadas sobre **mismos IDs** cuando aplica (pareado, pil
 | Variante | n | **canonical RDKit (primaria, comp.)** | exact string | tf_match string (+ tf_canonical) | Δcanonical pp | Δtf pp | Δexact pp | valid | incomplete | p50 ms | p95 ms | tamaño MB | Reporte |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|
 | E1s selective dyn (decoder sin atención) | 300 | **207/292 (0.7089)** ✅≥70% | 118 (0.3933) | 263/300 (0.8767) / can 260/289 (0.900) | -1.03 pp | -5.33 pp | -1.00 pp | 299 (0.9967) | 1 | 2860.85 | 3963.42 | 117.1 | `data/benchmark/pilot/handdrawn.e1s-sel-noattn.pilot300.json` |
+| FP32 (ref) | 300 | **198/278 (0.7122)** ✅≥70% | 1 (0.0033) | 252/300 (0.8400) / can 244/279 (0.875) | -0.69 pp | -9.00 pp (agg) | -40.00 pp (agg) | 299 (0.9967) | 1 | 2046.58 | 5223.96 | 301.2 | `data/benchmark/pilot/handdrawn.fp32.cross-on-printed.pilot300.json` |
 | FP32 (ref) | 300 | **210/292 (0.7192)** ✅≥70% | 121 (0.4033) | 279/300 (0.9300) / can 273/291 (0.938) | (ref) | (ref) | (ref) | 299 (0.9967) | 1 | — (cache, sin latencia fresca) | — | 301.2 | `data/benchmark/pilot/handdrawn.fp32.pilot300.json` |
 | E1 dynamic INT8 all | 300 | **204/293 (0.6962)** ❌<70% | 116 (0.3867) | 266/300 (0.8867) / can 263/290 (0.907) | -2.29 pp | -4.33 pp | -1.67 pp | 299 (0.9967) | 1 | — (cache, sin latencia fresca) | — | 81.3 | `data/benchmark/pilot/handdrawn.int8-dyn-all.pilot300.json` |
 
