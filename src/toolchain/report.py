@@ -554,6 +554,8 @@ def render_results() -> tuple[str, list[str]]:
         "",
         "> **Nota de ejecución (realidad):** algunas corridas (pilotos/remainders) se ejecutaron con contención de CPU, por lo que sus `p50/p95` pueden no ser comparables (la accuracy no se ve afectada); preferir mediciones en solitario para comparar latencia. McNemar/IC bootstrap no están automatizados en este reporte (se reportan tasas/Δpp/`n`). Hubo reintentos por fallos transitorios de carga ONNX y limitaciones de runtime/cuantización documentadas en resultados/selecciones. Ver glosario (§1) y `docs/benchmark-spec.md` (§7) para detalle.",
         "",
+        "> **Dominio/especialización (en evaluación):** `ocsr-printed` y `ocsr-handdrawn` son modelos distintos (pesos/tokenizadores/orígenes diferentes) pero **no son especialistas exclusivos** según la evidencia de cross-evaluación observada (p. ej. piloto 2×2 FP32: handdrawn 0.712 en impreso vs 0.711 impreso in-domain; 0.719 en manuscrito, mientras impreso cae a 0.677 en manuscrito). Pruebas adicionales (eval-1000 cruzado y mezcla 1:1 impreso+manuscrito) están en curso/pendientes de consolidación para confirmar diferencias.",
+        "",
     ]
 
     def table(title: str, rows: list[str | None]):
